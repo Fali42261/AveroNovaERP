@@ -83,8 +83,11 @@
     <x:String x:Key="IconProfile">&#x1F464;</x:String>
     <x:String x:Key="IconLock">&#x1F512;</x:String>
     <x:String x:Key="IconUnlock">&#x1F513;</x:String>
-    <x:String x:Key="IconEye">&#x25CE;</x:String>
-    <x:String x:Key="IconEyeOff">&#x2299;</x:String>
+    <x:String x:Key="IconEye">&#x1F441;</x:String>
+    <x:String x:Key="IconEyeOff">&#x1F576;</x:String>
+    <x:String x:Key="IconAuthLock">&#x25A6;</x:String>
+    <x:String x:Key="IconAuthEye">&#x25CE;</x:String>
+    <x:String x:Key="IconAuthEyeOff">&#x2299;</x:String>
     <x:String x:Key="IconEmail">&#x2709;</x:String>
     <x:String x:Key="IconPhone">&#x260E;</x:String>
     <x:String x:Key="IconLogout">&#x2B9E;</x:String>

@@ -18,13 +18,23 @@
 
         <!-- Editor -->
 
-        <Editor
-            x:Name="EditorControl"
-            Text="{Binding Text, Source={x:Reference This}, Mode=TwoWay}"
-            Placeholder="{Binding Placeholder, Source={x:Reference This}}"
-            AutoSize="TextChanges"
-            MinimumHeightRequest="100"
-            FontSize="14" />
+        <Border
+            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource InputBackgroundDark}}"
+            Stroke="Transparent"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 12"
+            Padding="14,10"
+            MinimumHeightRequest="80"
+            VerticalOptions="Start">
+            <Editor
+                x:Name="EditorControl"
+                Text="{Binding Text, Source={x:Reference This}, Mode=TwoWay}"
+                Placeholder="{Binding Placeholder, Source={x:Reference This}}"
+                AutoSize="TextChanges"
+                MinimumHeightRequest="80"
+                FontSize="14"
+                BackgroundColor="Transparent" />
+        </Border>
 
         <!-- Error -->
 

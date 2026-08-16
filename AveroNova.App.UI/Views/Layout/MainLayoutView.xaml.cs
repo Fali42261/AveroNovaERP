@@ -547,7 +547,7 @@ public partial class MainLayoutView : ContentView
         if (width <= 0)
             return;
 
-        bool desktop = width >= 700;
+        bool desktop = width >= AveroNova.App.UI.Layout.ResponsiveBreakpoints.ShellDesktopMinWidth;
 
         DesktopLayout.IsVisible = desktop;
         MobileLayout.IsVisible = !desktop;

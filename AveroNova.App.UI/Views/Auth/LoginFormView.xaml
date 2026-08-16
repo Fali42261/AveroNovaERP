@@ -71,9 +71,9 @@
             ErrorMessage="{Binding PasswordError}"
             Margin="0,0,0,12" />
 
-        <!-- ── REMEMBER ME + FORGOT PASSWORD ──────────────────────────── -->
+        <!-- ── REMEMBER ME ─────────────────────────────────────────────── -->
         <Grid
-            ColumnDefinitions="Auto,Auto,*,Auto"
+            ColumnDefinitions="Auto,*"
             ColumnSpacing="8"
             Margin="0,0,0,24"
             VerticalOptions="Center">
@@ -92,20 +92,6 @@
                 FontSize="{StaticResource FontSizeBody}"
                 TextColor="{StaticResource TextPrimary}"
                 VerticalOptions="Center" />
-
-            <Label
-                Grid.Column="3"
-                Text="Forgot password?"
-                FontSize="{StaticResource FontSizeBody}"
-                TextColor="{StaticResource PrimaryColor}"
-                FontAttributes="Bold"
-                VerticalOptions="Center"
-                MinimumHeightRequest="44">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnForgotPasswordTapped" />
-                </Label.GestureRecognizers>
-            </Label>
-
         </Grid>
 
         <!-- ── SIGN IN BUTTON ──────────────────────────────────────────── -->

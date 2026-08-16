@@ -39,6 +39,14 @@ public static class MauiProgram
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            })
+            .ConfigureMauiHandlers(handlers =>
+            {
+                AveroNova.App.UI.Helpers.NativeInputChrome.Register();
+                // GlobalPointerCursor.Register() disabled: ViewHandler mapping + VisualTreeHelper
+                // recursion blocked the UI thread on the authentication landing page.
+                // ResponsivePage.Attach() disabled: walking/mutating the visual tree on SizeChanged
+                // re-entered layout and froze the same page.
             });
 
         // ── Database ──────────────────────────────────────────────────────────
@@ -55,10 +63,11 @@ public static class MauiProgram
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddTransient<ForgotPasswordPage>();
+        builder.Services.AddTransient<ResetPasswordPage>();
 
         // ── Auth view models ──────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();
-        builder.Services.AddTransient<RegisterViewModel>();
+        builder.Services.AddSingleton<RegisterViewModel>();
 
         // ── Auth views ────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginFormView>();

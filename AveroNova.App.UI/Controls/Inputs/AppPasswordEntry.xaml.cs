@@ -68,8 +68,9 @@ public partial class AppPasswordEntry : ContentView
     {
         var control = (AppPasswordEntry)bindable;
         var isVisible = (bool)newValue;
-        // Eye icon: open eye when visible, closed (crossed) when hidden
-        control.EyeIcon.Text = isVisible ? "\U0001F441" : "\U0001F576";
+        var eye = ResolveIcon("IconAuthEye", "\u25CE");
+        var eyeOff = ResolveIcon("IconAuthEyeOff", "\u2299");
+        control.EyeIcon.Text = isVisible ? eyeOff : eye;
     }
 
     // ── HasError ──────────────────────────────────────────────────────────────
@@ -90,8 +91,9 @@ public partial class AppPasswordEntry : ContentView
         var control = (AppPasswordEntry)bindable;
         var hasError = (bool)newValue;
         control.InputBorder.Stroke = hasError
-            ? Color.FromArgb("#EF4444")
-            : Color.FromArgb("#E2E8F0");
+            ? (Color)Microsoft.Maui.Controls.Application.Current!.Resources["ErrorColor"]
+            : Colors.Transparent;
+        control.InputBorder.StrokeThickness = hasError ? 1 : 0;
     }
 
     // ── ErrorMessage ──────────────────────────────────────────────────────────
@@ -120,12 +122,30 @@ public partial class AppPasswordEntry : ContentView
         PasswordEntryControl.Focused += (s, e) =>
         {
             if (!HasError)
-                InputBorder.Stroke = Color.FromArgb("#2563EB");
+            {
+                InputBorder.Stroke = (Color)Microsoft.Maui.Controls.Application.Current!.Resources["PrimaryColor"];
+                InputBorder.StrokeThickness = 1;
+            }
         };
         PasswordEntryControl.Unfocused += (s, e) =>
         {
             if (!HasError)
-                InputBorder.Stroke = Color.FromArgb("#E2E8F0");
+            {
+                InputBorder.Stroke = Colors.Transparent;
+                InputBorder.StrokeThickness = 0;
+            }
         };
+    }
+
+    private static string ResolveIcon(string key, string fallback)
+    {
+        if (Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
+            && value is string text
+            && !string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        return fallback;
     }
 }

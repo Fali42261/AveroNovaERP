@@ -18,11 +18,7 @@
         <!-- Input Border -->
         <Border
             x:Name="InputBorder"
-            BackgroundColor="{StaticResource CardBackground}"
-            Stroke="{StaticResource BorderColor}"
-            StrokeThickness="1.5"
-            StrokeShape="RoundRectangle 10"
-            Padding="14,0">
+            Style="{StaticResource AuthField}">
 
             <Entry
                 x:Name="EntryControl"

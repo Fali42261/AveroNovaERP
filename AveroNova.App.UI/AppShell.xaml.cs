@@ -28,10 +28,9 @@ public partial class AppShell : Shell
 
     private static void RegisterRoutes()
     {
-        Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
-        // Auth push routes
         Routing.RegisterRoute(AppRoutes.Register,       typeof(RegisterPage));
         Routing.RegisterRoute(AppRoutes.ForgotPassword, typeof(ForgotPasswordPage));
+        Routing.RegisterRoute(AppRoutes.ResetPassword,  typeof(ResetPasswordPage));
         Routing.RegisterRoute(AppRoutes.OtpVerify,      typeof(OtpVerifyPage));
 
         // Company

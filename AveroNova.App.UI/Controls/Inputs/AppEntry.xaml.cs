@@ -133,8 +133,9 @@ public partial class AppEntry : ContentView
     {
         var control = (AppEntry)bindable;
         control.InputBorder.Stroke = (bool)newValue
-            ? Color.FromArgb("#EF4444")
-            : Color.FromArgb("#E2E8F0");
+            ? (Color)Microsoft.Maui.Controls.Application.Current!.Resources["ErrorColor"]
+            : Colors.Transparent;
+        control.InputBorder.StrokeThickness = (bool)newValue ? 1 : 0;
     }
 
     // ── ErrorMessage ──────────────────────────────────────────────────────────
@@ -156,12 +157,18 @@ public partial class AppEntry : ContentView
         EntryControl.Focused += (s, e) =>
         {
             if (!HasError)
-                InputBorder.Stroke = Color.FromArgb("#2563EB");
+            {
+                InputBorder.Stroke = (Color)Microsoft.Maui.Controls.Application.Current!.Resources["PrimaryColor"];
+                InputBorder.StrokeThickness = 1;
+            }
         };
         EntryControl.Unfocused += (s, e) =>
         {
             if (!HasError)
-                InputBorder.Stroke = Color.FromArgb("#E2E8F0");
+            {
+                InputBorder.Stroke = Colors.Transparent;
+                InputBorder.StrokeThickness = 0;
+            }
         };
     }
 }

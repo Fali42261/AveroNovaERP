@@ -1,107 +1,116 @@
-using System;
 using System.Reflection;
-using Microsoft.Maui.Controls;
 
-#if WINDOWS
-using Microsoft.UI.Input;
-using Microsoft.UI.Xaml;
-#endif
+namespace AveroNova.App.UI.Helpers;
 
-namespace AveroNova.App.UI.Helpers
+public enum CursorType
 {
-    public enum CursorType
+    Default,
+    Hand,
+    Arrow,
+    IBeam
+}
+
+public static class CursorBehavior
+{
+    public static readonly BindableProperty CursorProperty =
+        BindableProperty.CreateAttached(
+            "Cursor",
+            typeof(CursorType),
+            typeof(CursorBehavior),
+            CursorType.Default,
+            propertyChanged: OnCursorChanged);
+
+    public static CursorType GetCursor(BindableObject view) => (CursorType)view.GetValue(CursorProperty);
+    public static void SetCursor(BindableObject view, CursorType value) => view.SetValue(CursorProperty, value);
+
+    private static void OnCursorChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        Default,
-        Hand,
-        Arrow,
-        IBeam
+        if (bindable is not VisualElement visualElement)
+            return;
+
+        visualElement.Loaded -= VisualElement_Loaded;
+        visualElement.Loaded += VisualElement_Loaded;
+        visualElement.HandlerChanged -= VisualElement_HandlerChanged;
+        visualElement.HandlerChanged += VisualElement_HandlerChanged;
+
+        ApplyCursor(visualElement, (CursorType)newValue);
     }
 
-    public static class CursorBehavior
+    private static void VisualElement_Loaded(object? sender, EventArgs e)
     {
-        public static readonly BindableProperty CursorProperty =
-            BindableProperty.CreateAttached(
-                "Cursor",
-                typeof(CursorType),
-                typeof(CursorBehavior),
-                CursorType.Default,
-                propertyChanged: OnCursorChanged);
+        if (sender is VisualElement visualElement)
+            ApplyCursor(visualElement, GetCursor(visualElement));
+    }
 
-        public static CursorType GetCursor(BindableObject view) => (CursorType)view.GetValue(CursorProperty);
-        public static void SetCursor(BindableObject view, CursorType value) => view.SetValue(CursorProperty, value);
+    private static void VisualElement_HandlerChanged(object? sender, EventArgs e)
+    {
+        if (sender is VisualElement visualElement)
+            ApplyCursor(visualElement, GetCursor(visualElement));
+    }
 
-        private static void OnCursorChanged(BindableObject bindable, object oldValue, object newValue)
+    public static void ApplyCursor(VisualElement element, CursorType cursorType)
+    {
+#if WINDOWS
+        if (_applying)
+            return;
+
+        if (element.Handler?.PlatformView is not Microsoft.UI.Xaml.UIElement platformView)
+            return;
+
+        _applying = true;
+        try
         {
-            if (bindable is VisualElement visualElement)
-            {
-                var cursor = (CursorType)newValue;
-
-                visualElement.Loaded -= VisualElement_Loaded;
-                visualElement.Loaded += VisualElement_Loaded;
-
-                visualElement.HandlerChanged -= VisualElement_HandlerChanged;
-                visualElement.HandlerChanged += VisualElement_HandlerChanged;
-
-                if (visualElement.Handler?.PlatformView != null)
-                {
-                    ApplyCursor(visualElement, cursor);
-                }
-
-                if (bindable is View view && cursor != CursorType.Default)
-                {
-                    var pointerGesture = new PointerGestureRecognizer();
-                    pointerGesture.PointerEntered += (s, e) => ApplyCursor(visualElement, cursor);
-                    pointerGesture.PointerExited += (s, e) => ApplyCursor(visualElement, CursorType.Arrow);
-                    view.GestureRecognizers.Add(pointerGesture);
-                }
-            }
+            SetProtectedCursor(platformView, ToNativeCursor(cursorType));
         }
-
-        private static void VisualElement_Loaded(object? sender, EventArgs e)
+        finally
         {
-            if (sender is VisualElement visualElement)
-            {
-                ApplyCursor(visualElement, GetCursor(visualElement));
-            }
+            _applying = false;
         }
-
-        private static void VisualElement_HandlerChanged(object? sender, EventArgs e)
-        {
-            if (sender is VisualElement visualElement)
-            {
-                ApplyCursor(visualElement, GetCursor(visualElement));
-            }
-        }
+#else
+        _ = element;
+        _ = cursorType;
+#endif
+    }
 
 #if WINDOWS
-        private static readonly PropertyInfo? ProtectedCursorProperty = 
-            typeof(Microsoft.UI.Xaml.UIElement).GetProperty("ProtectedCursor", 
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
+    [ThreadStatic]
+    private static bool _applying;
 
-        public static void ApplyCursor(VisualElement element, CursorType cursorType)
+    private static readonly PropertyInfo? ProtectedCursorProperty =
+        typeof(Microsoft.UI.Xaml.UIElement).GetProperty(
+            "ProtectedCursor",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+    private static readonly Microsoft.UI.Input.InputCursor HandCursor =
+        Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Hand);
+
+    private static readonly Microsoft.UI.Input.InputCursor ArrowCursor =
+        Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
+
+    private static readonly Microsoft.UI.Input.InputCursor IBeamCursor =
+        Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.IBeam);
+
+    private static Microsoft.UI.Input.InputCursor? ToNativeCursor(CursorType cursorType) => cursorType switch
+    {
+        CursorType.Hand => HandCursor,
+        CursorType.IBeam => IBeamCursor,
+        CursorType.Arrow => ArrowCursor,
+        _ => null
+    };
+
+    private static void SetProtectedCursor(Microsoft.UI.Xaml.UIElement platformView, Microsoft.UI.Input.InputCursor? cursor)
+    {
+        if (ProtectedCursorProperty is null)
+            return;
+
+        try
         {
-#if WINDOWS
-            if (element.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement platformView && ProtectedCursorProperty != null)
-            {
-                try
-                {
-                    InputCursor? cursor = cursorType switch
-                    {
-                        CursorType.Hand => InputSystemCursor.Create(InputSystemCursorShape.Hand),
-                        CursorType.IBeam => InputSystemCursor.Create(InputSystemCursorShape.IBeam),
-                        CursorType.Arrow => InputSystemCursor.Create(InputSystemCursorShape.Arrow),
-                        _ => null
-                    };
-
-                    ProtectedCursorProperty.SetValue(platformView, cursor);
-                }
-                catch
-                {
-                    // Fail gracefully if platform view is in intermediate state
-                }
-            }
-#endif
+            ProtectedCursorProperty.SetValue(platformView, cursor);
+        }
+        catch
+        {
+            // Platform view can be in an intermediate state during handler attach.
         }
     }
+#endif
 }

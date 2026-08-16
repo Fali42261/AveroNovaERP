@@ -66,6 +66,11 @@
     <x:Double x:Key="BreakpointMobile">600</x:Double>
     <x:Double x:Key="BreakpointTablet">900</x:Double>
     <x:Double x:Key="BreakpointDesktop">1200</x:Double>
+    <x:Double x:Key="AuthCardMaxWidth">480</x:Double>
+    <x:Double x:Key="WizardMaxWidth">1120</x:Double>
+    <x:Double x:Key="FormMaxWidth">1120</x:Double>
+    <x:Double x:Key="ContentMaxWidth">1280</x:Double>
+    <x:Double x:Key="WideLayoutMinWidth">700</x:Double>
 
     <!-- ── Shadow / Elevation ─────────────────────────────────────────── -->
     <x:Double x:Key="ShadowRadius">8</x:Double>
