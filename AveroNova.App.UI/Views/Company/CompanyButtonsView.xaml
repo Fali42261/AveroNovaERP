@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Company.CompanyButtonsView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:buttons="clr-namespace:AveroNova.App.UI.Controls.Buttons">
+
+    <Border
+    BackgroundColor="White"
+    Stroke="{StaticResource BorderColor}"
+    Padding="14">
+
+        <VerticalStackLayout Spacing="10">
+
+            <!-- Test Label -->
+                     <Grid>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="160"/>
+                </Grid.ColumnDefinitions>
+
+                <buttons:AppButton
+            Grid.Column="1"
+            Text="Back"
+            ButtonColor="White"
+            TextColor="Black"
+            Command="{Binding BackCommand}" />
+
+                <buttons:AppButton
+            Grid.Column="2"
+            Margin="15,0,0,0"
+            Text="Continue"
+            ButtonColor="{StaticResource PrimaryColor}"
+            Command="{Binding NextCommand}" />
+
+            </Grid>
+
+        </VerticalStackLayout>
+
+    </Border>
+
+</ContentView>

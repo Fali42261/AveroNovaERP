@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Help.HelpAboutPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="24"
+            Spacing="20">
+
+            <Label
+                Text="Help &amp; About"
+                FontSize="24"
+                FontAttributes="Bold"
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+
+            <Border
+                Style="{StaticResource AppCard}">
+
+                <VerticalStackLayout Spacing="12">
+
+                    <Label
+                        Text="AveroNova"
+                        FontSize="22"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryColor}" />
+
+                    <Label
+                        Text="AveroNova ERP"
+                        FontSize="16"
+                        FontAttributes="Bold" />
+
+                    <Label
+                        Text="Version 1.0"
+                        FontSize="13"
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+
+                    <Label
+                        Text="Offline-first ERP and business management application."
+                        FontSize="14"
+                        LineBreakMode="WordWrap"
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+
+                </VerticalStackLayout>
+            </Border>
+
+            <Border
+                Style="{StaticResource AppCard}">
+
+                <VerticalStackLayout Spacing="12">
+
+                    <Label
+                        Text="Help &amp; Support"
+                        FontSize="17"
+                        FontAttributes="Bold" />
+
+                    <Label
+                        Text="For application support, contact your AveroNova administrator or support team."
+                        FontSize="14"
+                        LineBreakMode="WordWrap"
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Inventory.StockMovementPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Padding="20,14"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <Grid ColumnDefinitions="Auto,*">
+                <Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/>
+                <Label Grid.Column="1" Text="Stock Movement History" FontSize="18" FontAttributes="Bold"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+            </Grid>
+        </Border>
+
+        <RefreshView Grid.Row="1" x:Name="Refresher" Refreshing="OnRefreshing">
+            <ScrollView>
+                <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="MovementList"/>
+            </ScrollView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

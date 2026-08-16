@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Company.CompanyFormView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:AveroNova.App.UI.Controls.Inputs">
+
+    <Grid
+        Padding="25"
+        ColumnSpacing="20"
+        RowSpacing="20">
+
+        <!-- Columns -->
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Rows -->
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Row 1 -->
+
+        <controls:AppEntry
+            Grid.Row="0"
+            Grid.Column="0"
+            Label="Company Name"
+            Placeholder="Enter Company Name"/>
+
+        <controls:AppEntry
+            Grid.Row="0"
+            Grid.Column="1"
+            Label="Owner Name"
+            Placeholder="Enter Owner Name"/>
+
+        <!-- Row 2 -->
+
+        <controls:AppEntry
+            Grid.Row="1"
+            Grid.Column="0"
+            Label="GST Number"
+            Placeholder="Enter GST Number"/>
+
+        <controls:AppEntry
+            Grid.Row="1"
+            Grid.Column="1"
+            Label="PAN Number"
+            Placeholder="Enter PAN Number"/>
+
+        <!-- Row 3 -->
+
+        <controls:AppEntry
+            Grid.Row="2"
+            Grid.Column="0"
+            Label="Email"
+            Placeholder="Enter Email"/>
+
+        <controls:AppEntry
+            Grid.Row="2"
+            Grid.Column="1"
+            Label="Mobile Number"
+            Placeholder="Enter Mobile Number"/>
+
+        <!-- Row 4 -->
+
+        <controls:AppEntry
+            Grid.Row="3"
+            Grid.Column="0"
+            Label="Country"
+            Placeholder="Enter Country"/>
+
+        <controls:AppEntry
+            Grid.Row="3"
+            Grid.Column="1"
+            Label="State"
+            Placeholder="Enter State"/>
+
+        <!-- Row 5 -->
+
+        <controls:AppEntry
+            Grid.Row="4"
+            Grid.Column="0"
+            Label="City"
+            Placeholder="Enter City"/>
+
+        <controls:AppEntry
+            Grid.Row="4"
+            Grid.Column="1"
+            Label="Pin Code"
+            Placeholder="Enter Pin Code"/>
+
+        <!-- Row 6 -->
+
+        <controls:AppEditor
+            Grid.Row="5"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Label="Company Address"
+            Placeholder="Enter Company Address"/>
+
+    </Grid>
+
+</ContentView>

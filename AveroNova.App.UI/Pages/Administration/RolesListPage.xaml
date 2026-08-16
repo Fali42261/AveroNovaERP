@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Administration.RolesListPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <Border Grid.Row="0" Padding="20,14"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+                StrokeThickness="1">
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="Roles" FontSize="20" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                    <Label x:Name="LblCount" Text="0 roles" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                </VerticalStackLayout>
+                <Button Grid.Column="1"
+        Text="Add Role"
+        Style="{StaticResource PrimaryButton}"
+        HeightRequest="40"
+        FontSize="13"
+        Clicked="OnAddClicked"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Padding="16,10"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+                StrokeThickness="1">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Border Style="{StaticResource InputContainer}" HeightRequest="40">
+                    <SearchBar x:Name="SearchBar" Placeholder="Search roles..."
+                               TextChanged="OnSearchChanged" BackgroundColor="Transparent"/>
+                </Border>
+                <Button Grid.Column="1" Text="{StaticResource IconRefresh}" Style="{StaticResource SmallSecondaryButton}" Clicked="OnRefreshClicked"/>
+            </Grid>
+        </Border>
+
+        <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing">
+            <ScrollView>
+                <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="RoleList"/>
+            </ScrollView>
+        </RefreshView>
+
+    </Grid>
+</ContentPage>

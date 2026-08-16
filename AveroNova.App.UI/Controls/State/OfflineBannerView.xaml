@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    OfflineBannerView — shown at the top of pages when the app is offline.
+    The UI must not block operations. Users can still work offline.
+    Changes are saved locally and synced when connectivity restores.
+-->
+<ContentView
+    x:Class="AveroNova.App.UI.Controls.State.OfflineBannerView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Border BackgroundColor="{StaticResource WarningBg}"
+            Stroke="{StaticResource WarningBorder}" StrokeThickness="1"
+            StrokeShape="RoundRectangle 8" Padding="14,10">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Label Text="&#x25CB;" FontSize="14" TextColor="{StaticResource WarningText}"
+                   VerticalOptions="Center"/>
+            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                <Label Text="You are offline"
+                       FontSize="13" FontAttributes="Bold"
+                       TextColor="{StaticResource WarningText}"/>
+                <Label x:Name="LblDetail"
+                       Text="Changes will be saved locally and synchronized when you are online."
+                       FontSize="11" TextColor="{StaticResource WarningText}"
+                       LineBreakMode="WordWrap"/>
+            </VerticalStackLayout>
+        </Grid>
+    </Border>
+
+</ContentView>

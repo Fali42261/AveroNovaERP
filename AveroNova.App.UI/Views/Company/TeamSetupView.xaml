@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Company.TeamSetupView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:AveroNova.App.UI.Controls.Inputs">
+
+    <Grid
+        Padding="25"
+        ColumnSpacing="20"
+        RowSpacing="20">
+
+        <!-- Columns -->
+
+        <Grid.ColumnDefinitions>
+
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+
+        </Grid.ColumnDefinitions>
+
+        <!-- Rows -->
+
+        <Grid.RowDefinitions>
+
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+
+        </Grid.RowDefinitions>
+
+        <!-- Row 1 -->
+
+        <controls:AppPicker
+            Grid.Row="0"
+            Grid.Column="0"
+            Label="Department"
+            Placeholder="Select Department"/>
+
+        <controls:AppEntry
+            Grid.Row="0"
+            Grid.Column="1"
+            Label="Team Name"
+            Placeholder="Enter Team Name"/>
+
+        <!-- Row 2 -->
+
+        <controls:AppPicker
+            Grid.Row="1"
+            Grid.Column="0"
+            Label="Default Role"
+            Placeholder="Select Role"/>
+
+        <controls:AppEntry
+            Grid.Row="1"
+            Grid.Column="1"
+            Label="Maximum Employees"
+            Placeholder="Enter Maximum Employees"
+            Keyboard="Numeric"/>
+
+        <!-- Row 3 -->
+
+        <controls:AppPicker
+            Grid.Row="2"
+            Grid.Column="0"
+            Label="Working Shift"
+            Placeholder="Select Working Shift"/>
+
+        <controls:AppPicker
+            Grid.Row="2"
+            Grid.Column="1"
+            Label="Time Zone"
+            Placeholder="Select Time Zone"/>
+
+    </Grid>
+
+</ContentView>

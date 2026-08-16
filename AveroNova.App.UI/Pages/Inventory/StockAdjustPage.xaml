@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Inventory.StockAdjustPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Padding="20,14"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <Grid ColumnDefinitions="Auto,*">
+                <Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/>
+                <Label Grid.Column="1" Text="Stock Adjustment" FontSize="18" FontAttributes="Bold"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20,16" Spacing="16">
+                <Border Style="{StaticResource AppCard}">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Adjustment Details" FontSize="14" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                        <BoxView Style="{StaticResource Divider}"/>
+
+                        <Label Text="Product *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}">
+                            <Picker x:Name="ProductPicker" Title="Select product..."/>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Current Stock" Style="{StaticResource InputLabel}"/>
+                                <Border Style="{StaticResource InputContainer}">
+                                    <Label x:Name="LblCurrentStock" Text="—" FontSize="14"
+                                           VerticalOptions="Center" Margin="0,12,0,12"/>
+                                </Border>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                <Label Text="New Stock *" Style="{StaticResource InputLabel}"/>
+                                <Border Style="{StaticResource InputContainer}">
+                                    <Entry x:Name="EntryNewStock" Placeholder="0" Keyboard="Numeric"/>
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Label Text="Reason *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}">
+                            <Picker x:Name="ReasonPicker" Title="Select reason...">
+                                <Picker.Items>
+                                    <x:String>Physical Count</x:String>
+                                    <x:String>Damaged Goods</x:String>
+                                    <x:String>Theft / Loss</x:String>
+                                    <x:String>Return from Customer</x:String>
+                                    <x:String>Supplier Return</x:String>
+                                    <x:String>Other</x:String>
+                                </Picker.Items>
+                            </Picker>
+                        </Border>
+
+                        <Label Text="Notes" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}" HeightRequest="80">
+                            <Editor x:Name="EditorNotes" Placeholder="Optional notes..." AutoSize="TextChanges"/>
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="ErrorBanner" IsVisible="False"
+                        BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}"
+                        StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10">
+                    <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="2" Padding="20,12"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Button Text="Cancel" Style="{StaticResource SecondaryButton}" Clicked="OnBackClicked"/>
+                <Button Grid.Column="1" Text="Apply Adjustment" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

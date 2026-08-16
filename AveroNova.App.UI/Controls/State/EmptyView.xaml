@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="AveroNova.App.UI.Controls.State.EmptyView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Grid HorizontalOptions="Center" VerticalOptions="Center" Padding="32">
+        <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+
+            <Border WidthRequest="72" HeightRequest="72"
+                    BackgroundColor="{StaticResource Gray100}"
+                    StrokeThickness="0" StrokeShape="RoundRectangle 36"
+                    HorizontalOptions="Center">
+                <Label x:Name="LblIcon" Text="&#x1F4CB;" FontSize="32"
+                       HorizontalOptions="Center" VerticalOptions="Center"/>
+            </Border>
+
+            <Label x:Name="LblTitle" Text="Nothing here yet"
+                   FontSize="16" FontAttributes="Bold"
+                   TextColor="{StaticResource TextPrimary}"
+                   HorizontalOptions="Center"/>
+
+            <Label x:Name="LblSubtitle" Text="No records found."
+                   FontSize="13" TextColor="{StaticResource TextSecondary}"
+                   HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"/>
+
+            <Button x:Name="BtnAction" Text="Add New"
+                    Style="{StaticResource SmallButton}"
+                    HorizontalOptions="Center"
+                    IsVisible="False"/>
+
+        </VerticalStackLayout>
+    </Grid>
+
+</ContentView>

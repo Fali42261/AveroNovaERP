@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="AveroNova.App.UI.Views.Shared.FooterView">
+
+    <Border
+        BackgroundColor="White"
+        Stroke="{StaticResource BorderColor}"
+        StrokeThickness="1"
+        Padding="25,15">
+
+        <Grid>
+
+            <Grid.ColumnDefinitions>
+
+                <ColumnDefinition Width="*" />
+
+                <ColumnDefinition Width="Auto" />
+
+            </Grid.ColumnDefinitions>
+
+            <!-- Left -->
+
+            <Label
+                VerticalOptions="Center"
+                Text="© 2026 AveroNova ERP"
+                FontSize="14"
+                TextColor="Gray"/>
+
+            <!-- Right -->
+
+            <HorizontalStackLayout
+                Grid.Column="1"
+                Spacing="12">
+
+                <Button
+                    Text="Back"
+                    WidthRequest="110"
+                    HeightRequest="42"
+                    CornerRadius="10"/>
+
+                <Button
+                    Text="Continue"
+                    WidthRequest="130"
+                    HeightRequest="42"
+                    CornerRadius="10"
+                    BackgroundColor="#2563EB"
+                    TextColor="White"/>
+
+            </HorizontalStackLayout>
+
+        </Grid>
+
+    </Border>
+
+</ContentView>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    LoginFormView — credential form hosted by LoginPage in both Desktop and Mobile layouts.
+    All colors via StaticResource. No hard-coded hex values.
+-->
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:inputs="clr-namespace:AveroNova.App.UI.Controls.Inputs"
+    xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:Class="AveroNova.App.UI.Views.Auth.LoginFormView"
+    x:DataType="vm:LoginViewModel"
+    x:Name="This">
+
+    <VerticalStackLayout Spacing="0">
+
+        <!-- ── HEADING ─────────────────────────────────────────────────── -->
+        <VerticalStackLayout Spacing="6" Margin="0,0,0,24">
+            <Label
+                Text="Welcome back"
+                FontSize="{StaticResource FontSizeLargeTitle}"
+                FontAttributes="Bold"
+                TextColor="{StaticResource TextPrimary}" />
+            <Label
+                Text="Sign in to your AveroNova ERP account"
+                FontSize="{StaticResource FontSizeBody}"
+                TextColor="{StaticResource TextSecondary}" />
+        </VerticalStackLayout>
+
+        <!-- ── ERROR BANNER ────────────────────────────────────────────── -->
+        <Border
+            IsVisible="{Binding HasError}"
+            Margin="0,0,0,16"
+            Padding="14,12"
+            BackgroundColor="#FEF2F2"
+            Stroke="#FECACA"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 10">
+            <Grid ColumnDefinitions="26,*" ColumnSpacing="10" VerticalOptions="Center">
+                <Label
+                    Text="{StaticResource IconWarning}"
+                    FontSize="{StaticResource IconSizeLarge}"
+                    TextColor="{StaticResource ErrorColor}"
+                    VerticalOptions="Center" />
+                <Label
+                    Grid.Column="1"
+                    Text="{Binding ErrorMessage}"
+                    FontSize="{StaticResource FontSizeBody}"
+                    TextColor="{StaticResource ErrorColor}"
+                    VerticalOptions="Center"
+                    LineBreakMode="WordWrap" />
+            </Grid>
+        </Border>
+
+        <!-- ── EMAIL / USERNAME ────────────────────────────────────────── -->
+        <inputs:AppEntry
+            Label="Email or Username"
+            Placeholder="admin@averonova.com"
+            Text="{Binding Email, Mode=TwoWay}"
+            Keyboard="Email"
+            HasError="{Binding HasEmailError}"
+            ErrorMessage="{Binding EmailError}"
+            Margin="0,0,0,16" />
+
+        <!-- ── PASSWORD ────────────────────────────────────────────────── -->
+        <inputs:AppPasswordEntry
+            Label="Password"
+            Placeholder="Enter your password"
+            Text="{Binding Password, Mode=TwoWay}"
+            HasError="{Binding HasPasswordError}"
+            ErrorMessage="{Binding PasswordError}"
+            Margin="0,0,0,12" />
+
+        <!-- ── REMEMBER ME + FORGOT PASSWORD ──────────────────────────── -->
+        <Grid
+            ColumnDefinitions="Auto,Auto,*,Auto"
+            ColumnSpacing="8"
+            Margin="0,0,0,24"
+            VerticalOptions="Center">
+
+            <CheckBox
+                Grid.Column="0"
+                IsChecked="{Binding RememberMe, Mode=TwoWay}"
+                Color="{StaticResource PrimaryColor}"
+                VerticalOptions="Center"
+                MinimumHeightRequest="44"
+                MinimumWidthRequest="44" />
+
+            <Label
+                Grid.Column="1"
+                Text="Remember me"
+                FontSize="{StaticResource FontSizeBody}"
+                TextColor="{StaticResource TextPrimary}"
+                VerticalOptions="Center" />
+
+            <Label
+                Grid.Column="3"
+                Text="Forgot password?"
+                FontSize="{StaticResource FontSizeBody}"
+                TextColor="{StaticResource PrimaryColor}"
+                FontAttributes="Bold"
+                VerticalOptions="Center"
+                MinimumHeightRequest="44">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnForgotPasswordTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+
+        </Grid>
+
+        <!-- ── SIGN IN BUTTON ──────────────────────────────────────────── -->
+        <Button
+            x:Name="BtnSignIn"
+            Text="Sign In"
+            HeightRequest="50"
+            CornerRadius="10"
+            BackgroundColor="{StaticResource PrimaryColor}"
+            TextColor="{StaticResource White}"
+            FontAttributes="Bold"
+            FontSize="{StaticResource FontSizeMedium}"
+            Clicked="OnSignInClicked"
+            Margin="0,0,0,16" />
+
+        <!-- ── LOADING STATE ───────────────────────────────────────────── -->
+        <HorizontalStackLayout
+            IsVisible="{Binding IsLoading}"
+            HorizontalOptions="Center"
+            Spacing="12"
+            Margin="0,0,0,16">
+            <ActivityIndicator
+                IsRunning="{Binding IsLoading}"
+                Color="{StaticResource PrimaryColor}"
+                WidthRequest="20"
+                HeightRequest="20"
+                VerticalOptions="Center" />
+            <Label
+                Text="Signing in..."
+                FontSize="{StaticResource FontSizeBody}"
+                TextColor="{StaticResource TextSecondary}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+        <!-- ── DIVIDER ─────────────────────────────────────────────────── -->
+        <Grid
+            ColumnDefinitions="*,Auto,*"
+            ColumnSpacing="12"
+            Margin="0,0,0,16">
+            <BoxView Grid.Column="0" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center" />
+            <Label Grid.Column="1" Text="or" FontSize="{StaticResource FontSizeSmall}" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+            <BoxView Grid.Column="2" HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ── DEMO HINT ───────────────────────────────────────────────── -->
+        <Border
+            Padding="14,12"
+            BackgroundColor="#F0F9FF"
+            Stroke="#BAE6FD"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 10"
+            Margin="0,0,0,24">
+            <VerticalStackLayout Spacing="4">
+                <HorizontalStackLayout Spacing="6">
+                    <Label
+                        Text="{StaticResource IconInfo}"
+                        FontSize="{StaticResource IconSizeMedium}"
+                        TextColor="{StaticResource InfoColor}"
+                        VerticalOptions="Center" />
+                    <Label
+                        Text="Demo Access"
+                        FontSize="{StaticResource FontSizeSmall}"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource InfoColor}"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Label
+                    Text="Use any email and password to sign in for demo."
+                    FontSize="{StaticResource FontSizeSmall}"
+                    TextColor="#0369A1" />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- ── CREATE ACCOUNT LINK ────────────────────────────────────── -->
+        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+            <Label
+                Text="Don't have an account?"
+                FontSize="{StaticResource FontSizeBody}"
+                TextColor="{StaticResource TextSecondary}" />
+            <Label
+                Text="Create Account"
+                FontSize="{StaticResource FontSizeBody}"
+                FontAttributes="Bold"
+                TextColor="{StaticResource PrimaryColor}"
+                MinimumHeightRequest="44">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCreateAccountTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+        </HorizontalStackLayout>
+
+    </VerticalStackLayout>
+
+</ContentView>

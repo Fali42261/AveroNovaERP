@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Company.CompanySetupPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:shared="clr-namespace:AveroNova.App.UI.Views.Shared"
+    xmlns:company="clr-namespace:AveroNova.App.UI.Views.Company"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource BackgroundColor}">
+
+    <Grid>
+
+        <!-- Sidebar + Main -->
+
+        <Grid.ColumnDefinitions>
+
+            <ColumnDefinition Width="260"/>
+
+            <ColumnDefinition Width="*"/>
+
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+
+        <company:CompanySidebarView
+    Grid.Column="0"
+    BindingContext="{Binding}" />
+        
+        <!--<shared:SidebarView
+    Grid.Column="0"
+    BindingContext="{Binding}"/>-->
+
+        <!-- Main -->
+
+        <Grid
+            Grid.Column="1"
+            BackgroundColor="{StaticResource BackgroundColor}">
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="70"/>
+
+                <RowDefinition Height="Auto"/>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="80"/>
+
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+
+            <shared:HeaderView
+                Grid.Row="0"/>
+
+            <!-- Title -->
+
+            <company:CompanyTitleView
+                Grid.Row="1"  BindingContext="{Binding}"/>
+
+            <!-- Form -->
+
+            <ScrollView Grid.Row="2">
+
+                <Grid>
+
+                    <company:CompanyFormView
+            x:Name="CompanyFormView"/>
+
+                    <!--<company:TeamSetupView
+            x:Name="TeamSetupView"
+            IsVisible="False"/>
+                    
+                    <company:AdminAccountView
+    x:Name="AdminAccountView"
+    IsVisible="False"/>-->
+                    
+                    <company:FinishSetupView
+    x:Name="FinishSetupView"
+    IsVisible="False"/>
+
+                </Grid>
+
+            </ScrollView>
+
+            <!-- Bottom -->
+
+            <company:CompanyButtonsView
+    Grid.Row="3"
+    BindingContext="{Binding}"/>
+
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

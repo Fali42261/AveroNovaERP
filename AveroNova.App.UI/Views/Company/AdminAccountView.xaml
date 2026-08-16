@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Company.AdminAccountView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:AveroNova.App.UI.Controls.Inputs">
+
+    <Grid
+        Padding="25"
+        ColumnSpacing="20"
+        RowSpacing="20">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Row 1 -->
+
+        <controls:AppEntry
+            Grid.Row="0"
+            Grid.Column="0"
+            Label="Full Name"
+            Placeholder="Enter Full Name"/>
+
+        <controls:AppEntry
+            Grid.Row="0"
+            Grid.Column="1"
+            Label="Email"
+            Placeholder="Enter Email"/>
+
+        <!-- Row 2 -->
+
+        <controls:AppEntry
+            Grid.Row="1"
+            Grid.Column="0"
+            Label="Mobile Number"
+            Placeholder="Enter Mobile Number"/>
+
+        <controls:AppEntry
+            Grid.Row="1"
+            Grid.Column="1"
+            Label="Username"
+            Placeholder="Enter Username"/>
+
+        <!-- Row 3 -->
+
+        <controls:AppEntry
+            Grid.Row="2"
+            Grid.Column="0"
+            Label="Password"
+            Placeholder="Enter Password"
+            IsPassword="True"/>
+
+        <controls:AppEntry
+            Grid.Row="2"
+            Grid.Column="1"
+            Label="Confirm Password"
+            Placeholder="Confirm Password"
+            IsPassword="True"/>
+
+    </Grid>
+
+</ContentView>

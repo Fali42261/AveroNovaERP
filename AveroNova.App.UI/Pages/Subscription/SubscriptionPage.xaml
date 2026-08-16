@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Subscription.SubscriptionPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Border Grid.Row="0" Padding="20,14"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+                StrokeThickness="1">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Subscription" FontSize="20" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                <Label Text="Manage your plan" FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+            </VerticalStackLayout>
+        </Border>
+
+        <RefreshView Grid.Row="1" x:Name="Refresher" Refreshing="OnRefreshing">
+            <ScrollView>
+                <VerticalStackLayout Padding="16,12" Spacing="16" x:Name="SubscriptionContent"/>
+            </ScrollView>
+        </RefreshView>
+
+    </Grid>
+</ContentPage>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="AveroNova.App.UI.Controls.Cards.StatCard"
+    x:Name="This">
+
+    <Border
+        Padding="20,18"
+        BackgroundColor="{StaticResource CardBackground}"
+        Stroke="{StaticResource BorderColor}"
+        StrokeThickness="1"
+        StrokeShape="RoundRectangle 16">
+
+        <VerticalStackLayout Spacing="10">
+
+            <!-- Top Row: Title and Icon -->
+            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+
+                    <Label
+                        Text="{Binding Title, Source={x:Reference This}}"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource TextSecondary}"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="{Binding Subtitle, Source={x:Reference This}}"
+                        FontSize="11"
+                        TextColor="{StaticResource Gray400}" />
+
+                </VerticalStackLayout>
+
+                <!-- Icon Badge -->
+                <Border
+                    Grid.Column="1"
+                    WidthRequest="42"
+                    HeightRequest="42"
+                    BackgroundColor="{Binding IconBackground, Source={x:Reference This}}"
+                    StrokeThickness="1"
+                    Stroke="{Binding IconBorderColor, Source={x:Reference This}}"
+                    StrokeShape="RoundRectangle 12"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="{Binding Icon, Source={x:Reference This}}"
+                        FontSize="18"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center" />
+
+                </Border>
+
+            </Grid>
+
+            <!-- Value -->
+            <Label
+                Text="{Binding Value, Source={x:Reference This}}"
+                FontSize="32"
+                FontAttributes="Bold"
+                TextColor="{StaticResource TextPrimary}"
+                Margin="0,4,0,4" />
+
+            <!-- Divider -->
+            <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+
+            <!-- Bottom Pill + Description -->
+            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+
+                <Border
+                    BackgroundColor="{Binding BadgeBackground, Source={x:Reference This}}"
+                    Stroke="{Binding BadgeBorderColor, Source={x:Reference This}}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 6"
+                    Padding="6,2"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="{Binding BadgeText, Source={x:Reference This}}"
+                        FontSize="10"
+                        FontAttributes="Bold"
+                        TextColor="{Binding BadgeTextColor, Source={x:Reference This}}" />
+
+                </Border>
+
+                <Label
+                    Text="{Binding Description, Source={x:Reference This}}"
+                    FontSize="11"
+                    TextColor="{StaticResource TextSecondary}"
+                    VerticalOptions="Center" />
+
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+
+    </Border>
+
+</ContentView>

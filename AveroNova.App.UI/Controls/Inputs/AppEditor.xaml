@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Controls.Inputs.AppEditor"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="This">
+
+    <VerticalStackLayout Spacing="6">
+
+        <!-- Label -->
+
+        <Label
+            Text="{Binding Label, Source={x:Reference This}}"
+            FontSize="13"
+            FontAttributes="Bold"
+            TextColor="{StaticResource TextPrimary}" />
+
+        <!-- Editor -->
+
+        <Editor
+            x:Name="EditorControl"
+            Text="{Binding Text, Source={x:Reference This}, Mode=TwoWay}"
+            Placeholder="{Binding Placeholder, Source={x:Reference This}}"
+            AutoSize="TextChanges"
+            MinimumHeightRequest="100"
+            FontSize="14" />
+
+        <!-- Error -->
+
+        <Label
+            Text="{Binding ErrorMessage, Source={x:Reference This}}"
+            FontSize="12"
+            TextColor="{StaticResource ErrorColor}"
+            IsVisible="{Binding HasError, Source={x:Reference This}}" />
+
+    </VerticalStackLayout>
+
+</ContentView>

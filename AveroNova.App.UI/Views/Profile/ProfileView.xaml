@@ -1,0 +1,492 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Profile.ProfileView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:DataType="viewmodels:ProfileViewModel">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="28"
+            Spacing="20">
+
+            <!-- ========================= -->
+            <!-- PROFILE SUCCESS -->
+            <!-- ========================= -->
+
+            <Border
+                Padding="20"
+                BackgroundColor="#ECFDF5"
+                Stroke="#BBF7D0"
+                StrokeShape="RoundRectangle 12">
+
+                <Grid
+                    ColumnDefinitions="60,*"
+                    ColumnSpacing="15">
+
+                    <!-- Success Icon -->
+
+                    <Border
+                        WidthRequest="48"
+                        HeightRequest="48"
+                        BackgroundColor="#22C55E"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 24"
+                        VerticalOptions="Center">
+
+                        <Label
+                            Text="âœ“"
+                            FontSize="28"
+                            FontAttributes="Bold"
+                            TextColor="White"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center" />
+
+                    </Border>
+
+                    <!-- Message -->
+
+                    <VerticalStackLayout
+                        Grid.Column="1"
+                        Spacing="4"
+                        VerticalOptions="Center">
+
+                        <Label
+                            Text="{Binding SuccessTitle}"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource TextPrimary}" />
+
+                        <Label
+                            Text="{Binding SuccessMessage}"
+                            FontSize="14"
+                            TextColor="{StaticResource TextPrimary}" />
+
+                    </VerticalStackLayout>
+
+                </Grid>
+
+            </Border>
+
+
+            <!-- ========================= -->
+            <!-- COMPANY INFORMATION -->
+            <!-- ========================= -->
+
+            <Border
+                Padding="25"
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeShape="RoundRectangle 12">
+
+                <VerticalStackLayout
+                    Spacing="20">
+
+                    <!-- Header -->
+
+                    <Grid
+                        ColumnDefinitions="*,Auto"
+                        VerticalOptions="Center">
+
+                        <HorizontalStackLayout
+                            Spacing="12">
+
+                            <Border
+                                WidthRequest="45"
+                                HeightRequest="45"
+                                BackgroundColor="#EFF6FF"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 23">
+
+                                <Label
+                                    Text="ðŸ¢"
+                                    FontSize="22"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+
+                            </Border>
+
+                            <Label
+                                Text="Company Information"
+                                FontSize="22"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource TextPrimary}"
+                                VerticalOptions="Center" />
+
+                        </HorizontalStackLayout>
+
+
+                        <!-- Edit -->
+
+                        <Button
+                            Grid.Column="1"
+                            Text="âœŽ  Edit Profile"
+                            HeightRequest="45"
+                            Padding="18,0"
+                            BackgroundColor="Transparent"
+                            BorderColor="{StaticResource PrimaryColor}"
+                            BorderWidth="1"
+                            TextColor="{StaticResource PrimaryColor}"
+                            CornerRadius="8" />
+
+                    </Grid>
+
+
+                    <!-- Divider -->
+
+                    <BoxView
+                        HeightRequest="1"
+                        BackgroundColor="#E2E8F0" />
+
+
+                    <!-- Company Details -->
+
+                    <Grid
+                        ColumnDefinitions="*,*"
+                        ColumnSpacing="35"
+                        RowSpacing="0">
+
+                        <!-- LEFT COLUMN -->
+
+                        <VerticalStackLayout
+                            Grid.Column="0"
+                            Spacing="0">
+
+                            <!-- Company -->
+
+                            <VerticalStackLayout
+                                Padding="0,0,0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="Company Name"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding CompanyName}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- Owner -->
+
+                            <VerticalStackLayout
+                                Padding="0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="Owner Name"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding OwnerName}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- GST -->
+
+                            <VerticalStackLayout
+                                Padding="0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="GST Number"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding GstNumber}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- Mobile -->
+
+                            <VerticalStackLayout
+                                Padding="0,14,0,0"
+                                Spacing="5">
+
+                                <Label
+                                    Text="Mobile Number"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding MobileNumber}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                        </VerticalStackLayout>
+
+
+                        <!-- RIGHT COLUMN -->
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="0">
+
+                            <!-- Email -->
+
+                            <VerticalStackLayout
+                                Padding="0,0,0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="Email"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding Email}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- Address -->
+
+                            <VerticalStackLayout
+                                Padding="0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="Address"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding Address}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- State -->
+
+                            <VerticalStackLayout
+                                Padding="0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="State"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding State}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- City -->
+
+                            <VerticalStackLayout
+                                Padding="0,14"
+                                Spacing="5">
+
+                                <Label
+                                    Text="City"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding City}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                            <BoxView
+                                HeightRequest="1"
+                                BackgroundColor="#E2E8F0" />
+
+
+                            <!-- Pincode -->
+
+                            <VerticalStackLayout
+                                Padding="0,14,0,0"
+                                Spacing="5">
+
+                                <Label
+                                    Text="Pincode"
+                                    FontSize="14"
+                                    TextColor="{StaticResource TextSecondary}" />
+
+                                <Label
+                                    Text="{Binding Pincode}"
+                                    FontSize="16"
+                                    TextColor="{StaticResource TextPrimary}" />
+
+                            </VerticalStackLayout>
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+
+            <!-- ========================= -->
+            <!-- ADMIN ACCOUNT -->
+            <!-- ========================= -->
+
+            <Border
+                Padding="25"
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeShape="RoundRectangle 12">
+
+                <VerticalStackLayout
+                    Spacing="20">
+
+                    <!-- Header -->
+
+                    <HorizontalStackLayout
+                        Spacing="12">
+
+                        <Border
+                            WidthRequest="45"
+                            HeightRequest="45"
+                            BackgroundColor="#EFF6FF"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 23">
+
+                            <Label
+                                Text="ðŸ”"
+                                FontSize="21"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+
+                        </Border>
+
+                        <Label
+                            Text="Admin Account"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource TextPrimary}"
+                            VerticalOptions="Center" />
+
+                    </HorizontalStackLayout>
+
+
+                    <BoxView
+                        HeightRequest="1"
+                        BackgroundColor="#E2E8F0" />
+
+
+                    <!-- Admin Details -->
+
+                    <Grid
+                        ColumnDefinitions="*,*,*"
+                        ColumnSpacing="25">
+
+                        <!-- Username -->
+
+                        <VerticalStackLayout
+                            Spacing="5">
+
+                            <Label
+                                Text="Username"
+                                FontSize="14"
+                                TextColor="{StaticResource TextSecondary}" />
+
+                            <Label
+                                Text="{Binding Username}"
+                                FontSize="16"
+                                TextColor="{StaticResource TextPrimary}" />
+
+                        </VerticalStackLayout>
+
+
+                        <!-- Password -->
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="5">
+
+                            <Label
+                                Text="Password"
+                                FontSize="14"
+                                TextColor="{StaticResource TextSecondary}" />
+
+                            <Label
+                                Text="{Binding Password}"
+                                FontSize="16"
+                                TextColor="{StaticResource TextPrimary}" />
+
+                        </VerticalStackLayout>
+
+
+                        <!-- Confirm Password -->
+
+                        <VerticalStackLayout
+                            Grid.Column="2"
+                            Spacing="5">
+
+                            <Label
+                                Text="Confirm Password"
+                                FontSize="14"
+                                TextColor="{StaticResource TextSecondary}" />
+
+                            <Label
+                                Text="{Binding ConfirmPassword}"
+                                FontSize="16"
+                                TextColor="{StaticResource TextPrimary}" />
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentView>

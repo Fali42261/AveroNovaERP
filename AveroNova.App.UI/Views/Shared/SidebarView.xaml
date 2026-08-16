@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Shared.SidebarView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Border
+        BackgroundColor="{StaticResource SidebarBackground}"
+        StrokeThickness="0">
+
+        <Grid Padding="20">
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="80"/>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="Auto"/>
+
+                <RowDefinition Height="65"/>
+
+            </Grid.RowDefinitions>
+
+            <!-- ================= Logo ================= -->
+
+            <HorizontalStackLayout
+                Grid.Row="0"
+                Spacing="10"
+                VerticalOptions="Center">
+
+                <Label
+                    Text="A"
+                    FontSize="42"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource PrimaryColor}" />
+
+                <VerticalStackLayout
+                    VerticalOptions="Center"
+                    Spacing="0">
+
+                    <Label
+                        Text="AveroNova"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="White" />
+
+                    <Label
+                        Text="ERP"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryColor}" />
+
+                </VerticalStackLayout>
+
+            </HorizontalStackLayout>
+
+            <!-- ================= Menu ================= -->
+
+            <VerticalStackLayout
+                Grid.Row="1"
+                Margin="0,15,0,0"
+                Spacing="14">
+
+                <Label
+                    Text="ONBOARDING"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    TextColor="#94A3B8" />
+
+                <!-- Active Step -->
+
+                <Border
+    x:Name="CompanyBorder"
+    BackgroundColor="#2563EB"
+    Stroke="#3B82F6"
+    StrokeShape="RoundRectangle 14"
+    Padding="12"
+    Margin="0,0,0,6">
+
+                    <Grid ColumnDefinitions="40,*">
+
+                        <Border
+            WidthRequest="36"
+            HeightRequest="36"
+            BackgroundColor="White"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 18"
+            VerticalOptions="Center">
+
+                            <Label
+                Text="1"
+                FontSize="16"
+                FontAttributes="Bold"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"/>
+
+                        </Border>
+
+                        <VerticalStackLayout
+            Grid.Column="1"
+            Margin="12,0,0,0"
+            Spacing="2"
+            VerticalOptions="Center">
+
+                            <Label
+                Text="Company Details"
+                FontSize="16"
+                FontAttributes="Bold"
+                TextColor="White"/>
+
+                            <Label
+                Text="Basic Information"
+                FontSize="13"
+                TextColor="#D6E4FF"/>
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+
+                <!-- Team -->
+
+                <Border
+    x:Name="TeamBorder"
+    BackgroundColor="Transparent"
+    StrokeThickness="0"
+    StrokeShape="RoundRectangle 14"
+    Padding="12">
+
+                    <Grid ColumnDefinitions="40,*">
+
+                        <Border
+            WidthRequest="34"
+            HeightRequest="34"
+            BackgroundColor="#233B73"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 17">
+
+                            <Label
+                Text="2"
+                FontSize="15"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                TextColor="White"/>
+
+                        </Border>
+
+                        <VerticalStackLayout
+            Grid.Column="1"
+            Margin="8,0,0,0"
+            Spacing="1"
+            VerticalOptions="Center">
+
+                            <Label
+                Text="Team Setup"
+                FontSize="16"
+                FontAttributes="Bold"
+                TextColor="White"/>
+
+                            <Label
+                Text="Create Teams"
+                FontSize="12"
+                TextColor="#94A3B8"/>
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+                <!-- Admin -->
+
+                <Border
+    x:Name="AdminBorder"
+    BackgroundColor="Transparent"
+    StrokeThickness="0"
+    StrokeShape="RoundRectangle 14"
+    Padding="12">
+
+                    <Grid ColumnDefinitions="40,*">
+
+                        <Border
+            WidthRequest="34"
+            HeightRequest="34"
+            BackgroundColor="#233B73"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 17">
+
+                            <Label
+                Text="3"
+                FontSize="15"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                TextColor="White"/>
+
+                        </Border>
+
+                        <VerticalStackLayout
+            Grid.Column="1"
+            Margin="8,0,0,0"
+            Spacing="1"
+            VerticalOptions="Center">
+
+                            <Label
+                Text="Admin Account"
+                FontSize="16"
+                FontAttributes="Bold"
+                TextColor="White"/>
+
+                            <Label
+                Text="Create Admin"
+                FontSize="12"
+                TextColor="#94A3B8"/>
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+                <!-- Finish -->
+
+                <Border
+    x:Name="FinishBorder"
+    BackgroundColor="Transparent"
+    StrokeThickness="0"
+    StrokeShape="RoundRectangle 14"
+    Padding="12">
+
+                    <Grid ColumnDefinitions="40,*">
+
+                        <Border
+            WidthRequest="34"
+            HeightRequest="34"
+            BackgroundColor="#233B73"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 17">
+
+                            <Label
+                Text="4"
+                FontSize="15"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                TextColor="White"/>
+
+                        </Border>
+
+                        <VerticalStackLayout
+            Grid.Column="1"
+            Margin="8,0,0,0"
+            Spacing="1"
+            VerticalOptions="Center">
+
+                            <Label
+                Text="Finish Setup"
+                FontSize="16"
+                FontAttributes="Bold"
+                TextColor="White"/>
+
+                            <Label
+                Text="Ready to Go"
+                FontSize="12"
+                TextColor="#94A3B8"/>
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+
+            </VerticalStackLayout>
+
+            <!-- ================= Security ================= -->
+
+            <Border
+                Grid.Row="2"
+                Margin="0,15,0,0"
+                Padding="14"
+                BackgroundColor="#162B55"
+                Stroke="#294B8F"
+                StrokeShape="RoundRectangle 14">
+
+                <VerticalStackLayout Spacing="8">
+
+                    <Label
+                        Text="🛡"
+                        FontSize="24"/>
+
+                    <Label
+                        Text="Your Data is Safe"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <Label
+                        FontSize="11"
+                        TextColor="#B8C6E0"
+                        Text="All your information is encrypted and stored securely."/>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+            <!-- ================= Bottom ================= -->
+
+            <Border
+                Grid.Row="3"
+                Margin="0,12,0,0"
+                Padding="14"
+                BackgroundColor="#162B55"
+                Stroke="#294B8F"
+                StrokeShape="RoundRectangle 14">
+
+                <HorizontalStackLayout Spacing="10">
+
+                    <Label
+                        Text="🌙"
+                        FontSize="20"/>
+
+                    <Label
+                        Text="System"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        VerticalOptions="Center"
+                        TextColor="White"/>
+
+                </HorizontalStackLayout>
+
+            </Border>
+
+        </Grid>
+
+    </Border>
+
+</ContentView>

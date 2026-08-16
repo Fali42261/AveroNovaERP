@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Reports.ReportsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Border Grid.Row="0" Padding="20,14"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Reports" FontSize="20" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                <Label Text="Financial &amp; Operational Reports" FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20,16,20,32" Spacing="20">
+
+                <Label Text="Overview" FontSize="15" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+
+                <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start"
+                            AlignItems="Stretch" AlignContent="Start">
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                            Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="TOTAL REVENUE" FontSize="10" FontAttributes="Bold"
+                                       CharacterSpacing="0.5"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38"
+                                        BackgroundColor="{StaticResource Primary50}" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10">
+                                    <Label Text="{StaticResource IconProfit}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Border>
+                            </Grid>
+                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="This period" FontSize="11"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                            Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="TOTAL EXPENSES" FontSize="10" FontAttributes="Bold"
+                                       CharacterSpacing="0.5"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38"
+                                        BackgroundColor="{StaticResource Error50}" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10">
+                                    <Label Text="{StaticResource IconExpenses}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Border>
+                            </Grid>
+                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="This period" FontSize="11"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                            Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="NET PROFIT" FontSize="10" FontAttributes="Bold"
+                                       CharacterSpacing="0.5"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38"
+                                        BackgroundColor="{StaticResource Success50}" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10">
+                                    <Label Text="{StaticResource IconCurrency}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Border>
+                            </Grid>
+                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="Revenue - Expenses" FontSize="11"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                            Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="OUTSTANDING" FontSize="10" FontAttributes="Bold"
+                                       CharacterSpacing="0.5"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38"
+                                        BackgroundColor="{StaticResource Warning50}" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10">
+                                    <Label Text="{StaticResource IconOutstanding}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Border>
+                            </Grid>
+                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="Pending collection" FontSize="11"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                </FlexLayout>
+
+                <Label Text="Available Reports" FontSize="15" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+
+                <RefreshView x:Name="Refresher" Refreshing="OnRefreshing">
+                    <VerticalStackLayout Spacing="10" x:Name="ReportsList">
+                       <Label Text="Reports coming soon."
+       FontSize="14"
+       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
+       HorizontalOptions="Center"
+       Margin="0,40,0,0"/>
+                    </VerticalStackLayout>
+                </RefreshView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
+</ContentPage>

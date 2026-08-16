@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Shared.HeaderView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Border
+        BackgroundColor="White"
+        Stroke="{StaticResource BorderColor}"
+        StrokeThickness="1"
+        HeightRequest="70"
+        Padding="20,0">
+
+        <Grid>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Back Button -->
+
+            <Label
+                Grid.Column="0"
+                Text="←"
+                FontSize="22"
+                VerticalOptions="Center"
+                HorizontalOptions="Center"
+                TextColor="{StaticResource TextPrimary}" />
+
+            <!-- Title -->
+
+            <Label
+                Grid.Column="1"
+                Margin="15,0,0,0"
+                Text="Company Setup"
+                FontSize="20"
+                FontAttributes="Bold"
+                VerticalOptions="Center"
+                TextColor="{StaticResource TextPrimary}" />
+
+            <!-- Right Icons -->
+
+            <HorizontalStackLayout
+                Grid.Column="2"
+                Spacing="12"
+                HorizontalOptions="End"
+                VerticalOptions="Center">
+
+                <Border
+                    WidthRequest="38"
+                    HeightRequest="38"
+                    BackgroundColor="#EEF4FF"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 10">
+
+                    <Label
+                        Text="?"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center" />
+
+                </Border>
+
+                <Border
+                    WidthRequest="38"
+                    HeightRequest="38"
+                    BackgroundColor="#EEF4FF"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 10">
+
+                    <Label
+                        Text="⚙"
+                        FontSize="16"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center" />
+
+                </Border>
+
+            </HorizontalStackLayout>
+
+        </Grid>
+
+    </Border>
+
+</ContentView>

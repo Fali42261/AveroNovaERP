@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Authentication.OtpVerifyPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
+    <ScrollView>
+        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                             Padding="24" Spacing="0" MaximumWidthRequest="400">
+
+            <Border WidthRequest="64" HeightRequest="64"
+                    BackgroundColor="{StaticResource Primary50}" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 32" HorizontalOptions="Center">
+                <Label Text="&#x1F4F1;" FontSize="30"
+                       HorizontalOptions="Center" VerticalOptions="Center"/>
+            </Border>
+
+            <Label Text="Verify Your Email" FontSize="24" FontAttributes="Bold"
+                   TextColor="{StaticResource TextPrimary}"
+                   HorizontalOptions="Center" Margin="0,20,0,8"/>
+            <Label Text="We've sent a 6-digit verification code to your email address. Enter it below."
+                   FontSize="13" TextColor="{StaticResource TextSecondary}"
+                   HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap" Margin="0,0,0,32"/>
+
+            <!-- Error -->
+            <Border x:Name="ErrorBanner" IsVisible="False"
+                    BackgroundColor="{StaticResource ErrorBg}"
+                    Stroke="{StaticResource ErrorBorder}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 10" Padding="14,10" Margin="0,0,0,16">
+                <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}"/>
+            </Border>
+
+            <Label Text="Verification Code" Style="{StaticResource InputLabel}"/>
+            <Border Style="{StaticResource InputContainer}" Margin="0,4,0,24">
+                <Entry x:Name="EntryOtp" Placeholder="123456" Keyboard="Numeric"
+                       MaxLength="6" FontSize="20" FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"/>
+            </Border>
+
+            <Label Text="Use 123456 for testing" FontSize="11"
+                   TextColor="{StaticResource TextTertiary}" HorizontalOptions="Center"
+                   Margin="0,0,0,16"/>
+
+            <Button Text="Verify Code" Style="{StaticResource PrimaryButton}"
+                    HorizontalOptions="Fill" Clicked="OnVerifyClicked"/>
+
+            <ActivityIndicator x:Name="Loader" IsRunning="False" IsVisible="False"
+                               Color="{StaticResource PrimaryColor}" HorizontalOptions="Center" Margin="0,12,0,0"/>
+
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="4" Margin="0,20,0,0">
+                <Label Text="Didn't receive the code?" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                <Label Text="Resend" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnResendTapped"/>
+                    </Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

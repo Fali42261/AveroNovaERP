@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:resources="clr-namespace:AveroNova.App.UI.Resources"
+    x:Class="AveroNova.App.UI.Resources.Typography">
+
+    <ResourceDictionary.MergedDictionaries>
+        <resources:Colors />
+        <!--<resources:Styles/>-->
+    </ResourceDictionary.MergedDictionaries>
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!--  AVERONOVA ERP — TYPOGRAPHY TOKENS                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- ── Font Sizes ────────────────────────────────────────────────── -->
+    <x:Double x:Key="FontSizeXXSmall">10</x:Double>
+    <x:Double x:Key="FontSizeXSmall">11</x:Double>
+    <x:Double x:Key="FontSizeSmall">12</x:Double>
+    <x:Double x:Key="FontSizeBody">14</x:Double>
+    <x:Double x:Key="FontSizeMedium">15</x:Double>
+    <x:Double x:Key="FontSizeSubHeading">16</x:Double>
+    <x:Double x:Key="FontSizeHeading">18</x:Double>
+    <x:Double x:Key="FontSizeTitle">20</x:Double>
+    <x:Double x:Key="FontSizeLargeTitle">24</x:Double>
+    <x:Double x:Key="FontSizeXLargeTitle">28</x:Double>
+    <x:Double x:Key="FontSizeDisplay">32</x:Double>
+    <x:Double x:Key="FontSizeHero">40</x:Double>
+
+    <!-- ── Icon Sizes ─────────────────────────────────────────────────── -->
+    <x:Double x:Key="IconSizeXSmall">12</x:Double>
+    <x:Double x:Key="IconSizeSmall">16</x:Double>
+    <x:Double x:Key="IconSizeMedium">20</x:Double>
+    <x:Double x:Key="IconSizeLarge">24</x:Double>
+    <x:Double x:Key="IconSizeXLarge">32</x:Double>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!--  SEMANTIC LABEL STYLES                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="DisplayText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeDisplay}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="PageTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLargeTitle}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="SectionTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSubHeading}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="CardTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="BodyText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="BodyTextSmall" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="SecondaryText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
+    <Style x:Key="CaptionText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeXSmall}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextTertiary}, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
+    <Style x:Key="LabelText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="InputLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+
+    <Style x:Key="ErrorText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeXSmall}" />
+        <Setter Property="TextColor" Value="{StaticResource ErrorColor}" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+
+    <Style x:Key="LinkText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="TextColor" Value="{StaticResource PrimaryColor}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="MetricValue" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeDisplay}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="MetricLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeXSmall}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+        <Setter Property="CharacterSpacing" Value="0.5" />
+    </Style>
+
+    <Style x:Key="TableHeader" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeXSmall}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+        <Setter Property="CharacterSpacing" Value="0.5" />
+    </Style>
+
+    <Style x:Key="MonospaceText" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <!-- ── Headline styles (legacy compat) ───────────────────────────── -->
+    <Style x:Key="Headline" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
+        <Setter Property="FontSize" Value="32" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="SubHeadline" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+    </Style>
+
+</ResourceDictionary>

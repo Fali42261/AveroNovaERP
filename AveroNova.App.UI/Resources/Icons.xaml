@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="AveroNova.App.UI.Resources.Icons">
+
+    <!--
+    ═══════════════════════════════════════════════════════════════════
+     AVERONOVA ERP — CENTRALIZED ICON SYSTEM
+     All icons are Unicode characters rendered as Label Text.
+     FontFamily: OpenSansRegular (built-in MAUI symbols).
+     To swap the entire icon library: edit values here only.
+     Cross-platform: tested on Windows, Android, iOS.
+    ═══════════════════════════════════════════════════════════════════
+    -->
+
+    <!-- ── Navigation & Shell ───────────────────────────────────────── -->
+    <x:String x:Key="IconMenu">&#x2630;</x:String>
+    <x:String x:Key="IconClose">&#x2715;</x:String>
+    <x:String x:Key="IconBack">&#x2190;</x:String>
+    <x:String x:Key="IconForward">&#x2192;</x:String>
+    <x:String x:Key="IconUp">&#x2191;</x:String>
+    <x:String x:Key="IconDown">&#x2193;</x:String>
+    <x:String x:Key="IconChevronRight">&#x276F;</x:String>
+    <x:String x:Key="IconChevronDown">&#x2304;</x:String>
+    <x:String x:Key="IconChevronUp">&#x2303;</x:String>
+    <x:String x:Key="IconExpand">&#x25BC;</x:String>
+    <x:String x:Key="IconCollapse">&#x25B2;</x:String>
+    <x:String x:Key="IconMore">&#x22EF;</x:String>
+    <x:String x:Key="IconMoreVert">&#x22EE;</x:String>
+    <x:String x:Key="IconHome">&#x2302;</x:String>
+    <x:String x:Key="IconBreadcrumbSep">&#x203A;</x:String>
+
+    <!-- ── ERP Modules (Sidebar) ─────────────────────────────────────── -->
+    <x:String x:Key="IconDashboard">&#x229E;</x:String>
+    <x:String x:Key="IconCompany">&#x1F3DB;</x:String>
+    <x:String x:Key="IconCustomers">&#x1F91D;</x:String>
+    <x:String x:Key="IconProducts">&#x1F4E6;</x:String>
+    <x:String x:Key="IconInventory">&#x1F4CB;</x:String>
+    <x:String x:Key="IconSales">&#x1F4C4;</x:String>
+    <x:String x:Key="IconBilling">&#x1F4B3;</x:String>
+    <x:String x:Key="IconPurchases">&#x1F6D2;</x:String>
+    <x:String x:Key="IconPayments">&#x1F4B0;</x:String>
+    <x:String x:Key="IconSalesReturns">&#x21A9;</x:String>
+    <x:String x:Key="IconPurchaseReturns">&#x21AA;</x:String>
+    <x:String x:Key="IconExpenses">&#x1F4B8;</x:String>
+    <x:String x:Key="IconReports">&#x1F4CA;</x:String>
+    <x:String x:Key="IconUsers">&#x1F465;</x:String>
+    <x:String x:Key="IconRoles">&#x1F6E1;</x:String>
+    <x:String x:Key="IconPermissions">&#x1F511;</x:String>
+    <x:String x:Key="IconSubscription">&#x2B50;</x:String>
+    <x:String x:Key="IconNotifications">&#x1F514;</x:String>
+    <x:String x:Key="IconSyncCenter">&#x21BB;</x:String>
+    <x:String x:Key="IconSettings">&#x2699;</x:String>
+    <x:String x:Key="IconHelp">&#x2753;</x:String>
+    <x:String x:Key="IconAbout">&#x2139;</x:String>
+
+    <!-- ── Actions ───────────────────────────────────────────────────── -->
+    <x:String x:Key="IconAdd">&#x2B;</x:String>
+    <x:String x:Key="IconEdit">&#x270E;</x:String>
+    <x:String x:Key="IconDelete">&#x1F5D1;</x:String>
+    <x:String x:Key="IconSave">&#x2713;</x:String>
+    <x:String x:Key="IconCancel">&#x2715;</x:String>
+    <x:String x:Key="IconSearch">&#x1F50D;</x:String>
+    <x:String x:Key="IconFilter">&#x25BC;</x:String>
+    <x:String x:Key="IconSort">&#x2195;</x:String>
+    <x:String x:Key="IconRefresh">&#x21BA;</x:String>
+    <x:String x:Key="IconPrint">&#x2399;</x:String>
+    <x:String x:Key="IconDownload">&#x2193;</x:String>
+    <x:String x:Key="IconUpload">&#x2191;</x:String>
+    <x:String x:Key="IconShare">&#x2197;</x:String>
+    <x:String x:Key="IconExport">&#x21E5;</x:String>
+    <x:String x:Key="IconDuplicate">&#x2398;</x:String>
+    <x:String x:Key="IconArchive">&#x1F4C2;</x:String>
+    <x:String x:Key="IconRestore">&#x21BA;</x:String>
+    <x:String x:Key="IconView">&#x1F441;</x:String>
+    <x:String x:Key="IconPreview">&#x1F4C3;</x:String>
+    <x:String x:Key="IconSend">&#x27A4;</x:String>
+    <x:String x:Key="IconCopy">&#x2398;</x:String>
+
+    <!-- ── User & Auth ───────────────────────────────────────────────── -->
+    <x:String x:Key="IconUser">&#x1F464;</x:String>
+    <x:String x:Key="IconProfile">&#x1F464;</x:String>
+    <x:String x:Key="IconLock">&#x1F512;</x:String>
+    <x:String x:Key="IconUnlock">&#x1F513;</x:String>
+    <x:String x:Key="IconEye">&#x25CE;</x:String>
+    <x:String x:Key="IconEyeOff">&#x2299;</x:String>
+    <x:String x:Key="IconEmail">&#x2709;</x:String>
+    <x:String x:Key="IconPhone">&#x260E;</x:String>
+    <x:String x:Key="IconLogout">&#x2B9E;</x:String>
+    <x:String x:Key="IconKey">&#x1F511;</x:String>
+    <x:String x:Key="IconShield">&#x1F6E1;</x:String>
+    <x:String x:Key="IconOtp">&#x1F4F1;</x:String>
+
+    <!-- ── Status & Feedback ─────────────────────────────────────────── -->
+    <x:String x:Key="IconCheck">&#x2713;</x:String>
+    <x:String x:Key="IconCheckCircle">&#x2705;</x:String>
+    <x:String x:Key="IconWarning">&#x26A0;</x:String>
+    <x:String x:Key="IconError">&#x26D4;</x:String>
+    <x:String x:Key="IconInfo">&#x2139;</x:String>
+    <x:String x:Key="IconDotFilled">&#x25CF;</x:String>
+    <x:String x:Key="IconDotOutline">&#x25CB;</x:String>
+    <x:String x:Key="IconSpinner">&#x21BB;</x:String>
+    <x:String x:Key="IconPending">&#x23F3;</x:String>
+
+    <!-- ── Connectivity ──────────────────────────────────────────────── -->
+    <x:String x:Key="IconOnline">&#x25CF;</x:String>
+    <x:String x:Key="IconOffline">&#x25CB;</x:String>
+    <x:String x:Key="IconSyncing">&#x21BB;</x:String>
+    <x:String x:Key="IconSynced">&#x2713;</x:String>
+    <x:String x:Key="IconSyncFailed">&#x26A0;</x:String>
+    <x:String x:Key="IconPendingSync">&#x23F3;</x:String>
+    <x:String x:Key="IconWifi">&#x25D1;</x:String>
+    <x:String x:Key="IconNoWifi">&#x25D0;</x:String>
+
+    <!-- ── Finance & Business ────────────────────────────────────────── -->
+    <x:String x:Key="IconInvoice">&#x1F4C4;</x:String>
+    <x:String x:Key="IconReceipt">&#x1F4DC;</x:String>
+    <x:String x:Key="IconCurrency">&#x1F4B2;</x:String>
+    <x:String x:Key="IconDiscount">&#x25CE;</x:String>
+    <x:String x:Key="IconTax">&#x1F4B9;</x:String>
+    <x:String x:Key="IconProfit">&#x1F4C8;</x:String>
+    <x:String x:Key="IconLoss">&#x1F4C9;</x:String>
+    <x:String x:Key="IconOutstanding">&#x231B;</x:String>
+    <x:String x:Key="IconCalendar">&#x1F4C5;</x:String>
+    <x:String x:Key="IconDate">&#x1F4C6;</x:String>
+    <x:String x:Key="IconBarcode">&#x1F3B0;</x:String>
+    <x:String x:Key="IconSku">&#x1F3F7;</x:String>
+    <x:String x:Key="IconCategory">&#x25A6;</x:String>
+    <x:String x:Key="IconBrand">&#x2318;</x:String>
+    <x:String x:Key="IconUnit">&#x25A1;</x:String>
+    <x:String x:Key="IconLowStock">&#x26A1;</x:String>
+    <x:String x:Key="IconStockAdjust">&#x2693;</x:String>
+    <x:String x:Key="IconTransfer">&#x21C4;</x:String>
+    <x:String x:Key="IconHistory">&#x231A;</x:String>
+    <x:String x:Key="IconReturn">&#x21A9;</x:String>
+    <x:String x:Key="IconSupplier">&#x1F69A;</x:String>
+    <x:String x:Key="IconAddress">&#x1F4CD;</x:String>
+    <x:String x:Key="IconLocation">&#x1F4CC;</x:String>
+    <x:String x:Key="IconCreditCard">&#x1F4B3;</x:String>
+    <x:String x:Key="IconCash">&#x1F4B5;</x:String>
+    <x:String x:Key="IconBank">&#x1F3E6;</x:String>
+    <x:String x:Key="IconPlans">&#x1F4CB;</x:String>
+    <x:String x:Key="IconRenewal">&#x21BA;</x:String>
+    <x:String x:Key="IconBilling2">&#x1F4B0;</x:String>
+    <x:String x:Key="IconTrial">&#x1F4AB;</x:String>
+
+    <!-- ── UI & Layout ───────────────────────────────────────────────── -->
+    <x:String x:Key="IconGrid">&#x25A6;</x:String>
+    <x:String x:Key="IconList">&#x2630;</x:String>
+    <x:String x:Key="IconTable">&#x229E;</x:String>
+    <x:String x:Key="IconCard">&#x25A0;</x:String>
+    <x:String x:Key="IconTheme">&#x25D0;</x:String>
+    <x:String x:Key="IconLightMode">&#x2600;</x:String>
+    <x:String x:Key="IconDarkMode">&#x263D;</x:String>
+    <x:String x:Key="IconSystemMode">&#x229E;</x:String>
+    <x:String x:Key="IconLanguage">&#x1F310;</x:String>
+    <x:String x:Key="IconCompact">&#x21B9;</x:String>
+    <x:String x:Key="IconSwitchCompany">&#x21C4;</x:String>
+    <x:String x:Key="IconAccent">&#x25CF;</x:String>
+    <x:String x:Key="IconToggleOn">&#x25C9;</x:String>
+    <x:String x:Key="IconToggleOff">&#x25EF;</x:String>
+    <x:String x:Key="IconAttach">&#x1F4CE;</x:String>
+    <x:String x:Key="IconImage">&#x1F4F7;</x:String>
+    <x:String x:Key="IconNotes">&#x1F4DD;</x:String>
+    <x:String x:Key="IconBadge">&#x25C9;</x:String>
+
+</ResourceDictionary>

@@ -1,0 +1,190 @@
+using AveroNova.App.UI.Pages.Authentication;
+using AveroNova.App.UI.Pages.Company;
+using AveroNova.App.UI.Pages.Dashboard;
+using AveroNova.App.UI.Pages.Splash;
+using AveroNova.App.UI.ViewModels;
+using AveroNova.App.UI.Views.Auth;
+using AveroNova.App.UI.Views.Dashboard;
+using AveroNova.App.UI.Views.Layout;
+using AveroNova.App.UI.Views.Profile;
+using AveroNova.App.UI.Pages.Customers;
+using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.Services.Mock;
+using Microsoft.Extensions.Logging;
+using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Pages.Administration;
+using AveroNova.App.UI.Pages.Billing;
+using AveroNova.App.UI.Pages.Expenses;
+using AveroNova.App.UI.Pages.Help;
+using AveroNova.App.UI.Pages.Inventory;
+using AveroNova.App.UI.Pages.Payments;
+using AveroNova.App.UI.Pages.Products;
+using AveroNova.App.UI.Pages.Purchases;
+using AveroNova.App.UI.Pages.Reports;
+using AveroNova.App.UI.Pages.Returns;
+using AveroNova.App.UI.Pages.Settings;
+using AveroNova.App.UI.Pages.Subscription;
+using AveroNova.App.UI.Pages.SyncCenter;
+
+namespace AveroNova.App.UI;
+
+public static class MauiProgram
+{
+    public static MauiApp CreateMauiApp()
+    {
+        var builder = MauiApp.CreateBuilder();
+        builder
+            .UseMauiApp<App>()
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            });
+
+        // ── Database ──────────────────────────────────────────────────────────
+        //var dbPath = DatabasePath.GetDatabasePath(FileSystem.AppDataDirectory);
+        //builder.Services.AddInfrastructure(dbPath);
+
+        // ── Singletons ────────────────────────────────────────────────────────
+        builder.Services.AddSingleton<App>();
+        builder.Services.AddSingleton<AppShell>();
+
+        // ── Auth pages ────────────────────────────────────────────────────────
+        builder.Services.AddTransient<SplashPage>();
+        builder.Services.AddTransient<WelcomePage>();
+        builder.Services.AddTransient<LoginPage>();
+        builder.Services.AddTransient<RegisterPage>();
+        builder.Services.AddTransient<ForgotPasswordPage>();
+
+        // ── Auth view models ──────────────────────────────────────────────────
+        builder.Services.AddTransient<LoginViewModel>();
+        builder.Services.AddTransient<RegisterViewModel>();
+
+        // ── Auth views ────────────────────────────────────────────────────────
+        builder.Services.AddTransient<LoginFormView>();
+
+        // ── Company setup ─────────────────────────────────────────────────────
+        // ── Company setup ─────────────────────────────────────────────────────
+        builder.Services.AddTransient<CompanySetupPage>();
+        builder.Services.AddTransient<CompanySetupViewModel>();
+
+
+        // ── Main ERP shell ────────────────────────────────────────────────────
+        builder.Services.AddTransient<MainPage>();
+        builder.Services.AddTransient<MainLayoutView>();       // single registration
+
+        // ── Dashboard ─────────────────────────────────────────────────────────
+        // builder.Services.AddTransient<DashboardPage>();
+        builder.Services.AddTransient<DashboardViewModel>();
+        builder.Services.AddTransient<DashboardView>();
+
+        // ── Profile ───────────────────────────────────────────────────────────
+        builder.Services.AddTransient<ProfileViewModel>();
+        builder.Services.AddTransient<ProfileView>();
+
+
+
+        // ── Main Layout Page Factories ────────────────────────────────────────
+
+        builder.Services.AddTransient<DashboardPage>();
+        builder.Services.AddTransient<Func<DashboardPage>>(sp => () => sp.GetRequiredService<DashboardPage>());
+
+        builder.Services.AddTransient<CompanyListPage>();
+        builder.Services.AddTransient<Func<CompanyListPage>>(sp => () => sp.GetRequiredService<CompanyListPage>());
+
+        builder.Services.AddTransient<CustomersListPage>();
+        builder.Services.AddTransient<Func<CustomersListPage>>(sp => () => sp.GetRequiredService<CustomersListPage>());
+
+        builder.Services.AddTransient<ProductsListPage>();
+        builder.Services.AddTransient<Func<ProductsListPage>>(sp => () => sp.GetRequiredService<ProductsListPage>());
+
+        builder.Services.AddTransient<InventoryPage>();
+        builder.Services.AddTransient<Func<InventoryPage>>(sp => () => sp.GetRequiredService<InventoryPage>());
+
+        builder.Services.AddTransient<BillingListPage>();
+        builder.Services.AddTransient<Func<BillingListPage>>(sp => () => sp.GetRequiredService<BillingListPage>());
+
+        builder.Services.AddTransient<PurchasesListPage>();
+        builder.Services.AddTransient<Func<PurchasesListPage>>(sp => () => sp.GetRequiredService<PurchasesListPage>());
+
+        builder.Services.AddTransient<PaymentsListPage>();
+        builder.Services.AddTransient<Func<PaymentsListPage>>(sp => () => sp.GetRequiredService<PaymentsListPage>());
+
+        builder.Services.AddTransient<SalesReturnsListPage>();
+        builder.Services.AddTransient<Func<SalesReturnsListPage>>(sp => () => sp.GetRequiredService<SalesReturnsListPage>());
+
+        builder.Services.AddTransient<PurchaseReturnsListPage>();
+        builder.Services.AddTransient<Func<PurchaseReturnsListPage>>(sp => () => sp.GetRequiredService<PurchaseReturnsListPage>());
+
+        builder.Services.AddTransient<ExpensesListPage>();
+        builder.Services.AddTransient<Func<ExpensesListPage>>(sp => () => sp.GetRequiredService<ExpensesListPage>());
+
+        builder.Services.AddTransient<ReportsPage>();
+        builder.Services.AddTransient<Func<ReportsPage>>(sp => () => sp.GetRequiredService<ReportsPage>());
+
+        builder.Services.AddTransient<UsersListPage>();
+        builder.Services.AddTransient<Func<UsersListPage>>(sp => () => sp.GetRequiredService<UsersListPage>());
+
+        builder.Services.AddTransient<RolesListPage>();
+        builder.Services.AddTransient<Func<RolesListPage>>(sp => () => sp.GetRequiredService<RolesListPage>());
+
+        builder.Services.AddTransient<PermissionsPage>();
+        builder.Services.AddTransient<Func<PermissionsPage>>(sp => () => sp.GetRequiredService<PermissionsPage>());
+
+        builder.Services.AddTransient<SubscriptionPage>();
+        builder.Services.AddTransient<Func<SubscriptionPage>>(sp => () => sp.GetRequiredService<SubscriptionPage>());
+
+        builder.Services.AddTransient<SyncCenterPage>();
+        builder.Services.AddTransient<Func<SyncCenterPage>>(sp => () => sp.GetRequiredService<SyncCenterPage>());
+
+        builder.Services.AddTransient<SettingsPage>();
+        builder.Services.AddTransient<Func<SettingsPage>>(sp => () => sp.GetRequiredService<SettingsPage>());
+
+        builder.Services.AddTransient<HelpAboutPage>();
+        builder.Services.AddTransient<Func<HelpAboutPage>>(sp => () => sp.GetRequiredService<HelpAboutPage>());
+
+
+        // ── Services / Repositories ───────────────────────────────────────────
+
+        // ── Mock Services ─────────────────────────────────────────────────────
+
+        builder.Services.AddTransient<IAuthenticationService, MockAuthenticationService>();
+        builder.Services.AddTransient<IBillingService, MockBillingService>();
+        builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, MockCompanyService>();
+        builder.Services.AddTransient<IConnectivityService, MockConnectivityService>();
+        builder.Services.AddTransient<ICustomerService, MockCustomerService>();
+        builder.Services.AddTransient<IExpenseService, MockExpenseService>();
+        builder.Services.AddTransient<IInventoryService, MockInventoryService>();
+        builder.Services.AddTransient<INotificationService, MockNotificationService>();
+        builder.Services.AddTransient<IPaymentService, MockPaymentService>();
+        builder.Services.AddTransient<IProductService, MockProductService>();
+        builder.Services.AddTransient<IPurchaseService, MockPurchaseService>();
+        builder.Services.AddTransient<IReturnService, MockReturnService>();
+        builder.Services.AddTransient<ISettingsService, MockSettingsService>();
+        builder.Services.AddTransient<ISubscriptionService, MockSubscriptionService>();
+        builder.Services.AddTransient<ISyncService, MockSyncService>();
+        builder.Services.AddTransient<IUserService, MockUserService>();
+
+        // Company DB services — DB setup complete hone ke baad enable karenge
+        //builder.Services.AddTransient<ICompanyService, CompanyService>();
+        //builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
+        //builder.Services.AddTransient<ICompanyService,    CompanyService>();
+        //builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
+
+#if DEBUG
+        builder.Logging.AddDebug();
+#endif
+
+        var app = builder.Build();
+
+        // Apply pending EF Core migrations on startup
+        //using var scope = app.Services.CreateScope();
+        //var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        //db.Database.Migrate();
+
+        //System.Diagnostics.Debug.WriteLine(
+        //    $"[AveroNova] DB path: {DatabasePath.GetDatabasePath(FileSystem.AppDataDirectory)}");
+
+        return app;
+    }
+}

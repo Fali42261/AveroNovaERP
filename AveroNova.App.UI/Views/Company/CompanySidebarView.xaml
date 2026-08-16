@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Company.CompanySidebarView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:company="clr-namespace:AveroNova.App.UI.Views.Company">
+
+    <Border
+        BackgroundColor="{StaticResource SidebarBackground}"
+        StrokeThickness="0">
+
+        <Grid Padding="20">
+
+            <Grid.RowDefinitions>
+
+                <!-- Logo -->
+                <RowDefinition Height="80"/>
+
+                <!-- Steps -->
+                <RowDefinition Height="Auto"/>
+
+                <!-- Empty Space -->
+                <RowDefinition Height="*"/>
+
+                <!-- Security -->
+                <RowDefinition Height="Auto"/>
+
+                <!-- Bottom -->
+                <RowDefinition Height="70"/>
+
+            </Grid.RowDefinitions>
+
+            <!-- Logo -->
+
+            <HorizontalStackLayout
+                Grid.Row="0"
+                Spacing="10"
+                VerticalOptions="Center">
+
+                <Label
+                    Text="A"
+                    FontSize="42"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource PrimaryColor}" />
+
+                <VerticalStackLayout
+                    Spacing="0"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="AveroNova"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <Label
+                        Text="ERP"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryColor}"/>
+
+                </VerticalStackLayout>
+
+            </HorizontalStackLayout>
+
+            <!-- Wizard Steps -->
+
+            <VerticalStackLayout
+    x:Name="StepsLayout"
+    Grid.Row="1"
+    Margin="0,15,0,0"
+    Spacing="8">
+
+                <Label
+        Text="ONBOARDING"
+        FontSize="11"
+        FontAttributes="Bold"
+        TextColor="#94A3B8"/>
+
+                <company:CompanySidebarItemView
+        x:Name="CompanyItem"
+        StepNumber="1"
+        Title="Company Information"
+        Subtitle="Basic Company Details"
+        IsActive="True"/>
+
+                <!--<company:CompanySidebarItemView
+        x:Name="TeamItem"
+        StepNumber="2"
+        Title="Team Setup"
+        Subtitle="Create Teams"/>
+
+                <company:CompanySidebarItemView
+        x:Name="AdminItem"
+        StepNumber="3"
+        Title="Admin Account"
+        Subtitle="Create Administrator"/>-->
+
+                <company:CompanySidebarItemView
+        x:Name="FinishItem"
+        StepNumber="2"
+        Title="Finish Setup"
+        Subtitle="Review &amp; Finish"/>
+
+            </VerticalStackLayout>
+
+            <!-- Security -->
+
+            <Border
+               Grid.Row="3"
+    Margin="0,16,0,12"
+                Padding="16"
+                BackgroundColor="#162B55"
+                Stroke="#294B8F"
+                StrokeShape="RoundRectangle 14">
+
+                <VerticalStackLayout>
+
+                    <Label
+                        Text="🛡"
+                        FontSize="22"/>
+
+                    <Label
+                        Text="Your Data is Safe"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <Label
+                        Text="All information is encrypted and stored securely."
+                        FontSize="12"
+                        TextColor="#B8C6E0"/>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+            <!-- Bottom -->
+
+            <!--<Border
+                Grid.Row="4"
+                Margin="0"
+                Padding="14"
+                BackgroundColor="#162B55"
+                Stroke="#294B8F"
+                StrokeShape="RoundRectangle 14">
+
+                <HorizontalStackLayout Spacing="10">
+
+                    <Label
+                        Text="🌙"
+                        FontSize="20"/>
+
+                    <Label
+                        Text="System"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        VerticalOptions="Center"
+                        TextColor="White"/>
+
+                </HorizontalStackLayout>
+
+            </Border>-->
+
+        </Grid>
+
+    </Border>
+
+</ContentView>

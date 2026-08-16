@@ -1,0 +1,13 @@
+<Solution>
+  <Project Path="AveroNova.API/AveroNova.API.csproj" />
+  <Project Path="AveroNova.App.UI/AveroNova.App.UI.csproj" Id="2e165931-2504-435a-b88e-0c8394ad47f3">
+    <Deploy Solution="Debug|*" />
+  </Project>
+  <Project Path="AveroNova.App/AveroNova.App.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+  <Project Path="AveroNova.Application/AveroNova.Application.csproj" />
+  <Project Path="AveroNova.Domain/AveroNova.Domain.csproj" />
+  <Project Path="AveroNova.Infrastructure/AveroNova.Infrastructure.csproj" />
+  <Project Path="AveroNova.Shared/AveroNova.Shared.csproj" />
+</Solution>

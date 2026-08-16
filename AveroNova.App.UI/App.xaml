@@ -1,0 +1,37 @@
+﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AveroNova.App.UI"
+             xmlns:converters="clr-namespace:AveroNova.App.UI.Converters"
+             xmlns:resources="clr-namespace:AveroNova.App.UI.Resources"
+             x:Class="AveroNova.App.UI.App">
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <!-- Global Converters -->
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+
+            <ResourceDictionary.MergedDictionaries>
+
+                <!-- 1. Color Tokens (must be first — others reference these) -->
+                <resources:Colors />
+
+                <!-- 2. Dimension Tokens (spacing, radius, padding) -->
+                <resources:Dimensions />
+
+                <!-- 3. Typography (font sizes, semantic label styles) -->
+                <resources:Typography />
+
+                <!-- 4. Theme (brushes derived from color tokens) -->
+                <resources:Theme />
+
+                <!-- 5. Component Styles (buttons, entries, etc.) -->
+                <resources:Styles />
+
+                <!-- 6. Icon Strings (centralized icon resource) -->
+                <resources:Icons />
+
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:shared="clr-namespace:AveroNova.App.UI.Views.Shared"
+    x:Class="AveroNova.App.UI.Layouts.MainLayout">
+
+    <Grid>
+
+        <Grid.ColumnDefinitions>
+
+            <ColumnDefinition Width="280"/>
+
+            <ColumnDefinition Width="*"/>
+
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+
+        <shared:SidebarView Grid.Column="0"/>
+
+        <!-- Main -->
+
+        <Grid Grid.Column="1">
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="70"/>
+
+                <RowDefinition Height="Auto"/>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="75"/>
+
+            </Grid.RowDefinitions>
+            <!--<Grid.RowDefinitions>
+
+                <RowDefinition Height="70"/>
+
+                <RowDefinition Height="*"/>
+
+            </Grid.RowDefinitions>-->
+
+            <shared:HeaderView Grid.Row="0"/>
+
+            <Border
+        Grid.Row="1"
+        BackgroundColor="LightGreen">
+
+                <Label
+            Text="Main Content"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            FontSize="24"/>
+
+            </Border>
+
+        </Grid>
+
+    </Grid>
+
+</ContentView>
