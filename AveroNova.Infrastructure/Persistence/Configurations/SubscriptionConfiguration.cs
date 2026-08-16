@@ -1,9 +1,6 @@
 ﻿using AveroNova.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AveroNova.Infrastructure.Persistence.Configurations
 {
@@ -13,44 +10,48 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Subscriptions");
 
-            // Primary Key
             builder.HasKey(x => x.Id);
 
-            // Properties
-            builder.Property(x => x.PlanName)
-                   .IsRequired()
-                   .HasMaxLength(100);
-
-            builder.Property(x => x.Price)
-                   .HasPrecision(18, 2)
+            builder.Property(x => x.CompanyId)
                    .IsRequired();
 
-            builder.Property(x => x.DurationInDays)
+            builder.Property(x => x.PlanId)
                    .IsRequired();
 
             builder.Property(x => x.StartDate)
                    .IsRequired();
 
-            builder.Property(x => x.ExpiryDate)
+            builder.Property(x => x.EndDate)
                    .IsRequired();
 
-            builder.Property(x => x.IsSubscription);
-                  // .HasDefaultValue(true);
+            builder.Property(x => x.IsTrial)
+                   .IsRequired();
+
+            builder.Property(x => x.CreditLimit)
+                   .IsRequired();
+
+            builder.Property(x => x.CreditsUsed)
+                   .HasDefaultValue(0)
+                   .IsRequired();
 
             builder.Property(x => x.Status)
-                   .HasConversion<int>()     // Store enum as int
+                   .HasConversion<int>()
                    .IsRequired();
 
-            builder.Property(x => x.Plan)
-                   .HasConversion<int>()     // Store enum as int
-                   .IsRequired();
+            builder.Ignore(x => x.RemainingCredits);
 
-            // Relationship
+            builder.HasIndex(x => x.CompanyId);
+            builder.HasIndex(x => x.PlanId);
+
+            builder.HasOne(x => x.Plan)
+                   .WithMany(x => x.Subscriptions)
+                   .HasForeignKey(x => x.PlanId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(x => x.Company)
                    .WithMany(x => x.Subscriptions)
                    .HasForeignKey(x => x.CompanyId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                   .OnDelete(DeleteBehavior.Restrict);
         }
-
     }
 }

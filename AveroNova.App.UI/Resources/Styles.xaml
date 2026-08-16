@@ -132,9 +132,9 @@
         <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="HeightRequest" Value="48"/>
-        <Setter Property="Padding" Value="20,0"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="Padding" Value="20,12"/>
+        <Setter Property="MinimumHeightRequest" Value="48"/>
+        <Setter Property="HorizontalOptions" Value="Fill"/>
     </Style>
 
     <Style x:Key="SecondaryButton" TargetType="Button">
@@ -145,9 +145,9 @@
         <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="HeightRequest" Value="48"/>
-        <Setter Property="Padding" Value="20,0"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="Padding" Value="20,12"/>
+        <Setter Property="MinimumHeightRequest" Value="48"/>
+        <Setter Property="HorizontalOptions" Value="Fill"/>
     </Style>
 
     <Style x:Key="DangerButton" TargetType="Button">
@@ -156,9 +156,9 @@
         <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="HeightRequest" Value="48"/>
-        <Setter Property="Padding" Value="20,0"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="Padding" Value="20,12"/>
+        <Setter Property="MinimumHeightRequest" Value="48"/>
+        <Setter Property="HorizontalOptions" Value="Fill"/>
     </Style>
 
     <Style x:Key="GhostButton" TargetType="Button">
@@ -167,9 +167,8 @@
         <Setter Property="BorderWidth" Value="0"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="HeightRequest" Value="48"/>
-        <Setter Property="Padding" Value="12,0"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="MinimumHeightRequest" Value="48"/>
     </Style>
 
     <Style x:Key="SmallButton" TargetType="Button">
@@ -210,8 +209,29 @@
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource InputBorder}, Dark={StaticResource BorderColorDark}}"/>
         <Setter Property="StrokeThickness" Value="1.5"/>
         <Setter Property="StrokeShape" Value="RoundRectangle 10"/>
-        <Setter Property="Padding" Value="14,0"/>
-        <Setter Property="HeightRequest" Value="48"/>
+        <Setter Property="Padding" Value="14,4"/>
+        <Setter Property="MinimumHeightRequest" Value="48"/>
+    </Style>
+
+    <Style x:Key="AuthCard" TargetType="Border" BasedOn="{StaticResource AppCard}">
+        <Setter Property="Padding" Value="24"/>
+        <Setter Property="HorizontalOptions" Value="Fill"/>
+    </Style>
+
+    <Style x:Key="FormActions" TargetType="Grid">
+        <Setter Property="ColumnSpacing" Value="12"/>
+        <Setter Property="Margin" Value="0,16,0,0"/>
+    </Style>
+
+    <Style x:Key="SelectableCard" TargetType="Border" BasedOn="{StaticResource AppCard}">
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="StrokeThickness" Value="1.5"/>
+        <Setter Property="Stroke" Value="{StaticResource BorderColor}"/>
+    </Style>
+
+    <Style x:Key="SelectableCardSelected" TargetType="Border" BasedOn="{StaticResource SelectableCard}">
+        <Setter Property="Stroke" Value="{StaticResource PrimaryColor}"/>
+        <Setter Property="BackgroundColor" Value="{StaticResource Primary50}"/>
     </Style>
 
     <!-- List row -->

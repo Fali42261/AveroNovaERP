@@ -6,25 +6,75 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{StaticResource SidebarBackground}">
 
-    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="20">
+    <Grid>
+        <VerticalStackLayout
+            x:Name="LoadingPanel"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Spacing="{StaticResource Space5}"
+            Padding="{StaticResource PaddingXLarge}">
 
-        <Border WidthRequest="80" HeightRequest="80"
-                BackgroundColor="#1557B0" StrokeThickness="0"
-                StrokeShape="RoundRectangle 20" HorizontalOptions="Center">
-            <Label Text="A" FontSize="44" FontAttributes="Bold"
-                   TextColor="{StaticResource Primary400}"
-                   HorizontalOptions="Center" VerticalOptions="Center"/>
-        </Border>
+            <Border
+                WidthRequest="80" HeightRequest="80"
+                BackgroundColor="{StaticResource Primary600}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 20"
+                HorizontalOptions="Center">
+                <Label Text="A"
+                       FontSize="{StaticResource FontSizeLargeTitle}"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource White}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+            </Border>
 
-        <Label Text="AveroNova ERP" FontSize="28" FontAttributes="Bold"
-               TextColor="{StaticResource White}" HorizontalOptions="Center"/>
+            <Label Text="AveroNova ERP"
+                   Style="{StaticResource PageTitle}"
+                   TextColor="{StaticResource White}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
 
-        <ActivityIndicator IsRunning="True" Color="{StaticResource Primary400}"
-                           HorizontalOptions="Center" Margin="0,16,0,0"/>
+            <Label x:Name="LblStatus"
+                   Text="Starting AveroNova..."
+                   Style="{StaticResource CaptionText}"
+                   TextColor="{StaticResource SidebarText}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
 
-        <Label Text="Loading..." FontSize="13" TextColor="{StaticResource SidebarText}"
-               HorizontalOptions="Center"/>
+            <ActivityIndicator
+                x:Name="Spinner"
+                IsRunning="True"
+                Color="{StaticResource Primary400}"
+                HorizontalOptions="Center"
+                Margin="0,8,0,0" />
+        </VerticalStackLayout>
 
-    </VerticalStackLayout>
+        <VerticalStackLayout
+            x:Name="ErrorPanel"
+            IsVisible="False"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            MaximumWidthRequest="{StaticResource AuthCardMaxWidth}"
+            Spacing="{StaticResource Space4}"
+            Padding="{StaticResource PaddingXLarge}">
 
+            <Label Text="Unable to start"
+                   Style="{StaticResource PageTitle}"
+                   TextColor="{StaticResource White}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <Label x:Name="LblError"
+                   Style="{StaticResource BodyText}"
+                   TextColor="{StaticResource SidebarText}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <Button x:Name="BtnRetry"
+                    Text="Retry"
+                    Style="{StaticResource PrimaryButton}"
+                    Clicked="OnRetryClicked" />
+        </VerticalStackLayout>
+    </Grid>
 </ContentPage>

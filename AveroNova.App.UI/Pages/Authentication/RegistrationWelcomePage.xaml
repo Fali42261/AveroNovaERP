@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Authentication.RegistrationWelcomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource BackgroundColor}">
+
+    <ScrollView>
+        <VerticalStackLayout
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Padding="40,32"
+            Spacing="0"
+            MaximumWidthRequest="460">
+
+            <!-- Logo -->
+            <Border
+                WidthRequest="64"
+                HeightRequest="64"
+                BackgroundColor="{StaticResource Primary600}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 16"
+                HorizontalOptions="Center"
+                Margin="0,0,0,24">
+                <Label
+                    Text="A"
+                    FontSize="36"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource White}"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </Border>
+
+            <!-- Title -->
+            <Label
+                Text="Welcome to AveroNova"
+                FontSize="28"
+                FontAttributes="Bold"
+                TextColor="{StaticResource TextPrimary}"
+                HorizontalOptions="Center"
+                Margin="0,0,0,8" />
+
+            <!-- Subtitle -->
+            <Label
+                Text="Create your account to get started"
+                FontSize="14"
+                TextColor="{StaticResource TextSecondary}"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                LineBreakMode="WordWrap"
+                Margin="0,0,0,32" />
+
+            <!-- Option Card -->
+            <Border
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="1.5"
+                StrokeShape="RoundRectangle 12"
+                Padding="20,16"
+                Margin="0,0,0,16">
+                <VerticalStackLayout Spacing="8">
+                    <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                        <Border
+                            WidthRequest="40"
+                            HeightRequest="40"
+                            BackgroundColor="{StaticResource Primary50}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 10"
+                            HorizontalOptions="Start"
+                            VerticalOptions="Start">
+                            <Label
+                                Text="✓"
+                                FontSize="20"
+                                TextColor="{StaticResource Primary600}"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Spacing="4" HorizontalOptions="Fill">
+                            <Label
+                                Text="Create New Company"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource TextPrimary}" />
+                            <Label
+                                Text="I want to create a new company and manage my business"
+                                FontSize="12"
+                                TextColor="{StaticResource TextSecondary}"
+                                LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Continue Button -->
+            <Button
+                Text="Continue →"
+                Style="{StaticResource PrimaryButton}"
+                HorizontalOptions="Fill"
+                Clicked="OnContinueClicked"
+                Margin="0,8,0,24" />
+
+            <!-- Login Link -->
+            <HorizontalStackLayout
+                Spacing="4"
+                HorizontalOptions="Center"
+                Margin="0,0,0,0">
+                <Label
+                    Text="Already have an account?"
+                    FontSize="13"
+                    TextColor="{StaticResource TextSecondary}" />
+                <Button
+                    Text="Login"
+                    Style="{StaticResource GhostButton}"
+                    Padding="0"
+                    Clicked="OnLoginClicked"
+                    FontSize="13"
+                    TextColor="{StaticResource Primary600}" />
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

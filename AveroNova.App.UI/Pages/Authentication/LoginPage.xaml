@@ -1,109 +1,102 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!--
-    LoginPage
-    ONLINE:  Credentials sent to AveroNova API → JWT returned → stored locally.
-    OFFLINE: Locally cached credential hash used for offline login.
-    TODO: Implement real JWT auth during backend phase.
--->
 <ContentPage
     x:Class="AveroNova.App.UI.Pages.Authentication.LoginPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:b="clr-namespace:AveroNova.App.UI.Behaviors"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
     <ScrollView>
-        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
-                             Padding="24" Spacing="0" MaximumWidthRequest="440">
+        <Border Style="{StaticResource AuthCard}"
+                Margin="{StaticResource PaddingMedium}"
+                VerticalOptions="Center"
+                MaximumWidthRequest="{StaticResource AuthCardMaxWidth}"
+                HorizontalOptions="Center">
+            <VerticalStackLayout Spacing="0">
 
-            <!-- Logo -->
-            <Border WidthRequest="56" HeightRequest="56"
-                    BackgroundColor="#1557B0" StrokeThickness="0"
-                    StrokeShape="RoundRectangle 14" HorizontalOptions="Center">
-                <Label Text="A" FontSize="28" FontAttributes="Bold"
-                       TextColor="{StaticResource Primary400}"
-                       HorizontalOptions="Center" VerticalOptions="Center"/>
-            </Border>
+                <Border WidthRequest="56" HeightRequest="56"
+                        BackgroundColor="{StaticResource Primary600}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 14"
+                        HorizontalOptions="Center">
+                    <Label Text="A" FontAttributes="Bold"
+                           FontSize="{StaticResource FontSizeLargeTitle}"
+                           TextColor="{StaticResource White}"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </Border>
 
-            <Label Text="Sign In" FontSize="26" FontAttributes="Bold"
-                   TextColor="{StaticResource TextPrimary}"
-                   HorizontalOptions="Center" Margin="0,20,0,4"/>
-            <Label Text="Enter your credentials to access AveroNova ERP"
-                   FontSize="13" TextColor="{StaticResource TextSecondary}"
-                   HorizontalOptions="Center" HorizontalTextAlignment="Center"
-                   LineBreakMode="WordWrap" Margin="0,0,0,32"/>
+                <Label Text="Sign In" Style="{StaticResource PageTitle}"
+                       HorizontalOptions="Center" Margin="0,16,0,4" />
+                <Label Text="Enter your credentials to access AveroNova ERP"
+                       Style="{StaticResource SecondaryText}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,0,0,24" />
 
-            <!-- Error banner -->
-            <Border x:Name="ErrorBanner" IsVisible="False"
-                    BackgroundColor="{StaticResource ErrorBg}"
-                    Stroke="{StaticResource ErrorBorder}" StrokeThickness="1"
-                    StrokeShape="RoundRectangle 10" Padding="14,10" Margin="0,0,0,16">
-                <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}"
-                       LineBreakMode="WordWrap"/>
-            </Border>
+                <Border x:Name="ErrorBanner" IsVisible="False"
+                        BackgroundColor="{StaticResource ErrorBg}"
+                        Stroke="{StaticResource ErrorBorder}" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 10" Padding="14,10" Margin="0,0,0,16">
+                    <Label x:Name="LblError" Style="{StaticResource ErrorText}" Margin="0" />
+                </Border>
 
-            <!-- Email -->
-            <Label Text="Email Address" Style="{StaticResource InputLabel}"/>
-            <Border Style="{StaticResource InputContainer}" Margin="0,4,0,16">
-                <Entry x:Name="EntryEmail" Placeholder="you@company.com"
-                       Keyboard="Email" ReturnType="Next"/>
-            </Border>
+                <Label Text="Email Address" Style="{StaticResource InputLabel}" />
+                <Border Style="{StaticResource InputContainer}" Margin="0,0,0,16">
+                    <Entry x:Name="EntryEmail" Placeholder="you@company.com"
+                           Keyboard="Email" ReturnType="Next"
+                           SemanticProperties.Description="Email address" />
+                </Border>
 
-            <!-- Password -->
-            <Label Text="Password" Style="{StaticResource InputLabel}"/>
-            <Border Style="{StaticResource InputContainer}" Margin="0,4,0,8">
-                <Grid ColumnDefinitions="*,44">
-                    <Entry x:Name="EntryPassword" Placeholder="Enter your password"
-                           IsPassword="True" ReturnType="Done"
-                           ReturnCommand="{Binding Source={x:Reference BtnLogin}, Path=Command}"/>
-                    <Button Grid.Column="1" Text="&#x25CE;" FontSize="16"
-                            BackgroundColor="Transparent" BorderWidth="0"
-                            TextColor="{StaticResource TextSecondary}"
-                            Clicked="OnTogglePasswordClicked" Padding="0"
-                            MinimumHeightRequest="44"/>
-                </Grid>
-            </Border>
+                <Label Text="Password" Style="{StaticResource InputLabel}" />
+                <Border Style="{StaticResource InputContainer}" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Entry x:Name="EntryPassword" Placeholder="Enter your password"
+                               IsPassword="True" ReturnType="Done"
+                               SemanticProperties.Description="Password" />
+                        <Button x:Name="BtnTogglePassword" Grid.Column="1" Text="Show"
+                                Style="{StaticResource GhostButton}"
+                                FontSize="{StaticResource FontSizeSmall}"
+                                MinimumWidthRequest="64"
+                                Clicked="OnTogglePasswordClicked" />
+                    </Grid>
+                </Border>
 
-            <!-- Remember me + forgot -->
-            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,24">
-                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                    <CheckBox x:Name="ChkRemember" Color="{StaticResource PrimaryColor}"/>
-                    <Label Text="Remember me" FontSize="13" VerticalOptions="Center"
-                           TextColor="{StaticResource TextSecondary}"/>
+                <FlexLayout Wrap="Wrap" JustifyContent="SpaceBetween" AlignItems="Center"
+                            Margin="0,8,0,24">
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <CheckBox x:Name="ChkRemember" Color="{StaticResource PrimaryColor}" />
+                        <Label Text="Remember me" Style="{StaticResource SecondaryText}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Label Text="Forgot Password?"
+                           Style="{StaticResource LinkText}"
+                           FontSize="{StaticResource FontSizeSmall}"
+                           VerticalOptions="Center"
+                           b:HandCursor.Enable="True">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnForgotPasswordTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </FlexLayout>
+
+                <Button x:Name="BtnLogin" Text="Login"
+                        Style="{StaticResource PrimaryButton}"
+                        Clicked="OnLoginClicked" />
+
+                <ActivityIndicator x:Name="Loader" IsRunning="False" IsVisible="False"
+                                   Color="{StaticResource PrimaryColor}"
+                                   HorizontalOptions="Center" Margin="0,12,0,0" />
+
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="4" Margin="0,24,0,0">
+                    <Label Text="Don't have an account?" Style="{StaticResource SecondaryText}" />
+                    <Label Text="Create New Company" Style="{StaticResource LinkText}" FontSize="{StaticResource FontSizeSmall}" b:HandCursor.Enable="True">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnRegisterTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
                 </HorizontalStackLayout>
-                <Label Grid.Column="1" Text="Forgot Password?"
-                       FontSize="13" TextColor="{StaticResource PrimaryColor}"
-                       VerticalOptions="Center">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnForgotPasswordTapped"/>
-                    </Label.GestureRecognizers>
-                </Label>
-            </Grid>
-
-            <!-- Sign In button -->
-            <Button x:Name="BtnLogin" Text="Sign In"
-                    Style="{StaticResource PrimaryButton}"
-                    HorizontalOptions="Fill"
-                    Clicked="OnLoginClicked"/>
-
-            <!-- Loading -->
-            <ActivityIndicator x:Name="Loader" IsRunning="False" IsVisible="False"
-                               Color="{StaticResource PrimaryColor}"
-                               HorizontalOptions="Center" Margin="0,12,0,0"/>
-
-            <!-- Register link -->
-            <HorizontalStackLayout HorizontalOptions="Center" Spacing="4" Margin="0,24,0,0">
-                <Label Text="Don't have an account?" FontSize="13"
-                       TextColor="{StaticResource TextSecondary}"/>
-                <Label Text="Create one" FontSize="13" FontAttributes="Bold"
-                       TextColor="{StaticResource PrimaryColor}">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnRegisterTapped"/>
-                    </Label.GestureRecognizers>
-                </Label>
-            </HorizontalStackLayout>
-
-        </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Border>
     </ScrollView>
-
 </ContentPage>

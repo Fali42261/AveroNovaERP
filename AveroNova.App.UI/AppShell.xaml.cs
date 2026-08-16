@@ -30,7 +30,9 @@ public partial class AppShell : Shell
     {
         Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
         // Auth push routes
-        Routing.RegisterRoute(AppRoutes.Register,       typeof(RegisterPage));
+        Routing.RegisterRoute(AppRoutes.Register,              typeof(RegisterPage));
+        Routing.RegisterRoute(AppRoutes.RegistrationWelcome,   typeof(RegistrationWelcomePage));
+        Routing.RegisterRoute(AppRoutes.RegistrationSuccess, typeof(RegistrationSuccessPage));
         Routing.RegisterRoute(AppRoutes.ForgotPassword, typeof(ForgotPasswordPage));
         Routing.RegisterRoute(AppRoutes.OtpVerify,      typeof(OtpVerifyPage));
 

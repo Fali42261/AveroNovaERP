@@ -13,7 +13,7 @@ public partial class OtpVerifyPage : ContentPage
         _auth = auth;
     }
 
-    private async void OnVerifyClicked(object sender, EventArgs e)
+    private async void OnVerifyClicked(object? sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(EntryOtp.Text) || EntryOtp.Text.Length != 6)
         {
@@ -38,6 +38,6 @@ public partial class OtpVerifyPage : ContentPage
         }
     }
 
-    private void OnResendTapped(object sender, TappedEventArgs e)
+    private void OnResendTapped(object? sender, TappedEventArgs e)
         => DisplayAlert("Code Resent", "A new verification code has been sent to your email.", "OK");
 }

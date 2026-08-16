@@ -8,6 +8,7 @@ using AveroNova.App.UI.Views.Dashboard;
 using AveroNova.App.UI.Views.Layout;
 using AveroNova.App.UI.Views.Profile;
 using AveroNova.App.UI.Pages.Customers;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.Services.Mock;
 using Microsoft.Extensions.Logging;
@@ -41,11 +42,19 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
+#if WINDOWS
+        Microsoft.Maui.Handlers.ButtonHandler.Mapper.AppendToMapping("AveroNovaHandCursor", (handler, _) =>
+        {
+            Behaviors.HandCursor.ApplyToPlatformView(handler.PlatformView);
+        });
+#endif
+
         // ── Database ──────────────────────────────────────────────────────────
         //var dbPath = DatabasePath.GetDatabasePath(FileSystem.AppDataDirectory);
         //builder.Services.AddInfrastructure(dbPath);
 
         // ── Singletons ────────────────────────────────────────────────────────
+        builder.Services.AddSingleton<IResponsiveLayoutService, ResponsiveLayoutService>();
         builder.Services.AddSingleton<App>();
         builder.Services.AddSingleton<AppShell>();
 
@@ -54,12 +63,16 @@ public static class MauiProgram
         builder.Services.AddTransient<WelcomePage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
+        builder.Services.AddTransient<RegistrationWelcomePage>();
+        builder.Services.AddTransient<RegistrationSuccessPage>();
         builder.Services.AddTransient<ForgotPasswordPage>();
+        builder.Services.AddTransient<OtpVerifyPage>();
 
         // ── Auth view models ──────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<RegisterViewModel>();
-
+        builder.Services.AddSingleton<RegistrationWizardViewModel>();
+        builder.Services.AddTransient<ForgotPasswordViewModel>();
         // ── Auth views ────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginFormView>();
 
@@ -148,7 +161,7 @@ public static class MauiProgram
 
         // ── Mock Services ─────────────────────────────────────────────────────
 
-        builder.Services.AddTransient<IAuthenticationService, MockAuthenticationService>();
+        builder.Services.AddSingleton<IAuthenticationService, MockAuthenticationService>();
         builder.Services.AddTransient<IBillingService, MockBillingService>();
         builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, MockCompanyService>();
         builder.Services.AddTransient<IConnectivityService, MockConnectivityService>();

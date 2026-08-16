@@ -3,96 +3,177 @@
     x:Class="AveroNova.App.UI.Pages.Authentication.WelcomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Shell.NavBarIsVisible="False">
+    xmlns:b="clr-namespace:AveroNova.App.UI.Behaviors"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource BackgroundColor}">
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid>
+        <Grid x:Name="ExpandedLayout" IsVisible="False" ColumnDefinitions="0.42*,0.58*">
+            <Border BackgroundColor="{StaticResource SidebarBackground}" StrokeThickness="0">
+                <ScrollView>
+                    <VerticalStackLayout
+                        Spacing="{StaticResource Space5}"
+                        VerticalOptions="Center"
+                        Padding="{StaticResource PaddingXLarge}">
 
-        <!-- Left accent panel (desktop only — hidden on mobile) -->
-        <Grid ColumnDefinitions="*,*" Grid.RowSpan="2">
-            <Border Grid.Column="0"
-                    BackgroundColor="{StaticResource SidebarBackground}"
-                    StrokeThickness="0"
-                    IsVisible="{OnIdiom Desktop=True, Phone=False, Tablet=False}">
-                <VerticalStackLayout Spacing="20" VerticalOptions="Center" HorizontalOptions="Center" Padding="48">
-                    <Border WidthRequest="64" HeightRequest="64"
-                            BackgroundColor="#1557B0" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 16" HorizontalOptions="Center">
-                        <Label Text="A" FontSize="36" FontAttributes="Bold"
-                               TextColor="{StaticResource Primary400}"
-                               HorizontalOptions="Center" VerticalOptions="Center"/>
-                    </Border>
-                    <Label Text="AveroNova ERP" FontSize="28" FontAttributes="Bold"
-                           TextColor="{StaticResource White}" HorizontalOptions="Center"/>
-                    <Label Text="Complete business management for modern enterprises. Manage invoicing, inventory, customers, purchases, and more."
-                           FontSize="14" TextColor="{StaticResource SidebarText}"
-                           HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
-                    <VerticalStackLayout Spacing="10" Margin="0,20,0,0">
-                        <HorizontalStackLayout Spacing="10">
-                            <Label Text="&#x2713;" FontSize="16" TextColor="{StaticResource Primary400}"/>
-                            <Label Text="Offline-first architecture" FontSize="13" TextColor="{StaticResource SidebarText}"/>
-                        </HorizontalStackLayout>
-                        <HorizontalStackLayout Spacing="10">
-                            <Label Text="&#x2713;" FontSize="16" TextColor="{StaticResource Primary400}"/>
-                            <Label Text="Real-time synchronization" FontSize="13" TextColor="{StaticResource SidebarText}"/>
-                        </HorizontalStackLayout>
-                        <HorizontalStackLayout Spacing="10">
-                            <Label Text="&#x2713;" FontSize="16" TextColor="{StaticResource Primary400}"/>
-                            <Label Text="Multi-company support" FontSize="13" TextColor="{StaticResource SidebarText}"/>
-                        </HorizontalStackLayout>
-                        <HorizontalStackLayout Spacing="10">
-                            <Label Text="&#x2713;" FontSize="16" TextColor="{StaticResource Primary400}"/>
-                            <Label Text="Windows, Android &amp; iOS" FontSize="13" TextColor="{StaticResource SidebarText}"/>
-                        </HorizontalStackLayout>
+                        <Border
+                            WidthRequest="56" HeightRequest="56"
+                            BackgroundColor="{StaticResource Primary600}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 14"
+                            HorizontalOptions="Start">
+                            <Label Text="A" Style="{StaticResource DisplayText}"
+                                   FontSize="{StaticResource FontSizeLargeTitle}"
+                                   TextColor="{StaticResource White}"
+                                   HorizontalOptions="Center" VerticalOptions="Center"
+                                   HorizontalTextAlignment="Center" />
+                        </Border>
+
+                        <Label Text="AveroNova ERP" Style="{StaticResource PageTitle}" TextColor="{StaticResource White}" />
+                        <Label Text="ERP for Smarter Business"
+                               Style="{StaticResource SectionTitle}"
+                               TextColor="{StaticResource Primary300}" />
+                        <Label Text="Invoicing, inventory, customers, purchases, and teams in one professional workspace."
+                               Style="{StaticResource BodyText}"
+                               TextColor="{StaticResource SidebarText}" />
+
+                        <VerticalStackLayout Spacing="{StaticResource Space3}" Margin="0,12,0,0">
+                            <Label Text="•  Offline-first architecture" Style="{StaticResource BodyText}" TextColor="{StaticResource SidebarText}" />
+                            <Label Text="•  Real-time synchronization" Style="{StaticResource BodyText}" TextColor="{StaticResource SidebarText}" />
+                            <Label Text="•  Multi-company support" Style="{StaticResource BodyText}" TextColor="{StaticResource SidebarText}" />
+                            <Label Text="•  Windows, Android and iOS" Style="{StaticResource BodyText}" TextColor="{StaticResource SidebarText}" />
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
-                </VerticalStackLayout>
+                </ScrollView>
             </Border>
+
+            <ScrollView Grid.Column="1">
+                <VerticalStackLayout
+                    VerticalOptions="Center"
+                    HorizontalOptions="Fill"
+                    Padding="{StaticResource PaddingXLarge}"
+                    MaximumWidthRequest="{StaticResource AuthCardMaxWidth}"
+                    Spacing="{StaticResource Space4}">
+
+                    <Label Text="Welcome to AveroNova" Style="{StaticResource PageTitle}" />
+                    <Label Text="Create your account to get started."
+                           Style="{StaticResource SecondaryText}" />
+
+                    <Border x:Name="CompanyCardExpanded"
+                            Style="{StaticResource SelectableCard}"
+                            b:HandCursor.Enable="True">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCreateCompanyTapped" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="{StaticResource Space3}">
+                            <Border WidthRequest="40" HeightRequest="40"
+                                    BackgroundColor="{StaticResource Primary50}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 10"
+                                    VerticalOptions="Start">
+                                <Label Text="✓" FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary600}"
+                                       HorizontalOptions="Center" VerticalOptions="Center"
+                                       HorizontalTextAlignment="Center" />
+                            </Border>
+                            <VerticalStackLayout Spacing="4" VerticalOptions="Center">
+                                <Label Text="Create New Company" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Set up a new company workspace. Existing company users are added later by the owner."
+                                       Style="{StaticResource CaptionText}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <Button x:Name="BtnContinueExpanded"
+                            Text="Continue →"
+                            Style="{StaticResource PrimaryButton}"
+                            IsEnabled="False"
+                            Clicked="OnContinueClicked" />
+
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
+                        <Label Text="Already have an account?" Style="{StaticResource SecondaryText}" />
+                        <Label Text="Login" Style="{StaticResource LinkText}" b:HandCursor.Enable="True">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnLoginClicked" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </ScrollView>
         </Grid>
 
-        <!-- Right / center panel -->
-        <ScrollView>
-            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
-                                 Padding="32" Spacing="0"
-                                 MaximumWidthRequest="440">
+        <ScrollView x:Name="CompactLayout">
+            <VerticalStackLayout
+                Margin="{StaticResource PaddingLarge}"
+                MaximumWidthRequest="{StaticResource AuthCardMaxWidth}"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Spacing="{StaticResource Space4}">
 
-                <!-- Logo (shown on mobile) -->
-                <Border WidthRequest="60" HeightRequest="60"
-                        BackgroundColor="#1557B0" StrokeThickness="0"
-                        StrokeShape="RoundRectangle 14"
-                        HorizontalOptions="Center"
-                        IsVisible="{OnIdiom Phone=True, Tablet=True, Desktop=False}">
-                    <Label Text="A" FontSize="30" FontAttributes="Bold"
-                           TextColor="{StaticResource Primary400}"
-                           HorizontalOptions="Center" VerticalOptions="Center"/>
+                <Border
+                    WidthRequest="56" HeightRequest="56"
+                    BackgroundColor="{StaticResource Primary600}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 14"
+                    HorizontalOptions="Center">
+                    <Label Text="A" FontAttributes="Bold"
+                           FontSize="{StaticResource FontSizeLargeTitle}"
+                           TextColor="{StaticResource White}"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
                 </Border>
 
-                <Label Text="Welcome to AveroNova" FontSize="26" FontAttributes="Bold"
-                       TextColor="{StaticResource TextPrimary}"
-                       HorizontalOptions="Center" Margin="0,24,0,8"/>
+                <Label Text="AveroNova ERP"
+                       Style="{StaticResource PageTitle}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="ERP for Smarter Business"
+                       Style="{StaticResource SectionTitle}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="Invoicing, inventory, customers, purchases, and teams in one professional workspace."
+                       Style="{StaticResource SecondaryText}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
 
-                <Label Text="Sign in to your account or create a new one to get started."
-                       FontSize="14" TextColor="{StaticResource TextSecondary}"
-                       HorizontalOptions="Center" HorizontalTextAlignment="Center"
-                       LineBreakMode="WordWrap" Margin="0,0,0,40"/>
+                <Label Text="Welcome to AveroNova"
+                       Style="{StaticResource PageTitle}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,8,0,0" />
+                <Label Text="Create your account to get started."
+                       Style="{StaticResource SecondaryText}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
 
-                <!-- Sign In button -->
-                <Button Text="Sign In" Style="{StaticResource PrimaryButton}"
-                        HorizontalOptions="Fill" Clicked="OnLoginClicked"/>
+                <Border x:Name="CompanyCardCompact"
+                        Style="{StaticResource SelectableCard}"
+                        b:HandCursor.Enable="True">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnCreateCompanyTapped" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Create New Company" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Set up a new company workspace. Existing company users are added later by the owner."
+                               Style="{StaticResource CaptionText}" />
+                    </VerticalStackLayout>
+                </Border>
 
-                <Label Text="or" HorizontalOptions="Center" FontSize="13"
-                       TextColor="{StaticResource TextSecondary}" Margin="0,16"/>
+                <Button x:Name="BtnContinueCompact"
+                        Text="Continue →"
+                        Style="{StaticResource PrimaryButton}"
+                        IsEnabled="False"
+                        Clicked="OnContinueClicked" />
 
-                <!-- Create account button -->
-                <Button Text="Create Account" Style="{StaticResource SecondaryButton}"
-                        HorizontalOptions="Fill" Clicked="OnRegisterClicked"/>
-
-                <!-- Version -->
-                <Label Text="AveroNova ERP v1.0" FontSize="11"
-                       TextColor="{StaticResource TextTertiary}"
-                       HorizontalOptions="Center" Margin="0,40,0,0"/>
-
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
+                    <Label Text="Already have an account?" Style="{StaticResource SecondaryText}" />
+                    <Label Text="Login" Style="{StaticResource LinkText}" b:HandCursor.Enable="True">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnLoginClicked" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
-
     </Grid>
-
 </ContentPage>

@@ -2,9 +2,6 @@
 using AveroNova.Domain.Entities;
 using AveroNova.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AveroNova.Infrastructure.Repositories
 {
@@ -16,34 +13,32 @@ namespace AveroNova.Infrastructure.Repositories
         {
             _context = context;
         }
+
         public async Task AddAsync(Company company)
         {
             await _context.Companies.AddAsync(company);
-            //var countBefore = await _context.Companies.CountAsync();
             await _context.SaveChangesAsync();
-
-            //var countAfter = await _context.Companies.CountAsync();
-
-            //Console.WriteLine($"Before : {countBefore}");
-            //Console.WriteLine($"After  : {countAfter}");
         }
 
         public async Task DeleteAsync(Company company)
         {
-            company.IsDeleted = false;
+            company.IsDeleted = true;
+            company.UpdatedAt = DateTime.UtcNow;
             _context.Companies.Update(company);
             await _context.SaveChangesAsync();
         }
 
         public async Task<List<Company>> GetAllAsync()
         {
-            var reult = await _context.Companies.ToListAsync();
-            return reult;
+            return await _context.Companies
+                .Where(x => !x.IsDeleted)
+                .ToListAsync();
         }
 
         public async Task<Company?> GetByIdAsync(Guid id)
         {
-            return await _context.Companies.FindAsync(id);
+            return await _context.Companies
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         }
 
         public async Task UpdateAsync(Company company)

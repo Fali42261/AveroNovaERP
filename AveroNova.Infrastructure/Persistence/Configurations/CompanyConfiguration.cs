@@ -1,9 +1,6 @@
 ﻿using AveroNova.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AveroNova.Infrastructure.Persistence.Configurations
 {
@@ -13,10 +10,8 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Companies");
 
-            // Primary Key
             builder.HasKey(x => x.Id);
 
-            // Properties
             builder.Property(x => x.CompanyCode)
                    .IsRequired()
                    .HasMaxLength(50);
@@ -60,19 +55,6 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.PinCode)
                    .HasMaxLength(10);
-            builder.Property(x => x.IsDeleted);
-
-            // Relationship : Company -> User (Many Companies, One User)
-            builder.HasOne(x => x.User)
-                   .WithMany(x => x.Companies)
-                   .HasForeignKey(x => x.UserId)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            // Relationship : Company -> Subscription
-            builder.HasMany(x => x.Subscriptions)
-                   .WithOne(x => x.Company)
-                   .HasForeignKey(x => x.CompanyId)
-                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="AveroNova.App.UI.Controls.Navigation.StepIndicatorView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+        <Grid x:Name="StepsGrid" ColumnSpacing="8" Padding="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <VerticalStackLayout x:Name="Step1" Grid.Column="0" Spacing="6" HorizontalOptions="Fill">
+                <Border x:Name="Step1Badge" WidthRequest="32" HeightRequest="32"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                        HorizontalOptions="Center">
+                    <Label x:Name="Step1Number" Text="1" FontAttributes="Bold" FontSize="13"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+                <Label x:Name="Step1Label" Text="You" Style="{StaticResource CaptionText}"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                       LineBreakMode="NoWrap" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout x:Name="Step2" Grid.Column="1" Spacing="6">
+                <Border x:Name="Step2Badge" WidthRequest="32" HeightRequest="32"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                        HorizontalOptions="Center">
+                    <Label x:Name="Step2Number" Text="2" FontAttributes="Bold" FontSize="13"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+                <Label x:Name="Step2Label" Text="Company" Style="{StaticResource CaptionText}"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                       LineBreakMode="NoWrap" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout x:Name="Step3" Grid.Column="2" Spacing="6">
+                <Border x:Name="Step3Badge" WidthRequest="32" HeightRequest="32"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                        HorizontalOptions="Center">
+                    <Label x:Name="Step3Number" Text="3" FontAttributes="Bold" FontSize="13"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+                <Label x:Name="Step3Label" Text="Plan" Style="{StaticResource CaptionText}"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                       LineBreakMode="NoWrap" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout x:Name="Step4" Grid.Column="3" Spacing="6">
+                <Border x:Name="Step4Badge" WidthRequest="32" HeightRequest="32"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                        HorizontalOptions="Center">
+                    <Label x:Name="Step4Number" Text="4" FontAttributes="Bold" FontSize="13"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+                <Label x:Name="Step4Label" Text="Review" Style="{StaticResource CaptionText}"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                       LineBreakMode="NoWrap" />
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+</ContentView>

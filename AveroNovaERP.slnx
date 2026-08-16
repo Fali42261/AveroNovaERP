@@ -10,4 +10,5 @@
   <Project Path="AveroNova.Domain/AveroNova.Domain.csproj" />
   <Project Path="AveroNova.Infrastructure/AveroNova.Infrastructure.csproj" />
   <Project Path="AveroNova.Shared/AveroNova.Shared.csproj" />
+  <Project Path="AveroNova.Foundation.Tests/AveroNova.Foundation.Tests.csproj" />
 </Solution>

@@ -26,6 +26,7 @@ public partial class MainLayoutView : ContentView
     private readonly IConnectivityService _connectivity;
     private readonly IAuthenticationService _auth;
     private readonly ICompanyService _company;
+    private readonly IResponsiveLayoutService _layout;
 
     private Button? _activeNavButton;
 
@@ -53,6 +54,7 @@ public partial class MainLayoutView : ContentView
         IConnectivityService connectivity,
         IAuthenticationService auth,
         ICompanyService company,
+        IResponsiveLayoutService layout,
         Func<DashboardPage> dashboardFactory,
         Func<CompanyListPage> companyFactory,
         Func<CustomersListPage> customersFactory,
@@ -78,6 +80,7 @@ public partial class MainLayoutView : ContentView
         _connectivity = connectivity;
         _auth = auth;
         _company = company;
+        _layout = layout;
 
         _dashboardFactory = dashboardFactory;
         _companyFactory = companyFactory;
@@ -547,7 +550,7 @@ public partial class MainLayoutView : ContentView
         if (width <= 0)
             return;
 
-        bool desktop = width >= 700;
+        bool desktop = _layout.UseTwoPane || width >= AveroNova.App.UI.Layout.ResponsiveBreakpoints.ExpandedMinWidth;
 
         DesktopLayout.IsVisible = desktop;
         MobileLayout.IsVisible = !desktop;

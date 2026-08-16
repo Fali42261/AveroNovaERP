@@ -23,7 +23,7 @@ public interface IAuthenticationService
     bool       IsAuthenticated { get; }
 
     Task<(bool Success, string? Error)> LoginAsync(string email, string password, bool rememberMe = false);
-    Task<(bool Success, string? Error)> RegisterAsync(string name, string email, string password);
+    Task<(bool Success, string? Error)> RegisterAsync(string name, string email, string password, string? phone = null, string? companyName = null);
     Task<(bool Success, string? Error)> ForgotPasswordAsync(string email);
     Task<(bool Success, string? Error)> ResetPasswordAsync(string token, string newPassword);
     Task<(bool Success, string? Error)> VerifyOtpAsync(string otp);

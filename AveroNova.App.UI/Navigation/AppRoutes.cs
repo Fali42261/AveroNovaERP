@@ -7,13 +7,15 @@ namespace AveroNova.App.UI.Navigation;
 public static class AppRoutes
 {
     // Auth
-    public const string Splash         = "//Splash";
-    public const string Welcome        = "//Welcome";
-    public const string Login          = "//Login";
-    public const string Register       = "Register";
-    public const string ForgotPassword = "ForgotPassword";
-    public const string ResetPassword  = "ResetPassword";
-    public const string OtpVerify      = "OtpVerify";
+    public const string Splash                      = "//Splash";
+    public const string Welcome                     = "//Welcome";
+    public const string Login                       = "//Login";
+    public const string Register                    = "Register";
+    public const string RegistrationWelcome         = "RegistrationWelcome";
+    public const string RegistrationSuccess         = "RegistrationSuccess";
+    public const string ForgotPassword              = "ForgotPassword";
+    public const string ResetPassword               = "ResetPassword";
+    public const string OtpVerify                   = "OtpVerify";
 
     // Main shell
     public const string Main           = "//Main";

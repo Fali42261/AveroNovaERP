@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Authentication.RegistrationSuccessPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource BackgroundColor}">
+
+    <ScrollView>
+        <Border Style="{StaticResource AuthCard}"
+                Margin="{StaticResource PaddingMedium}"
+                MaximumWidthRequest="{StaticResource AuthCardMaxWidth}"
+                HorizontalOptions="Center"
+                VerticalOptions="Center">
+            <VerticalStackLayout Spacing="{StaticResource Space4}">
+                <Border WidthRequest="56" HeightRequest="56"
+                        BackgroundColor="{StaticResource Primary600}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 14"
+                        HorizontalOptions="Center">
+                    <Label Text="A" FontAttributes="Bold"
+                           FontSize="{StaticResource FontSizeLargeTitle}"
+                           TextColor="{StaticResource White}"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+
+                <Label Text="Registration Successful"
+                       Style="{StaticResource PageTitle}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="Your account has been created successfully."
+                       Style="{StaticResource SecondaryText}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+
+                <Button x:Name="BtnGoToLogin"
+                        Text="Go to Login"
+                        Style="{StaticResource PrimaryButton}"
+                        Clicked="OnGoToLoginClicked" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>
