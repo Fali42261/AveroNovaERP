@@ -12,6 +12,9 @@ public class SubscriptionPlanModel
     public bool     IsCurrentPlan  { get; set; }
     public int      MaxUsers       { get; set; }
     public int      MaxCompanies   { get; set; }
+    public bool     IsAvailable    { get; set; } = true;
+    public int      TrialDays      { get; set; }
+    public string   CurrencyCode   { get; set; } = "INR";
 
 }
 

@@ -1,5 +1,6 @@
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.Domain.Enums;
 
 namespace AveroNova.App.UI.Pages.Dashboard;
 
@@ -10,13 +11,15 @@ public partial class DashboardPage : ContentPage
     private readonly ICustomerService  _customer;
     private readonly IPaymentService   _payment;
     private readonly ICompanyService   _company;
+    private readonly ILicenseService   _licenses;
 
     public DashboardPage(
         IBillingService  billing,
         IProductService  product,
         ICustomerService customer,
         IPaymentService  payment,
-        ICompanyService  company)
+        ICompanyService  company,
+        ILicenseService  licenses)
     {
         InitializeComponent();
         _billing  = billing;
@@ -24,6 +27,7 @@ public partial class DashboardPage : ContentPage
         _customer = customer;
         _payment  = payment;
         _company  = company;
+        _licenses = licenses;
     }
 
     protected override async void OnAppearing()
@@ -41,6 +45,8 @@ public partial class DashboardPage : ContentPage
 
     private async Task LoadDataAsync()
     {
+        await LoadLicenseBannerAsync();
+
         var cid       = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         var invoices  = await _billing.GetAllAsync(cid);
         var products  = await _product.GetAllAsync(cid);
@@ -76,6 +82,35 @@ public partial class DashboardPage : ContentPage
 
         if (!products.Any(p => p.IsLowStock))
             LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
+    }
+
+    private async Task LoadLicenseBannerAsync()
+    {
+        var state = await _licenses.GetAccessStateAsync();
+        if (state.NeedsFirstActivation)
+        {
+            TrialBanner.IsVisible = false;
+            return;
+        }
+
+        TrialBanner.IsVisible = true;
+        if (state.Status == LicenseStatus.Expired)
+        {
+            LblTrialTitle.Text = "License expired";
+            LblTrialDetail.Text = "Restricted features are unavailable until the license is renewed.";
+            return;
+        }
+
+        if (state.IsTrial)
+        {
+            LblTrialTitle.Text = "Starter · Trial";
+            var end = state.TrialEndDateUtc?.ToLocalTime().ToString("dd-MMM-yyyy");
+            LblTrialDetail.Text = $"{state.RemainingTrialDays} day{(state.RemainingTrialDays == 1 ? "" : "s")} remaining · Ends {end}";
+            return;
+        }
+
+        LblTrialTitle.Text = $"{state.Plan} · {state.Status}";
+        LblTrialDetail.Text = "License is active on this device.";
     }
 
     private static View BuildInvoiceRow(InvoiceModel inv)

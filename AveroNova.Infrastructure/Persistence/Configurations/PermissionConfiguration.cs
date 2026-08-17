@@ -33,6 +33,9 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
         builder.Property(x => x.IsDeleted)
                .HasDefaultValue(false);
 
+        builder.Property(x => x.SyncStatus).HasConversion<int>();
+        builder.Property(x => x.SyncVersion).HasDefaultValue(1L);
+
         // Relationships
         builder.HasMany(x => x.RolePermissions)
                .WithOne(x => x.Permission)

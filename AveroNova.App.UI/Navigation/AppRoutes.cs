@@ -9,6 +9,7 @@ public static class AppRoutes
     // Auth
     public const string Splash         = "//Splash";
     public const string Welcome        = "//Welcome";
+    public const string LicenseActivation = "//LicenseActivation";
     public const string Login          = "//Login";
     public const string Register       = "Register";
     public const string ForgotPassword = "ForgotPassword";

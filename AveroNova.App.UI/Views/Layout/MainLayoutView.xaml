@@ -41,7 +41,7 @@
         <Grid
             x:Name="DesktopLayout"
             ColumnDefinitions="260,*"
-            RowDefinitions="64,*"
+            RowDefinitions="64,Auto,*"
             BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
             <!-- Sidebar -->
@@ -193,7 +193,7 @@
 
                             <Button
                                 x:Name="BtnSubscription"
-                                Text="Subscription"
+                                Text="License"
                                 Style="{StaticResource SidebarNavItem}"
                                 Clicked="OnNavClicked" />
 
@@ -406,11 +406,27 @@
                 </Grid>
             </Border>
 
+            <Border
+                x:Name="OfflineBanner"
+                Grid.Column="1"
+                Grid.Row="1"
+                IsVisible="False"
+                Padding="16,8"
+                BackgroundColor="#FEF3C7"
+                Stroke="#FDE68A"
+                StrokeThickness="1">
+                <Label
+                    x:Name="LblOfflineBanner"
+                    Text="Offline — changes will sync when connection is restored."
+                    FontSize="12"
+                    TextColor="#92400E" />
+            </Border>
+
             <!-- Desktop content -->
             <ContentView
                 x:Name="ContentArea"
                 Grid.Column="1"
-                Grid.Row="1" />
+                Grid.Row="2" />
         </Grid>
 
         <!-- ========================================================= -->
@@ -419,7 +435,7 @@
 
         <Grid
             x:Name="MobileLayout"
-            RowDefinitions="56,*,60"
+            RowDefinitions="56,Auto,*,60"
             BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}"
             IsVisible="False">
 
@@ -473,14 +489,28 @@
                 </Grid>
             </Border>
 
+            <Border
+                x:Name="MOfflineBanner"
+                Grid.Row="1"
+                IsVisible="False"
+                Padding="12,6"
+                BackgroundColor="#FEF3C7"
+                Stroke="#FDE68A"
+                StrokeThickness="1">
+                <Label
+                    Text="Offline — changes will sync when connection is restored."
+                    FontSize="11"
+                    TextColor="#92400E" />
+            </Border>
+
             <!-- Mobile content -->
             <ContentView
                 x:Name="MobileContentArea"
-                Grid.Row="1" />
+                Grid.Row="2" />
 
             <!-- Mobile navigation -->
             <Border
-                Grid.Row="2"
+                Grid.Row="3"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
                 StrokeThickness="1">

@@ -166,7 +166,10 @@
         </Border>
 
         <!-- ── CREATE ACCOUNT LINK ────────────────────────────────────── -->
-        <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+        <HorizontalStackLayout
+            x:Name="CreateAccountRow"
+            HorizontalOptions="Center"
+            Spacing="6">
             <Label
                 Text="Don't have an account?"
                 FontSize="{StaticResource FontSizeBody}"

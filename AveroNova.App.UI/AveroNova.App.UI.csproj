@@ -33,10 +33,12 @@
 		       <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation) -->
 		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
-		<!-- Display name -->
-		<ApplicationTitle>AveroNova.App.UI</ApplicationTitle>
+		<!-- Display name shown on all platforms (launcher, taskbar, window title). -->
+		<ApplicationTitle>AveroNova</ApplicationTitle>
+		<Product>AveroNova</Product>
+		<AssemblyTitle>AveroNova</AssemblyTitle>
 
-		<!-- App Identifier -->
+		<!-- App Identifier (internal; not the user-facing name) -->
 		<ApplicationId>com.companyname.averonova.app.ui</ApplicationId>
 
 		<!-- Versions -->
@@ -45,6 +47,11 @@
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
+
+		<!-- Debug Fast Deployment omits managed assemblies from the APK. Sideloaded installs
+		     (BrowserStack, adb install without Visual Studio) then crash in monodroid before
+		     any AveroNova page loads. Embed assemblies so the Debug APK is self-contained. -->
+		<EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
@@ -56,10 +63,10 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#2563EB" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#2563EB" ForegroundScale="0.62" />
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0F172A" BaseSize="128,128" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
@@ -115,9 +122,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- MAUI client must not reference Infrastructure (AspNetCore/JWT server packages are not Android-compatible). -->
 		<ProjectReference Include="..\AveroNova.Application\AveroNova.Application.csproj" />
 		<ProjectReference Include="..\AveroNova.Domain\AveroNova.Domain.csproj" />
-		<ProjectReference Include="..\AveroNova.Infrastructure\AveroNova.Infrastructure.csproj" />
 		<ProjectReference Include="..\AveroNova.Shared\AveroNova.Shared.csproj" />
 	</ItemGroup>
 
@@ -287,13 +294,6 @@
 	<ItemGroup>
 		<MauiFont Include="Assets\Fonts\OpenSans-Regular.ttf" />
 		<MauiFont Include="Assets\Fonts\OpenSans-Semibold.ttf" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<MauiImage Include="Assets\Images\dotnet_bot.png">
-			<Resize>True</Resize>
-			<BaseSize>300,185</BaseSize>
-		</MauiImage>
 	</ItemGroup>
 
 	<ItemGroup>

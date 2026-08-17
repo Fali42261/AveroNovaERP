@@ -8,8 +8,14 @@ using AveroNova.App.UI.Views.Dashboard;
 using AveroNova.App.UI.Views.Layout;
 using AveroNova.App.UI.Views.Profile;
 using AveroNova.App.UI.Pages.Customers;
+using AveroNova.App.UI.Services;
+using AveroNova.App.UI.Services.Api;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.Services.License;
 using AveroNova.App.UI.Services.Mock;
+using AveroNova.App.UI.Services.Security;
+using AveroNova.App.UI.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Pages.Administration;
@@ -17,6 +23,7 @@ using AveroNova.App.UI.Pages.Billing;
 using AveroNova.App.UI.Pages.Expenses;
 using AveroNova.App.UI.Pages.Help;
 using AveroNova.App.UI.Pages.Inventory;
+using AveroNova.App.UI.Pages.License;
 using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Pages.Products;
 using AveroNova.App.UI.Pages.Purchases;
@@ -67,7 +74,7 @@ public static class MauiProgram
 
         // ── Auth view models ──────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();
-        builder.Services.AddSingleton<RegisterViewModel>();
+        builder.Services.AddTransient<RegisterViewModel>();
 
         // ── Auth views ────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginFormView>();
@@ -140,6 +147,11 @@ public static class MauiProgram
         builder.Services.AddTransient<PermissionsPage>();
         builder.Services.AddTransient<Func<PermissionsPage>>(sp => () => sp.GetRequiredService<PermissionsPage>());
 
+        builder.Services.AddTransient<LicenseViewModel>();
+        builder.Services.AddTransient<LicensePage>();
+        builder.Services.AddTransient<Func<LicensePage>>(sp => () => sp.GetRequiredService<LicensePage>());
+        builder.Services.AddTransient<LicenseActivationPage>();
+
         builder.Services.AddTransient<SubscriptionPage>();
         builder.Services.AddTransient<Func<SubscriptionPage>>(sp => () => sp.GetRequiredService<SubscriptionPage>());
 
@@ -155,30 +167,65 @@ public static class MauiProgram
 
         // ── Services / Repositories ───────────────────────────────────────────
 
-        // ── Mock Services ─────────────────────────────────────────────────────
+        // ── Local SQLite (Offline-First foundation) ───────────────────────────
+        // Local offline DB — NEVER the server AveroNovaDev.db.
+        var localDbPath = Path.Combine(FileSystem.AppDataDirectory, "AveroNovaLocal.db");
+        builder.Services.AddDbContextFactory<LocalAppDbContext>(options =>
+            options.UseSqlite($"Data Source={localDbPath}"));
+        builder.Services.AddScoped(sp =>
+            sp.GetRequiredService<IDbContextFactory<LocalAppDbContext>>().CreateDbContext());
+        builder.Services.AddScoped<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
+        builder.Services.AddSingleton<ISecureTokenStore, MauiSecureTokenStore>();
+        builder.Services.AddSingleton<IPendingRegistrationSecretStore, MauiPendingRegistrationSecretStore>();
+        builder.Services.AddSingleton<IStableDeviceIdProvider, MauiStableDeviceIdProvider>();
+        builder.Services.AddSingleton<IInstallationService, InstallationService>();
+        builder.Services.AddSingleton<ILocalSessionPolicy, LocalSessionPolicy>();
+        builder.Services.AddSingleton<IAppSessionContext, AppSessionContext>();
+        builder.Services.AddSingleton<ILocalAuthSessionStore, LocalAuthSessionStore>();
+        builder.Services.AddSingleton<IOfflineRegistrationStore, OfflineRegistrationStore>();
 
-        builder.Services.AddTransient<IAuthenticationService, MockAuthenticationService>();
-        builder.Services.AddTransient<IBillingService, MockBillingService>();
-        builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, MockCompanyService>();
-        builder.Services.AddTransient<IConnectivityService, MockConnectivityService>();
-        builder.Services.AddTransient<ICustomerService, MockCustomerService>();
+        var apiSettings = ApiSettingsLoader.Load();
+        builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(apiSettings));
+#if DEBUG
+        // Trust ASP.NET Core development HTTPS certificate for local Windows/Android/iOS targets.
+        builder.Services.AddSingleton(_ =>
+        {
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+            return new HttpClient(handler);
+        });
+#else
+        builder.Services.AddSingleton(_ => new HttpClient());
+#endif
+        builder.Services.AddSingleton<IApiClient, ApiClient>();
+        builder.Services.AddSingleton<IAuthApiClient, AuthApiClient>();
+        builder.Services.AddSingleton<ILicenseApiClient, LicenseApiClient>();
+        builder.Services.AddSingleton<ILicenseAnchorStore, MauiLicenseAnchorStore>();
+        builder.Services.AddSingleton<ILocalCredentialStore, MauiLocalCredentialStore>();
+        builder.Services.AddSingleton<ILicenseService, LicenseService>();
+
+        // ── Auth + Mock business services ─────────────────────────────────────
+
+        builder.Services.AddSingleton<IClientDeviceInfo, MauiClientDeviceInfo>();
+        builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        builder.Services.AddTransient<IBillingService, LocalBillingService>();
+        builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
+        builder.Services.AddSingleton<IConnectivityService, MauiConnectivityService>();
+        builder.Services.AddTransient<ICustomerService, LocalCustomerService>();
         builder.Services.AddTransient<IExpenseService, MockExpenseService>();
         builder.Services.AddTransient<IInventoryService, MockInventoryService>();
         builder.Services.AddTransient<INotificationService, MockNotificationService>();
-        builder.Services.AddTransient<IPaymentService, MockPaymentService>();
-        builder.Services.AddTransient<IProductService, MockProductService>();
+        builder.Services.AddTransient<IPaymentService, LocalPaymentService>();
+        builder.Services.AddTransient<IProductService, LocalProductService>();
         builder.Services.AddTransient<IPurchaseService, MockPurchaseService>();
         builder.Services.AddTransient<IReturnService, MockReturnService>();
         builder.Services.AddTransient<ISettingsService, MockSettingsService>();
         builder.Services.AddTransient<ISubscriptionService, MockSubscriptionService>();
-        builder.Services.AddTransient<ISyncService, MockSyncService>();
+        builder.Services.AddSingleton<ISyncService, RegistrationSyncService>();
         builder.Services.AddTransient<IUserService, MockUserService>();
-
-        // Company DB services — DB setup complete hone ke baad enable karenge
-        //builder.Services.AddTransient<ICompanyService, CompanyService>();
-        //builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
-        //builder.Services.AddTransient<ICompanyService,    CompanyService>();
-        //builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
 
 #if DEBUG
         builder.Logging.AddDebug();
@@ -186,13 +233,17 @@ public static class MauiProgram
 
         var app = builder.Build();
 
-        // Apply pending EF Core migrations on startup
-        //using var scope = app.Services.CreateScope();
-        //var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        //db.Database.Migrate();
-
-        //System.Diagnostics.Debug.WriteLine(
-        //    $"[AveroNova] DB path: {DatabasePath.GetDatabasePath(FileSystem.AppDataDirectory)}");
+        using (var scope = app.Services.CreateScope())
+        {
+            var localDb = scope.ServiceProvider.GetRequiredService<ILocalDatabaseInitializer>();
+            localDb.InitializeAsync().GetAwaiter().GetResult();
+            var installation = scope.ServiceProvider.GetRequiredService<IInstallationService>();
+            installation.EnsureInitializedAsync().GetAwaiter().GetResult();
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] Local SQLite: {localDb.DatabasePath}");
+            System.Diagnostics.Debug.WriteLine(
+                $"[AveroNova] Installation: {installation.InstallationId} Status={installation.Status}");
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] API BaseUrl: {apiSettings.BaseUrl}");
+        }
 
         return app;
     }

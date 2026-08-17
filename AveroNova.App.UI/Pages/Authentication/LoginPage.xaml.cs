@@ -7,21 +7,25 @@ namespace AveroNova.App.UI.Pages.Authentication;
 public partial class LoginPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
+    private readonly IInstallationService _installation;
     private bool _layoutBusy;
     private double _appliedMinHeight = double.NaN;
     private ScreenSize? _appliedSize;
 
-    public LoginPage(IAuthenticationService auth)
+    public LoginPage(IAuthenticationService auth, IInstallationService installation)
     {
         InitializeComponent();
         _auth = auth;
+        _installation = installation;
         SizeChanged += (_, _) => ApplyLayout();
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
         ApplyLayout();
+        await _installation.EnsureInitializedAsync();
+        CreateAccountRow.IsVisible = _installation.CanCreateAccount;
     }
 
     private void ApplyLayout()
@@ -132,7 +136,16 @@ public partial class LoginPage : ContentPage
     }
 
     private async void OnRegisterTapped(object? sender, TappedEventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.Register);
+    {
+        await _installation.EnsureInitializedAsync();
+        if (!_installation.CanCreateAccount)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Login);
+            return;
+        }
+
+        await Shell.Current.GoToAsync(AppRoutes.Register);
+    }
 
     private async void OnResetPasswordTapped(object? sender, TappedEventArgs e)
         => await Shell.Current.GoToAsync(AppRoutes.ResetPassword);

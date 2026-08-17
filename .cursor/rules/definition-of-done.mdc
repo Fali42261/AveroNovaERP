@@ -1,0 +1,42 @@
+---
+description: Master Definition of Done — never report DONE without real E2E verification
+alwaysApply: true
+---
+
+# AveroNova Definition of Done
+
+A feature is DONE only when its complete real-world E2E acceptance test passes.
+
+Never report DONE, READY, COMPLETE, or PASS because code compiles, a build/APK succeeds, unit code exists, UI appears, or an API endpoint exists.
+
+## Status vocabulary (use only these)
+
+- **IMPLEMENTED**: code exists
+- **BUILT**: project compiles
+- **TESTED**: a test was actually executed
+- **VERIFIED**: expected result was confirmed
+- **NOT VERIFIED**: required test could not be executed (environment limitation). Do not report PASS.
+- **FAILED**: test ran and expected behavior failed
+- **DONE**: all mandatory E2E acceptance tests passed
+
+Distinguish Implementation / Build / APK / Runtime / E2E. If Runtime or E2E fails, final status is **NOT DONE**.
+
+## Never say DONE if
+
+- APK was not launched, API not tested, or DB effect not verified
+- Offline, online recovery, or sync was not tested
+- An old APK was tested, BrowserStack could not reach the required API, or a required platform was skipped
+- There is an unresolved crash, or the result was only inferred from code
+
+## Working vs verified
+
+```
+Implementation: PASS
+Build: PASS
+APK: PASS
+Runtime: FAIL
+E2E: FAIL
+Final: NOT DONE
+```
+
+If a test cannot run due to environment limits, report **NOT VERIFIED**, never PASS.

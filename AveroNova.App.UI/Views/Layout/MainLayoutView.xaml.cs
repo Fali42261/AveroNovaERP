@@ -13,8 +13,9 @@ using AveroNova.App.UI.Pages.Purchases;
 using AveroNova.App.UI.Pages.Reports;
 using AveroNova.App.UI.Pages.Returns;
 using AveroNova.App.UI.Pages.Settings;
-using AveroNova.App.UI.Pages.Subscription;
+using AveroNova.App.UI.Pages.License;
 using AveroNova.App.UI.Pages.SyncCenter;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls;
 using AveroNova.App.UI.Models;
@@ -26,6 +27,8 @@ public partial class MainLayoutView : ContentView
     private readonly IConnectivityService _connectivity;
     private readonly IAuthenticationService _auth;
     private readonly ICompanyService _company;
+    private readonly ILicenseService _licenses;
+    private readonly IAppSessionContext _session;
 
     private Button? _activeNavButton;
 
@@ -44,7 +47,7 @@ public partial class MainLayoutView : ContentView
     private readonly Func<UsersListPage> _usersFactory;
     private readonly Func<RolesListPage> _rolesFactory;
     private readonly Func<PermissionsPage> _permissionsFactory;
-    private readonly Func<SubscriptionPage> _subscriptionFactory;
+    private readonly Func<LicensePage> _licenseFactory;
     private readonly Func<SyncCenterPage> _syncCenterFactory;
     private readonly Func<SettingsPage> _settingsFactory;
     private readonly Func<HelpAboutPage> _helpFactory;
@@ -53,6 +56,8 @@ public partial class MainLayoutView : ContentView
         IConnectivityService connectivity,
         IAuthenticationService auth,
         ICompanyService company,
+        ILicenseService licenses,
+        IAppSessionContext session,
         Func<DashboardPage> dashboardFactory,
         Func<CompanyListPage> companyFactory,
         Func<CustomersListPage> customersFactory,
@@ -68,7 +73,7 @@ public partial class MainLayoutView : ContentView
         Func<UsersListPage> usersFactory,
         Func<RolesListPage> rolesFactory,
         Func<PermissionsPage> permissionsFactory,
-        Func<SubscriptionPage> subscriptionFactory,
+        Func<LicensePage> licenseFactory,
         Func<SyncCenterPage> syncCenterFactory,
         Func<SettingsPage> settingsFactory,
         Func<HelpAboutPage> helpFactory)
@@ -78,6 +83,8 @@ public partial class MainLayoutView : ContentView
         _connectivity = connectivity;
         _auth = auth;
         _company = company;
+        _licenses = licenses;
+        _session = session;
 
         _dashboardFactory = dashboardFactory;
         _companyFactory = companyFactory;
@@ -94,15 +101,17 @@ public partial class MainLayoutView : ContentView
         _usersFactory = usersFactory;
         _rolesFactory = rolesFactory;
         _permissionsFactory = permissionsFactory;
-        _subscriptionFactory = subscriptionFactory;
+        _licenseFactory = licenseFactory;
         _syncCenterFactory = syncCenterFactory;
         _settingsFactory = settingsFactory;
         _helpFactory = helpFactory;
 
         _connectivity.StatusChanged += OnConnectivityChanged;
+        _session.SessionChanged += OnSessionChanged;
 
         UpdateUserInfo();
         UpdateCompanyInfo();
+        ApplyMenuPermissions();
         UpdateConnectivityUI(_connectivity.Status);
 
         ShowDesktopPage(
@@ -206,13 +215,63 @@ public partial class MainLayoutView : ContentView
 
         LblConnStatus.Text = label;
         LblConnStatus.TextColor = Color.FromArgb(textColor);
+
+        var offline = status == ConnectivityStatus.Offline;
+        OfflineBanner.IsVisible = offline;
+        MOfflineBanner.IsVisible = offline;
+        if (offline)
+            LblOfflineBanner.Text = "Offline — changes will sync when connection is restored.";
     }
+
+    private void OnSessionChanged(object? sender, EventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            UpdateUserInfo();
+            UpdateCompanyInfo();
+            ApplyMenuPermissions();
+        });
+    }
+
+    private void ApplyMenuPermissions()
+    {
+        var permissions = _session.Permissions;
+        SetNavVisible(BtnDashboard, "Dashboard", permissions);
+        SetNavVisible(BtnCompany, "Company", permissions);
+        SetNavVisible(BtnCustomers, "Customers", permissions);
+        SetNavVisible(BtnProducts, "Products", permissions);
+        SetNavVisible(BtnInventory, "Inventory", permissions);
+        SetNavVisible(BtnBilling, "Billing", permissions);
+        SetNavVisible(BtnPurchases, "Purchases", permissions);
+        SetNavVisible(BtnPayments, "Payments", permissions);
+        SetNavVisible(BtnSalesReturns, "SalesReturns", permissions);
+        SetNavVisible(BtnPurchaseReturns, "PurchaseReturns", permissions);
+        SetNavVisible(BtnExpenses, "Expenses", permissions);
+        SetNavVisible(BtnReports, "Reports", permissions);
+        SetNavVisible(BtnUsers, "Users", permissions);
+        SetNavVisible(BtnRoles, "Roles", permissions);
+        SetNavVisible(BtnPermissions, "Permissions", permissions);
+        SetNavVisible(BtnSubscription, "License", permissions);
+        SetNavVisible(BtnNotifications, "Notifications", permissions);
+        SetNavVisible(BtnSyncCenter, "SyncCenter", permissions);
+        SetNavVisible(BtnSettings, "Settings", permissions);
+        SetNavVisible(BtnHelp, "Help", permissions);
+        SetNavVisible(BtnAbout, "About", permissions);
+        SetNavVisible(MBtnDashboard, "Dashboard", permissions);
+        SetNavVisible(MBtnBilling, "Billing", permissions);
+        SetNavVisible(MBtnCustomers, "Customers", permissions);
+        SetNavVisible(MBtnReports, "Reports", permissions);
+        SetNavVisible(MBtnSettings, "Settings", permissions);
+    }
+
+    private static void SetNavVisible(Button button, string key, IReadOnlyList<string> permissions)
+        => button.IsVisible = MenuCatalog.IsAllowed(key, permissions);
 
     // ============================================================
     // NAVIGATION
     // ============================================================
 
-    private void OnNavClicked(
+    private async void OnNavClicked(
         object? sender,
         EventArgs e)
     {
@@ -227,6 +286,25 @@ public partial class MainLayoutView : ContentView
                 out var title,
                 out var breadcrumb))
         {
+            if (!ReferenceEquals(button, BtnSubscription)
+                && !ReferenceEquals(button, BtnDashboard)
+                && !ReferenceEquals(button, MBtnDashboard)
+                && !ReferenceEquals(button, BtnSettings)
+                && !ReferenceEquals(button, MBtnSettings)
+                && !ReferenceEquals(button, BtnHelp)
+                && !ReferenceEquals(button, BtnAbout)
+                && !ReferenceEquals(button, BtnSyncCenter))
+            {
+                var access = await _licenses.GetAccessStateAsync();
+                if (!access.AllowsAccess)
+                {
+                    pageFactory = () => _licenseFactory();
+                    title = "License";
+                    breadcrumb = "Home / License";
+                    button = BtnSubscription;
+                }
+            }
+
             if (isMobile)
             {
                 ShowMobilePage(
@@ -390,9 +468,9 @@ public partial class MainLayoutView : ContentView
 
         if (ReferenceEquals(button, BtnSubscription))
         {
-            factory = () => _subscriptionFactory();
-            title = "Subscription";
-            breadcrumb = "Home / Subscription";
+            factory = () => _licenseFactory();
+            title = "License";
+            breadcrumb = "Home / License";
             return true;
         }
 
@@ -512,8 +590,8 @@ public partial class MainLayoutView : ContentView
         if (!confirm)
             return;
 
-        await Shell.Current.GoToAsync(
-            AppRoutes.Welcome);
+        await _auth.LogoutAsync();
+        await Shell.Current.GoToAsync(AppRoutes.Login);
     }
 
     // ============================================================

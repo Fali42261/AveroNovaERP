@@ -36,6 +36,9 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
             builder.Property(x => x.IsDeleted)
                    .HasDefaultValue(false);
 
+            builder.Property(x => x.SyncStatus).HasConversion<int>();
+            builder.Property(x => x.SyncVersion).HasDefaultValue(1L);
+
             // Relationships
             builder.HasMany(x => x.UserRoles)
                    .WithOne(x => x.Role)

@@ -15,73 +15,90 @@ using AveroNova.App.UI.Pages.Returns;
 using AveroNova.App.UI.Pages.Settings;
 using AveroNova.App.UI.Pages.Subscription;
 using AveroNova.App.UI.Pages.SyncCenter;
+using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI;
 
 public partial class AppShell : Shell
 {
-    public AppShell()
+    private readonly IInstallationService _installation;
+
+    public AppShell(IInstallationService installation)
     {
+        _installation = installation;
         InitializeComponent();
         RegisterRoutes();
+        Navigating += OnNavigating;
+    }
+
+    private void OnNavigating(object? sender, ShellNavigatingEventArgs e)
+    {
+        var target = e.Target?.Location?.OriginalString ?? string.Empty;
+        if (!target.Contains("Register", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        // Status is initialized at app start; block direct Create Account navigation when registered.
+        if (_installation.IsRegistered)
+        {
+            e.Cancel();
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await GoToAsync(AppRoutes.Login);
+                }
+                catch
+                {
+                    // ignore navigation races during startup
+                }
+            });
+        }
     }
 
     private static void RegisterRoutes()
     {
-        Routing.RegisterRoute(AppRoutes.Register,       typeof(RegisterPage));
+        Routing.RegisterRoute(AppRoutes.Register, typeof(RegisterPage));
         Routing.RegisterRoute(AppRoutes.ForgotPassword, typeof(ForgotPasswordPage));
-        Routing.RegisterRoute(AppRoutes.ResetPassword,  typeof(ResetPasswordPage));
-        Routing.RegisterRoute(AppRoutes.OtpVerify,      typeof(OtpVerifyPage));
+        Routing.RegisterRoute(AppRoutes.ResetPassword, typeof(ResetPasswordPage));
+        Routing.RegisterRoute(AppRoutes.OtpVerify, typeof(OtpVerifyPage));
 
-        // Company
-        Routing.RegisterRoute(AppRoutes.CompanyAdd,  typeof(CompanyFormPage));
+        Routing.RegisterRoute(AppRoutes.CompanyAdd, typeof(CompanyFormPage));
         Routing.RegisterRoute(AppRoutes.CompanyEdit, typeof(CompanyFormPage));
 
-        // Customers
-        Routing.RegisterRoute(AppRoutes.CustomerAdd,  typeof(CustomerFormPage));
+        Routing.RegisterRoute(AppRoutes.CustomerAdd, typeof(CustomerFormPage));
         Routing.RegisterRoute(AppRoutes.CustomerEdit, typeof(CustomerFormPage));
         Routing.RegisterRoute(AppRoutes.CustomerView, typeof(CustomerViewPage));
 
-        // Products
-        Routing.RegisterRoute(AppRoutes.ProductAdd,  typeof(ProductFormPage));
+        Routing.RegisterRoute(AppRoutes.ProductAdd, typeof(ProductFormPage));
         Routing.RegisterRoute(AppRoutes.ProductEdit, typeof(ProductFormPage));
         Routing.RegisterRoute(AppRoutes.ProductView, typeof(ProductViewPage));
 
-        // Inventory
-        Routing.RegisterRoute(AppRoutes.StockAdjust,   typeof(StockAdjustPage));
-        Routing.RegisterRoute(AppRoutes.StockMovement,  typeof(StockMovementPage));
+        Routing.RegisterRoute(AppRoutes.StockAdjust, typeof(StockAdjustPage));
+        Routing.RegisterRoute(AppRoutes.StockMovement, typeof(StockMovementPage));
 
-        // Billing
-        Routing.RegisterRoute(AppRoutes.InvoiceNew,  typeof(InvoiceFormPage));
+        Routing.RegisterRoute(AppRoutes.InvoiceNew, typeof(InvoiceFormPage));
         Routing.RegisterRoute(AppRoutes.InvoiceView, typeof(InvoiceViewPage));
         Routing.RegisterRoute(AppRoutes.InvoiceEdit, typeof(InvoiceFormPage));
 
-        // Purchases
-        Routing.RegisterRoute(AppRoutes.PurchaseNew,  typeof(PurchaseFormPage));
+        Routing.RegisterRoute(AppRoutes.PurchaseNew, typeof(PurchaseFormPage));
         Routing.RegisterRoute(AppRoutes.PurchaseView, typeof(PurchaseViewPage));
 
-        // Payments
-        Routing.RegisterRoute(AppRoutes.PaymentAdd,  typeof(PaymentFormPage));
+        Routing.RegisterRoute(AppRoutes.PaymentAdd, typeof(PaymentFormPage));
         Routing.RegisterRoute(AppRoutes.PaymentView, typeof(PaymentViewPage));
 
-        // Returns
-        Routing.RegisterRoute(AppRoutes.SalesReturnNew,   typeof(SalesReturnFormPage));
+        Routing.RegisterRoute(AppRoutes.SalesReturnNew, typeof(SalesReturnFormPage));
         Routing.RegisterRoute(AppRoutes.PurchaseReturnNew, typeof(PurchaseReturnFormPage));
 
-        // Expenses
-        Routing.RegisterRoute(AppRoutes.ExpenseAdd,  typeof(ExpenseFormPage));
+        Routing.RegisterRoute(AppRoutes.ExpenseAdd, typeof(ExpenseFormPage));
         Routing.RegisterRoute(AppRoutes.ExpenseView, typeof(ExpenseViewPage));
 
-        // Administration
-        Routing.RegisterRoute(AppRoutes.UserAdd,  typeof(UserFormPage));
+        Routing.RegisterRoute(AppRoutes.UserAdd, typeof(UserFormPage));
         Routing.RegisterRoute(AppRoutes.UserView, typeof(UserViewPage));
         Routing.RegisterRoute(AppRoutes.UserEdit, typeof(UserFormPage));
-        Routing.RegisterRoute(AppRoutes.RoleAdd,  typeof(RoleFormPage));
+        Routing.RegisterRoute(AppRoutes.RoleAdd, typeof(RoleFormPage));
         Routing.RegisterRoute(AppRoutes.RoleEdit, typeof(RoleFormPage));
 
-        // System
         Routing.RegisterRoute(AppRoutes.Notifications, typeof(NotificationsPage));
-        //Routing.RegisterRoute(AppRoutes.Help,           typeof(HelpPage));
         Routing.RegisterRoute(AppRoutes.Help, typeof(HelpAboutPage));
     }
 }

@@ -1,3 +1,4 @@
+using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 
@@ -6,11 +7,82 @@ namespace AveroNova.App.UI.Pages.Authentication;
 public partial class ResetPasswordPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
+    private bool _layoutBusy;
+    private double _appliedMinHeight = double.NaN;
+    private ScreenSize? _appliedSize;
 
     public ResetPasswordPage(IAuthenticationService auth)
     {
         InitializeComponent();
         _auth = auth;
+        SizeChanged += (_, _) => ApplyLayout();
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        ApplyLayout();
+    }
+
+    private void ApplyLayout()
+    {
+        if (_layoutBusy || Width <= 0)
+            return;
+
+        var size = ResponsiveBreakpoints.FromWidth(Width);
+        var compact = size == ScreenSize.Compact;
+        var sizeChanged = _appliedSize != size;
+
+        _layoutBusy = true;
+        try
+        {
+            if (sizeChanged)
+            {
+                _appliedSize = size;
+                ContentHost.Padding = size switch
+                {
+                    ScreenSize.Compact => new Thickness(20, 24),
+                    ScreenSize.Medium => new Thickness(32, 28),
+                    _ => new Thickness(40, 36)
+                };
+
+                AuthCard.HorizontalOptions = LayoutOptions.Center;
+                AuthCard.Padding = compact ? new Thickness(4, 8) : new Thickness(32);
+
+                if (compact)
+                {
+                    AuthCard.StrokeThickness = 0;
+                    AuthCard.BackgroundColor = Colors.Transparent;
+                }
+                else
+                {
+                    AuthCard.ClearValue(Border.StrokeThicknessProperty);
+                    AuthCard.ClearValue(Border.BackgroundColorProperty);
+                }
+            }
+
+            var minHeight = Height > 0
+                ? Math.Max(0, Height - ContentHost.Padding.VerticalThickness)
+                : -1;
+            if (minHeight >= 0
+                && (double.IsNaN(_appliedMinHeight) || Math.Abs(_appliedMinHeight - minHeight) >= 32))
+            {
+                _appliedMinHeight = minHeight;
+                ContentHost.MinimumHeightRequest = minHeight;
+            }
+
+            var available = Math.Max(280, Width - ContentHost.Padding.HorizontalThickness);
+            var cardWidth = Math.Min(available, compact ? 480 : 440);
+            if (Math.Abs(AuthCard.WidthRequest - cardWidth) >= 1)
+            {
+                AuthCard.WidthRequest = cardWidth;
+                AuthCard.MaximumWidthRequest = cardWidth;
+            }
+        }
+        finally
+        {
+            _layoutBusy = false;
+        }
     }
 
     private void OnEmailCompleted(object? sender, EventArgs e) => EntryPassword.Focus();

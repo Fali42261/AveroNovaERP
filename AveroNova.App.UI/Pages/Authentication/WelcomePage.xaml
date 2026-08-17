@@ -110,13 +110,15 @@
                             helpers:CursorBehavior.Cursor="Hand"
                             Clicked="OnLoginClicked"/>
 
-                    <Label Text="or"
+                    <Label x:Name="OrDivider"
+                           Text="or"
                            HorizontalOptions="Center"
                            FontSize="13"
                            TextColor="{StaticResource TextSecondary}"
                            Margin="0,16"/>
 
-                    <Button Text="Create Account"
+                    <Button x:Name="BtnCreateAccount"
+                            Text="Create Account"
                             Style="{StaticResource SecondaryButton}"
                             HorizontalOptions="Fill"
                             helpers:CursorBehavior.Cursor="Hand"

@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AveroNova.Application\AveroNova.Application.csproj" />
+    <ProjectReference Include="..\AveroNova.Domain\AveroNova.Domain.csproj" />
+    <ProjectReference Include="..\AveroNova.Shared\AveroNova.Shared.csproj" />
+    <ProjectReference Include="..\AveroNova.API\AveroNova.API.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AveroNova.App.UI\Data\LocalAppDbContext.cs" Link="Linked\Data\LocalAppDbContext.cs" />
+    <Compile Include="..\AveroNova.App.UI\Data\LocalEntities.cs" Link="Linked\Data\LocalEntities.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\AppEnums.cs" Link="Linked\Models\AppEnums.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\BaseModel.cs" Link="Linked\Models\BaseModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\UserModel.cs" Link="Linked\Models\UserModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\SyncHistoryModel.cs" Link="Linked\Models\SyncHistoryModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\AuthenticationService.cs" Link="Linked\Services\AuthenticationService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\InstallationService.cs" Link="Linked\Services\InstallationService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalAuthSessionStore.cs" Link="Linked\Services\LocalAuthSessionStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\OfflineRegistrationStore.cs" Link="Linked\Services\OfflineRegistrationStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\RegistrationSyncService.cs" Link="Linked\Services\RegistrationSyncService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Api\ApiClient.cs" Link="Linked\Services\Api\ApiClient.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Api\AuthApiClient.cs" Link="Linked\Services\Api\AuthApiClient.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Api\ApiSettings.cs" Link="Linked\Services\Api\ApiSettings.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Security\ISecureTokenStore.cs" Link="Linked\Services\Security\ISecureTokenStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Security\IPendingRegistrationSecretStore.cs" Link="Linked\Services\Security\IPendingRegistrationSecretStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IAuthenticationService.cs" Link="Linked\Services\Interfaces\IAuthenticationService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IClientDeviceInfo.cs" Link="Linked\Services\Interfaces\IClientDeviceInfo.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IConnectivityService.cs" Link="Linked\Services\Interfaces\IConnectivityService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IInstallationService.cs" Link="Linked\Services\Interfaces\IInstallationService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IStableDeviceIdProvider.cs" Link="Linked\Services\Interfaces\IStableDeviceIdProvider.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ISyncService.cs" Link="Linked\Services\Interfaces\ISyncService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ILicenseService.cs" Link="Linked\Services\Interfaces\ILicenseService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ICustomerService.cs" Link="Linked\Services\Interfaces\ICustomerService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IProductService.cs" Link="Linked\Services\Interfaces\IProductService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IBillingService.cs" Link="Linked\Services\Interfaces\IBillingService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IPaymentService.cs" Link="Linked\Services\Interfaces\IPaymentService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ICompanyService.cs" Link="Linked\Services\Interfaces\ICompanyService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Security\ILocalCredentialStore.cs" Link="Linked\Services\Security\ILocalCredentialStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\License\LicenseApiClient.cs" Link="Linked\Services\License\LicenseApiClient.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LicenseService.cs" Link="Linked\Services\LicenseService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalSyncQueueWriter.cs" Link="Linked\Services\LocalSyncQueueWriter.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalCustomerService.cs" Link="Linked\Services\LocalCustomerService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalProductService.cs" Link="Linked\Services\LocalProductService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalBillingService.cs" Link="Linked\Services\LocalBillingService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalPaymentService.cs" Link="Linked\Services\LocalPaymentService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalCompanyService.cs" Link="Linked\Services\LocalCompanyService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Navigation\MenuCatalog.cs" Link="Linked\Navigation\MenuCatalog.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\CustomerModel.cs" Link="Linked\Models\CustomerModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\ProductModel.cs" Link="Linked\Models\ProductModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\InvoiceModel.cs" Link="Linked\Models\InvoiceModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\PaymentModel.cs" Link="Linked\Models\PaymentModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\CompanyModel.cs" Link="Linked\Models\CompanyModel.cs" />
+  </ItemGroup>
+
+</Project>

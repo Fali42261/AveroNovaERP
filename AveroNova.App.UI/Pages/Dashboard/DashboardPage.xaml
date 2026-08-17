@@ -31,6 +31,20 @@
                     </Border>
                 </Grid>
 
+                <Border x:Name="TrialBanner" IsVisible="False" Padding="14,12"
+                        BackgroundColor="{StaticResource Primary50}"
+                        Stroke="{StaticResource Primary200}" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="2">
+                            <Label x:Name="LblTrialTitle" Text="Starter Trial" FontSize="13" FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary700}"/>
+                            <Label x:Name="LblTrialDetail" FontSize="12"
+                                   TextColor="{StaticResource TextSecondary}"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
                 <!-- KPI Cards — responsive FlexLayout -->
                 <Label Text="Key Performance Indicators" FontSize="15" FontAttributes="Bold"
                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>

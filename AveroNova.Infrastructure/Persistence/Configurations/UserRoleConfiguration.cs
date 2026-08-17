@@ -15,8 +15,11 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
 
             builder.HasKey(x => x.Id);
 
-            builder.HasIndex(x => new { x.UserId, x.RoleId })
+            builder.HasIndex(x => new { x.UserId, x.RoleId, x.CompanyId })
                    .IsUnique();
+
+            builder.Property(x => x.SyncStatus).HasConversion<int>();
+            builder.Property(x => x.SyncVersion).HasDefaultValue(1L);
 
             builder.HasOne(x => x.User)
                    .WithMany(x => x.UserRoles)

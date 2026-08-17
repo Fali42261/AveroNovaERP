@@ -18,6 +18,20 @@ obj/
 # Logs
 *.log
 
+# Local / development SQLite databases (never commit)
+*.db
+*.db-shm
+*.db-wal
+AveroNova.API/Data/
+**/AveroNovaDev.db
+**/AveroNovaLocal.db
+**/AveroNova.local.db
+**/AveroNova.db
+
 # OS files
 .DS_Store
 Thumbs.db
+# Certificates / signing files
+*.pfx
+*.keystore
+*.jks

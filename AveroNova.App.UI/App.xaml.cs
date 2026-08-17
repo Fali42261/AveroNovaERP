@@ -17,21 +17,24 @@ namespace AveroNova.App.UI
         {
             var window = new Window(_appShell)
             {
-                Width = 1400,
-                Height = 900
+                Title = "AveroNova"
             };
 
+            // Desktop window sizing is Windows-only. Setting Width/Height on Android
+            // crashes the process (Fatal signal 11 / SIGSEGV) before the first page.
 #if WINDOWS
-        window.Created += (sender, args) =>
-        {
-            if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window nativeWindow)
+            window.Width = 1400;
+            window.Height = 900;
+            window.Created += (sender, args) =>
             {
-                if (nativeWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+                if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window nativeWindow)
                 {
-                    presenter.Maximize();
+                    if (nativeWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+                    {
+                        presenter.Maximize();
+                    }
                 }
-            }
-        };
+            };
 #endif
 
             return window;
