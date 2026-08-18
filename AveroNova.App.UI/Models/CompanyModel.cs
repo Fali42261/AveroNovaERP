@@ -7,10 +7,14 @@ namespace AveroNova.App.UI.Models;
 public class CompanyModel : BaseModel
 {
     public string   Name            { get; set; } = string.Empty;
+    public string   CompanyCode     { get; set; } = string.Empty;
+    public string   OwnerName       { get; set; } = string.Empty;
     public string   Email           { get; set; } = string.Empty;
     public string   Phone           { get; set; } = string.Empty;
     public string   Address         { get; set; } = string.Empty;
     public string   City            { get; set; } = string.Empty;
+    public string   State           { get; set; } = string.Empty;
+    public string   PinCode         { get; set; } = string.Empty;
     public string   Country         { get; set; } = string.Empty;
     public string   TaxNumber       { get; set; } = string.Empty;
     public string   RegistrationNo  { get; set; } = string.Empty;

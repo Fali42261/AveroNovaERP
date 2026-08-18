@@ -13,7 +13,7 @@
                 <!-- Welcome row -->
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Spacing="3">
-                        <Label x:Name="LblWelcome" Text="Good morning, Admin"
+                        <Label x:Name="LblWelcome" Text="Welcome"
                                FontSize="20" FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <Label x:Name="LblDate" FontSize="12"
@@ -30,6 +30,8 @@
                         </HorizontalStackLayout>
                     </Border>
                 </Grid>
+
+                <VerticalStackLayout x:Name="CompanyDetailsHost" Spacing="16" />
 
                 <!-- KPI Cards — responsive FlexLayout -->
                 <Label Text="Key Performance Indicators" FontSize="15" FontAttributes="Bold"
@@ -52,11 +54,11 @@
                                     <Label Text="&#x1F4B3;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label x:Name="LblTotalSales" Text="$28,450" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblTotalSales" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Border Style="{StaticResource BadgeSuccess}" Padding="6,2">
-                                    <Label Text="+12.5%" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/>
+                                    <Label x:Name="LblSalesChange" Text="" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/>
                                 </Border>
                                 <Label Text="vs last month" FontSize="11"
                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
@@ -79,11 +81,11 @@
                                     <Label Text="&#x1F6D2;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label x:Name="LblTotalPurchases" Text="$14,200" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblTotalPurchases" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Border Style="{StaticResource BadgePurple}" Padding="6,2">
-                                    <Label Text="2 orders" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource Purple600}"/>
+                                    <Label x:Name="LblPurchasesMeta" Text="" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource Purple600}"/>
                                 </Border>
                                 <Label Text="this month" FontSize="11"
                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
@@ -106,11 +108,11 @@
                                     <Label Text="&#x231B;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label x:Name="LblOutstanding" Text="$15,530" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblOutstanding" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Border Style="{StaticResource BadgeWarning}" Padding="6,2">
-                                    <Label Text="3 invoices" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource WarningText}"/>
+                                    <Label x:Name="LblOutstandingMeta" Text="" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource WarningText}"/>
                                 </Border>
                                 <Label Text="overdue" FontSize="11"
                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
@@ -133,11 +135,11 @@
                                     <Label Text="&#x1F91D;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label x:Name="LblCustomers" Text="5" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblCustomers" Text="0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Border Style="{StaticResource BadgeSuccess}" Padding="6,2">
-                                    <Label Text="4 active" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/>
+                                    <Label x:Name="LblCustomersMeta" Text="" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/>
                                 </Border>
                             </HorizontalStackLayout>
                         </VerticalStackLayout>
@@ -157,11 +159,11 @@
                                     <Label Text="&#x1F4E6;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label x:Name="LblProducts" Text="6" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblProducts" Text="0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Border Style="{StaticResource BadgeError}" Padding="6,2">
-                                    <Label Text="2 low stock" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource ErrorText}"/>
+                                    <Label x:Name="LblProductsMeta" Text="" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource ErrorText}"/>
                                 </Border>
                             </HorizontalStackLayout>
                         </VerticalStackLayout>
@@ -181,11 +183,11 @@
                                     <Label Text="&#x1F4B0;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label x:Name="LblPayments" Text="$2,750" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblPayments" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Border Style="{StaticResource BadgeSuccess}" Padding="6,2">
-                                    <Label Text="2 received" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/>
+                                    <Label x:Name="LblPaymentsMeta" Text="" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/>
                                 </Border>
                             </HorizontalStackLayout>
                         </VerticalStackLayout>
@@ -230,7 +232,7 @@
                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
                            VerticalOptions="Center"/>
                     <Border Grid.Column="1" Style="{StaticResource BadgeError}" Padding="8,2">
-                        <Label Text="2 items" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource ErrorText}"/>
+                        <Label x:Name="LblLowStockCount" Text="0 items" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource ErrorText}"/>
                     </Border>
                 </Grid>
 

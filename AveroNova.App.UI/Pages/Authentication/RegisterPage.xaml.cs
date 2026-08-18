@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Layout;
+using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.ViewModels;
@@ -40,6 +41,7 @@ public partial class RegisterPage : ContentPage
         UpdateProgress();
         ApplyFieldLayout();
         UpdatePrimaryColumn();
+        _ = PageScroll.ScrollToAsync(0, 0, false);
     }
 
     private void UpdatePrimaryColumn()
@@ -107,11 +109,16 @@ public partial class RegisterPage : ContentPage
             return;
 
         var size = ResponsiveBreakpoints.FromWidth(width);
+        var compact = size == ScreenSize.Compact;
         var usable = Math.Max(320, width - ResponsiveBreakpoints.PageGutter);
         var formWidth = Math.Min(usable, ResponsiveBreakpoints.FormMaxWidth(size));
         FormHost.WidthRequest = formWidth;
         FormHost.MaximumWidthRequest = formWidth;
         FormHost.HorizontalOptions = LayoutOptions.Center;
+        FormHost.VerticalOptions = LayoutOptions.Start;
+        FormHost.Padding = compact
+            ? new Thickness(20, 24, 20, 160)
+            : new Thickness(24, 32, 24, 48);
 
         var compactProgress = width < 700;
         StepLabel1.IsVisible = !compactProgress;
@@ -125,9 +132,14 @@ public partial class RegisterPage : ContentPage
 
         var columns = ResponsiveBreakpoints.FormColumnCount(formWidth, maxColumns: 3);
 
-        PlaceFlow(Step1Grid, columns, FullNameField, EmailField);
+        PlaceFlow(
+            Step1Grid,
+            columns,
+            FullNameField, EmailField, MobileField,
+            PersonalPinField, PasswordField, ConfirmField,
+            PersonalAddressField, PersonalCityField, PersonalStateField,
+            PersonalCountryField);
         PlaceCompanyFields(columns);
-        PlaceFlow(Step3Grid, columns, PasswordField, ConfirmField);
         ApplyActionButtons(columns);
     }
 
@@ -224,6 +236,12 @@ public partial class RegisterPage : ContentPage
         Grid.SetRowSpan(view, 1);
     }
 
+    private void OnSelectPlanClicked(object? sender, EventArgs e)
+    {
+        if (sender is Button button && button.CommandParameter is string planId)
+            _vm.SelectPlanCommand.Execute(planId);
+    }
+
     private async void OnLoginTapped(object? sender, TappedEventArgs e)
         => await Shell.Current.GoToAsync(AppRoutes.Login);
 
@@ -246,33 +264,64 @@ public partial class RegisterPage : ContentPage
         _vm.IsBusy = true;
         _vm.HasGeneralError = false;
         _vm.GeneralError = string.Empty;
+        _vm.HasSuccessMessage = false;
 
         try
         {
-            var (success, error) = await _auth.RegisterAsync(
-                _vm.FullName.Trim(),
-                _vm.Email.Trim(),
-                _vm.Password);
-
-            if (success)
+            var result = await _auth.RegisterAccountAsync(new RegistrationRequest
             {
-                _vm.Reset();
-                await Shell.Current.GoToAsync(AppRoutes.OtpVerify);
-            }
-            else
+                FullName = _vm.FullName.Trim(),
+                Email = _vm.Email.Trim(),
+                Mobile = _vm.Mobile.Trim(),
+                Password = _vm.Password,
+                CompanyName = _vm.CompanyName.Trim(),
+                OwnerName = _vm.OwnerName.Trim(),
+                GSTNumber = _vm.GSTNumber.Trim(),
+                PANNumber = _vm.PANNumber.Trim(),
+                CompanyEmail = _vm.CompanyEmail.Trim(),
+                CompanyMobile = _vm.MobileNumber.Trim(),
+                Country = _vm.Country.Trim(),
+                State = _vm.State.Trim(),
+                City = _vm.City.Trim(),
+                PinCode = _vm.PinCode.Trim(),
+                Address = _vm.Address.Trim(),
+                PlanId = _vm.SelectedPlanId,
+                PlanName = _vm.SelectedPlanName
+            });
+
+            if (!result.Success || !result.LocalAccountCreated)
             {
                 _vm.HasGeneralError = true;
-                _vm.GeneralError = error ?? "Registration failed. Please try again.";
+                _vm.GeneralError = result.Error ?? "Account could not be created. Please try again.";
+                return;
             }
+
+            var message = BuildSuccessMessage(result);
+            _vm.SuccessMessage = message;
+            _vm.HasSuccessMessage = true;
+            await DisplayAlert("Account Completed Successfully", message, "Continue");
+            _vm.Reset();
+            await Shell.Current.GoToAsync(AppRoutes.Main);
         }
-        catch
+        catch (Exception ex)
         {
             _vm.HasGeneralError = true;
-            _vm.GeneralError = "Something went wrong. Please try again.";
+            _vm.GeneralError = $"Account could not be created. {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] CreateAccount failed: {ex}");
         }
         finally
         {
             _vm.IsBusy = false;
         }
+    }
+
+    private static string BuildSuccessMessage(RegistrationResult result)
+    {
+        if (result.ServerSynced)
+        {
+            return "Account Completed Successfully.\n\nLOCAL ACCOUNT CREATED\nSERVER SYNC COMPLETED";
+        }
+
+        return "Account Completed Successfully.\n\nLOCAL ACCOUNT CREATED\nServer sync is pending and will complete when internet is available.";
     }
 }

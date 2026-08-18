@@ -48,11 +48,15 @@ public partial class LoginPage : ContentPage
 
                 AuthCard.HorizontalOptions = LayoutOptions.Center;
                 AuthCard.Padding = compact ? new Thickness(4, 8) : new Thickness(32);
+                AuthCard.VerticalOptions = compact ? LayoutOptions.Start : LayoutOptions.Center;
 
                 if (compact)
                 {
                     AuthCard.StrokeThickness = 0;
                     AuthCard.BackgroundColor = Colors.Transparent;
+                    ContentHost.ClearValue(MinimumHeightRequestProperty);
+                    _appliedMinHeight = double.NaN;
+                    ContentHost.Padding = new Thickness(20, 24, 20, 160);
                 }
                 else
                 {
@@ -61,14 +65,17 @@ public partial class LoginPage : ContentPage
                 }
             }
 
-            var minHeight = Height > 0
-                ? Math.Max(0, Height - ContentHost.Padding.VerticalThickness)
-                : -1;
-            if (minHeight >= 0
-                && (double.IsNaN(_appliedMinHeight) || Math.Abs(_appliedMinHeight - minHeight) >= 32))
+            if (!compact)
             {
-                _appliedMinHeight = minHeight;
-                ContentHost.MinimumHeightRequest = minHeight;
+                var minHeight = Height > 0
+                    ? Math.Max(0, Height - ContentHost.Padding.VerticalThickness)
+                    : -1;
+                if (minHeight >= 0
+                    && (double.IsNaN(_appliedMinHeight) || Math.Abs(_appliedMinHeight - minHeight) >= 32))
+                {
+                    _appliedMinHeight = minHeight;
+                    ContentHost.MinimumHeightRequest = minHeight;
+                }
             }
 
             var available = Math.Max(280, Width - ContentHost.Padding.HorizontalThickness);

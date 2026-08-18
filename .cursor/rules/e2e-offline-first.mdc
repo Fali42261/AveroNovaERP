@@ -1,0 +1,45 @@
+---
+description: End-to-end, offline-first, sync, and API-unavailable acceptance for AveroNova
+alwaysApply: true
+---
+
+# E2E and Offline-First Acceptance
+
+E2E means the real flow, not one layer:
+
+UI → ViewModel → Service → Local/Remote data → API (if applicable) → Database → Response → UI update
+
+AveroNova is offline-first. Normal operation must not depend on internet. Platforms: Windows, Android, iOS, MacCatalyst.
+
+## Offline operation
+
+Internet OFF → app starts → local SQLite → user/session/company context → business ops → data saved locally → app continues.
+
+Internet ON: local app keeps working; background sync may run.
+
+## Mandatory Offline → Online E2E
+
+1. Start app. Turn internet OFF.
+2. Create/update supported data. Verify local SQLite. SyncStatus = Pending where applicable.
+3. Turn internet ON. App detects connectivity. Sync starts automatically.
+4. API receives data. Server DB contains it. Server confirms success.
+5. Local record becomes Synced. Reopen/read. No duplicates.
+6. Turn internet OFF again. App continues on local data.
+
+Any failed step: Offline → Online E2E = FAIL → feature = NOT DONE.
+
+## API unavailable
+
+Disconnect/block Development API. App must not crash, terminate, corrupt local data, unnecessarily force logout, or lose pending data. Continue per offline policy.
+
+## Connectivity recovery
+
+App OPEN → internet OFF → continues → internet ON → connectivity event → recovery/sync starts → continues.
+
+Do not require app restart, APK reinstall, or manual DB reset unless technically unavoidable and documented.
+
+## Build is required, not sufficient
+
+`dotnet clean` / `restore` / `build` / `publish` where applicable, then runtime testing is mandatory.
+
+Do not stop after implementation, build, APK generation, or install. Continue through runtime and E2E.

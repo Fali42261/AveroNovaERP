@@ -512,8 +512,8 @@ public partial class MainLayoutView : ContentView
         if (!confirm)
             return;
 
-        await Shell.Current.GoToAsync(
-            AppRoutes.Welcome);
+        await _auth.LogoutAsync();
+        await Shell.Current.GoToAsync(AppRoutes.Login);
     }
 
     // ============================================================

@@ -9,7 +9,10 @@ using AveroNova.App.UI.Views.Layout;
 using AveroNova.App.UI.Views.Profile;
 using AveroNova.App.UI.Pages.Customers;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.Services.Local;
 using AveroNova.App.UI.Services.Mock;
+using AveroNova.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Pages.Administration;
@@ -49,9 +52,13 @@ public static class MauiProgram
                 // re-entered layout and froze the same page.
             });
 
-        // ── Database ──────────────────────────────────────────────────────────
-        //var dbPath = DatabasePath.GetDatabasePath(FileSystem.AppDataDirectory);
-        //builder.Services.AddInfrastructure(dbPath);
+        // ── Database (existing AppDbContext schema; local SQLite file) ────────
+        builder.Services.AddDbContextFactory<AppDbContext>(options =>
+        {
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "AveroNovaLocal.db");
+            options.UseSqlite($"Data Source={dbPath}");
+        });
+        builder.Services.AddSingleton<LocalDatabaseInitializer>();
 
         // ── Singletons ────────────────────────────────────────────────────────
         builder.Services.AddSingleton<App>();
@@ -157,10 +164,10 @@ public static class MauiProgram
 
         // ── Mock Services ─────────────────────────────────────────────────────
 
-        builder.Services.AddTransient<IAuthenticationService, MockAuthenticationService>();
+        builder.Services.AddSingleton<IAuthenticationService, LocalAuthenticationService>();
         builder.Services.AddTransient<IBillingService, MockBillingService>();
-        builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, MockCompanyService>();
-        builder.Services.AddTransient<IConnectivityService, MockConnectivityService>();
+        builder.Services.AddSingleton<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
+        builder.Services.AddSingleton<IConnectivityService, DeviceConnectivityService>();
         builder.Services.AddTransient<ICustomerService, MockCustomerService>();
         builder.Services.AddTransient<IExpenseService, MockExpenseService>();
         builder.Services.AddTransient<IInventoryService, MockInventoryService>();
@@ -170,7 +177,7 @@ public static class MauiProgram
         builder.Services.AddTransient<IPurchaseService, MockPurchaseService>();
         builder.Services.AddTransient<IReturnService, MockReturnService>();
         builder.Services.AddTransient<ISettingsService, MockSettingsService>();
-        builder.Services.AddTransient<ISubscriptionService, MockSubscriptionService>();
+        builder.Services.AddSingleton<ISubscriptionService, LocalSubscriptionService>();
         builder.Services.AddTransient<ISyncService, MockSyncService>();
         builder.Services.AddTransient<IUserService, MockUserService>();
 

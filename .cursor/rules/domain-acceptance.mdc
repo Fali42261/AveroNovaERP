@@ -1,0 +1,58 @@
+---
+description: Auth, license, API, database, company isolation, and permission acceptance
+alwaysApply: true
+---
+
+# Domain Acceptance
+
+## Auth
+
+Create Account with internet OFF → local SQLite → account exists → Login → authenticated local session → app opens.
+
+Online sync must work when internet returns. No OTP, email, mobile, or verification code unless explicitly required later.
+
+## License / trial
+
+Fresh install, internet OFF → app starts → local license/trial init → 15-day trial → app continues.
+
+When internet is available: connectivity detected → license sync/validation → server → local license updated.
+
+If API is unavailable: do not crash. If a platform cannot guarantee a security property (e.g. reinstall-proof offline trial), report the limitation honestly. Do not fake PASS.
+
+## API
+
+Client → Development API → server application layer → database → response → client state → UI.
+
+A successful HTTP response alone is not enough. Verify the actual database effect.
+
+## Database
+
+Verify create, read, update, delete where applicable, company isolation, user authorization, persistence, offline behavior, and sync.
+
+For synchronized data: local record, server record, ID mapping, sync status, duplicate prevention.
+
+## Company isolation (mandatory)
+
+Company A creates data. Company B logs in / selects company. Company B must not see Company A data.
+
+Test UI **and** API/server authorization. Client-side filtering alone is not acceptable.
+
+## Roles / permissions
+
+Test dynamic sidebar with actual permissions (Admin / Sales / Inventory menus). Do not test only by changing a role string in UI.
+
+Verify permission → menu visibility → navigation → API authorization. A hidden menu without server authorization is not secure.
+
+## No fake data / silent fallbacks
+
+Do not use fake business data to claim a feature works. Dashboard numbers must come from actual data; otherwise show No data or 0 as designed.
+
+Do not catch exceptions and silently continue to make tests pass. Log the actual reason, fix the root cause, retest.
+
+## Root cause and regression
+
+On E2E failure: identify first actual failure → root cause → fix → rebuild → retest complete affected flow → retest related flows → then report.
+
+Do not ship temporary workarounds or declare PASS because an error message disappeared.
+
+After a fix, re-run the affected E2E and verify Auth, SQLite, License, API, Sync, company isolation, roles/permissions, branding, and navigation were not broken.

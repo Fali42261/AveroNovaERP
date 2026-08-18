@@ -55,6 +55,20 @@ public class MockAuthenticationService : IAuthenticationService
         return Task.FromResult<(bool, string?)>((true, null));
     }
 
+    public async Task<RegistrationResult> RegisterAccountAsync(RegistrationRequest request)
+    {
+        var (success, error) = await RegisterAsync(request.FullName, request.Email, request.Password);
+        if (!success)
+            return RegistrationResult.Fail(error ?? "Registration failed.");
+
+        return new RegistrationResult
+        {
+            Success = true,
+            LocalAccountCreated = true,
+            ServerSynced = false
+        };
+    }
+
     public Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
@@ -79,4 +93,6 @@ public class MockAuthenticationService : IAuthenticationService
     }
 
     public Task<bool> TryAutoLoginAsync() => Task.FromResult(false);
+
+    public Task<bool> HasLocalUserAsync() => Task.FromResult(_currentUser != null);
 }

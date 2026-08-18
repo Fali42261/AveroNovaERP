@@ -14,7 +14,8 @@
         x:Name="PageScroll"
         Orientation="Vertical"
         HorizontalScrollBarVisibility="Never"
-        VerticalScrollBarVisibility="Default">
+        VerticalScrollBarVisibility="Default"
+        Padding="0,0,0,8">
 
         <Grid
             x:Name="ContentHost"

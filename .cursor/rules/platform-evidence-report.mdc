@@ -1,0 +1,55 @@
+---
+description: Android/Windows/BrowserStack evidence and mandatory feature status report format
+alwaysApply: true
+---
+
+# Platform Tests, Evidence, and Report Format
+
+## Android
+
+APK must be built, installed, launched, and actually tested. Verify: app name AveroNova, icon AN, startup, splash, create account, login, offline, online, offline → online. No startup crash. Install-but-crash = Android E2E FAIL.
+
+## Windows
+
+Verify the actual Windows app: launch → branding → auth → SQLite → offline → online → sync. Build success alone is not enough.
+
+## BrowserStack
+
+Always verify the APK under test is the NEW APK. Report filename, size, and path/build identifier. Never claim a new fix passed on an old APK.
+
+If BrowserStack cannot reach the local Development API: report **ENVIRONMENT LIMITATION**. Do not report PASS. Use a real Android device on the same development network for local API E2E when appropriate.
+
+## Evidence required for every final PASS
+
+```
+Test: <name>
+Environment: <Windows/Android/etc.>
+Input: <what was done>
+Expected: <expected result>
+Actual: <actual result>
+Database verification: PASS/FAIL
+API verification: PASS/FAIL
+Runtime verification: PASS/FAIL
+E2E: PASS/FAIL
+```
+
+## Mandatory feature report
+
+```
+FEATURE: <name>
+IMPLEMENTATION: PASS/FAIL
+BUILD: PASS/FAIL
+RUNTIME: PASS/FAIL
+DATABASE: PASS/FAIL/NOT APPLICABLE
+API: PASS/FAIL/NOT APPLICABLE
+OFFLINE: PASS/FAIL/NOT APPLICABLE
+ONLINE: PASS/FAIL/NOT APPLICABLE
+SYNC: PASS/FAIL/NOT APPLICABLE
+E2E: PASS/FAIL/NOT VERIFIED
+REGRESSION: PASS/FAIL/NOT VERIFIED
+KNOWN LIMITATIONS: <list>
+ROOT CAUSE OF ANY FAILURE: <actual cause>
+FINAL STATUS: DONE / FAILED / NOT VERIFIED
+```
+
+Use only those final statuses. DONE only when complete E2E acceptance criteria PASS.
