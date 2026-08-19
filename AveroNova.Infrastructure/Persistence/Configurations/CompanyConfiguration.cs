@@ -67,12 +67,6 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
                    .WithMany(x => x.Companies)
                    .HasForeignKey(x => x.UserId)
                    .OnDelete(DeleteBehavior.Restrict);
-
-            // Relationship : Company -> Subscription
-            builder.HasMany(x => x.Subscriptions)
-                   .WithOne(x => x.Company)
-                   .HasForeignKey(x => x.CompanyId)
-                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

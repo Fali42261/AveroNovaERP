@@ -28,6 +28,21 @@ public static class NativeInputChrome
             AttachFocus(view as VisualElement));
         PickerHandler.Mapper.AppendToMapping("AveroNovaInputFocus", (handler, view) =>
             AttachFocus(view as VisualElement));
+
+#if ANDROID || IOS || MACCATALYST
+        EntryHandler.Mapper.AppendToMapping(nameof(Entry.TextColor), (handler, _) =>
+            Apply(handler.PlatformView));
+        EntryHandler.Mapper.AppendToMapping(nameof(Entry.PlaceholderColor), (handler, _) =>
+            Apply(handler.PlatformView));
+        EditorHandler.Mapper.AppendToMapping(nameof(Editor.TextColor), (handler, _) =>
+            Apply(handler.PlatformView));
+        EditorHandler.Mapper.AppendToMapping(nameof(Editor.PlaceholderColor), (handler, _) =>
+            Apply(handler.PlatformView));
+        SearchBarHandler.Mapper.AppendToMapping(nameof(SearchBar.TextColor), (handler, _) =>
+            Apply(handler.PlatformView));
+        SearchBarHandler.Mapper.AppendToMapping(nameof(SearchBar.PlaceholderColor), (handler, _) =>
+            Apply(handler.PlatformView));
+#endif
     }
 
     private static void AttachFocus(VisualElement? element)
@@ -57,16 +72,8 @@ public static class NativeInputChrome
         if (!focused && border.Stroke is SolidColorBrush current && error is not null && current.Color == error)
             return;
 
-        if (focused)
-        {
-            border.Stroke = Colors.Transparent;
-            border.StrokeThickness = 0;
-        }
-        else
-        {
-            border.Stroke = Colors.Transparent;
-            border.StrokeThickness = 0;
-        }
+        border.Stroke = Colors.Transparent;
+        border.StrokeThickness = 0;
     }
 
     private static Border? FindInputBorder(Element? element)
@@ -91,6 +98,28 @@ public static class NativeInputChrome
 
         return null;
     }
+
+    private static bool IsDark()
+    {
+        var app = Microsoft.Maui.Controls.Application.Current;
+        if (app is null)
+            return false;
+
+        var theme = app.UserAppTheme == AppTheme.Unspecified
+            ? app.RequestedTheme
+            : app.UserAppTheme;
+        return theme == AppTheme.Dark;
+    }
+
+    private static Color ThemeText()
+        => IsDark()
+            ? TryGetColor("InputTextDark") ?? Colors.White
+            : TryGetColor("InputText") ?? TryGetColor("TextPrimary") ?? Color.FromArgb("#0F172A");
+
+    private static Color ThemePlaceholder()
+        => IsDark()
+            ? TryGetColor("InputPlaceholderDark") ?? Color.FromArgb("#CBD5E1")
+            : TryGetColor("InputPlaceholder") ?? Color.FromArgb("#9CA3AF");
 
     private static void Apply(object? platformView)
     {
@@ -125,19 +154,69 @@ public static class NativeInputChrome
                 editText.BackgroundTintList =
                     Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
                 editText.SetPadding(0, editText.PaddingTop, 0, editText.PaddingBottom);
+                ApplyAndroidTextColors(editText);
             }
         }
 #endif
 #if IOS || MACCATALYST
         if (platformView is UIKit.UITextField field)
+        {
             field.BorderStyle = UIKit.UITextBorderStyle.None;
+            ApplyAppleTextColors(field);
+        }
         if (platformView is UIKit.UITextView textView)
         {
             textView.BackgroundColor = UIKit.UIColor.Clear;
             textView.Layer.BorderWidth = 0;
+            ApplyAppleTextColors(textView);
         }
         if (platformView is UIKit.UIView uiView)
             uiView.BackgroundColor = UIKit.UIColor.Clear;
 #endif
     }
+
+#if ANDROID
+    private static void ApplyAndroidTextColors(Android.Widget.EditText editText)
+    {
+        var text = ThemeText();
+        var placeholder = ThemePlaceholder();
+        var selection = TryGetColor("PrimaryColor") ?? Color.FromArgb("#2563EB");
+
+        static Android.Graphics.Color ToAndroid(Color c, byte? alpha = null)
+            => new(
+                (int)(c.Red * 255),
+                (int)(c.Green * 255),
+                (int)(c.Blue * 255),
+                alpha ?? (int)(c.Alpha * 255));
+
+        editText.SetTextColor(ToAndroid(text));
+        editText.SetHintTextColor(ToAndroid(placeholder));
+        editText.SetHighlightColor(ToAndroid(selection, 180));
+        editText.SetCursorVisible(true);
+    }
+#endif
+
+#if IOS || MACCATALYST
+    private static UIKit.UIColor ToApple(Color c)
+        => UIKit.UIColor.FromRGBA((nfloat)c.Red, (nfloat)c.Green, (nfloat)c.Blue, (nfloat)c.Alpha);
+
+    private static void ApplyAppleTextColors(UIKit.UITextField field)
+    {
+        var text = ToApple(ThemeText());
+        field.TextColor = text;
+        field.TintColor = text;
+        if (!string.IsNullOrEmpty(field.Placeholder))
+        {
+            field.AttributedPlaceholder = new Foundation.NSAttributedString(
+                field.Placeholder, foregroundColor: ToApple(ThemePlaceholder()));
+        }
+    }
+
+    private static void ApplyAppleTextColors(UIKit.UITextView textView)
+    {
+        var text = ToApple(ThemeText());
+        textView.TextColor = text;
+        textView.TintColor = text;
+    }
+#endif
 }

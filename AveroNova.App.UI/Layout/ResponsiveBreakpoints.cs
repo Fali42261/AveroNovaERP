@@ -23,6 +23,16 @@ public static class ResponsiveBreakpoints
     public const double FormMaxMedium = 760;
     public const double FormMaxExpanded = 1120;
     public const double PageGutter = 48;
+    public const double SidebarDesktopWidth = 256;
+    public const double SidebarTabletWidth = 240;
+    public const double SidebarMobileDrawerWidth = 280;
+
+    public static double DockedSidebarWidth(ScreenSize size) => size switch
+    {
+        ScreenSize.Compact => 0,
+        ScreenSize.Medium => SidebarTabletWidth,
+        _ => SidebarDesktopWidth
+    };
 
     public static ScreenSize FromWidth(double width)
     {

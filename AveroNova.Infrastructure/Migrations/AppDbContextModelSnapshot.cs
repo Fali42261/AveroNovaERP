@@ -213,6 +213,9 @@ namespace AveroNova.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AutoRenew")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("TEXT");
 
@@ -225,14 +228,23 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsSubscription")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsTrial")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Plan")
                         .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("PlanId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PlanName")
                         .IsRequired()
@@ -249,6 +261,15 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("SubscriptionType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("TrialEndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TrialStartDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
@@ -256,7 +277,105 @@ namespace AveroNova.Infrastructure.Migrations
 
                     b.HasIndex("CompanyId");
 
+                    b.HasIndex("PlanId");
+
                     b.ToTable("Subscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationInDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCustomerAvailable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsTrialPlan")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionPlans", (string)null);
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlanFeature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ModuleKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModuleName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId", "ModuleKey")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionPlanFeatures", (string)null);
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.User", b =>
@@ -314,6 +433,43 @@ namespace AveroNova.Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("AveroNova.Domain.Entities.UserCompany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsOwner")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("UserId", "CompanyId")
+                        .IsUnique();
+
+                    b.ToTable("UserCompanies", (string)null);
+                });
+
             modelBuilder.Entity("AveroNova.Domain.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -329,6 +485,9 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<Guid>("RoleId")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
@@ -337,9 +496,11 @@ namespace AveroNova.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CompanyId");
+
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("UserId", "RoleId")
+                    b.HasIndex("UserId", "CompanyId", "RoleId")
                         .IsUnique();
 
                     b.ToTable("UserRoles", (string)null);
@@ -383,11 +544,53 @@ namespace AveroNova.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("AveroNova.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany("Subscriptions")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Company");
+
+                    b.Navigation("SubscriptionPlan");
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlanFeature", b =>
+                {
+                    b.HasOne("AveroNova.Domain.Entities.SubscriptionPlan", "Plan")
+                        .WithMany("Features")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plan");
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.UserCompany", b =>
+                {
+                    b.HasOne("AveroNova.Domain.Entities.Company", "Company")
+                        .WithMany("UserCompanies")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AveroNova.Domain.Entities.User", "User")
+                        .WithMany("UserCompanies")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.UserRole", b =>
                 {
+                    b.HasOne("AveroNova.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("AveroNova.Domain.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
@@ -400,6 +603,8 @@ namespace AveroNova.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Role");
 
                     b.Navigation("User");
@@ -408,6 +613,8 @@ namespace AveroNova.Infrastructure.Migrations
             modelBuilder.Entity("AveroNova.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Subscriptions");
+
+                    b.Navigation("UserCompanies");
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.Permission", b =>
@@ -422,9 +629,18 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Navigation("UserRoles");
                 });
 
+            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlan", b =>
+                {
+                    b.Navigation("Features");
+
+                    b.Navigation("Subscriptions");
+                });
+
             modelBuilder.Entity("AveroNova.Domain.Entities.User", b =>
                 {
                     b.Navigation("Companies");
+
+                    b.Navigation("UserCompanies");
 
                     b.Navigation("UserRoles");
                 });

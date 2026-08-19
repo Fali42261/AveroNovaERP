@@ -13,7 +13,7 @@
             Text="{Binding Label, Source={x:Reference This}}"
             FontSize="13"
             FontAttributes="Bold"
-            TextColor="{StaticResource TextPrimary}" />
+            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
 
         <!-- Picker -->
         <Border Style="{StaticResource AuthField}">

@@ -5,23 +5,25 @@ using AveroNova.Infrastructure.Persistence;
 using AveroNova.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AveroNova.Infrastructure
 {
     public static class DependencyInjection
     {
         public static IServiceCollection AddInfrastructure(
-            this IServiceCollection services, 
-            string dbPath) 
+            this IServiceCollection services,
+            string dbPath)
         {
-            services.AddDbContext<AppDbContext>(options =>
-             options.UseSqlite($"Data Source={dbPath}"));
+            services.AddDbContextFactory<AppDbContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}"));
+            services.AddScoped(sp =>
+                sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
             services.AddScoped<ICompanyRepository, CompanyRepository>();
             services.AddScoped<ICompanyService, CompanyService>();
+            services.AddScoped<ISubscriptionAccessRepository, SubscriptionAccessRepository>();
+            services.AddScoped<ICompanySubscriptionService, CompanySubscriptionService>();
+            services.AddScoped<IAccessControlService, AccessControlService>();
 
             return services;
         }

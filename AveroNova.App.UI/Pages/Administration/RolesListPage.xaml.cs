@@ -41,6 +41,8 @@ public partial class RolesListPage : ContentPage
         RenderList(_all);
     }
 
+    public Task ReloadAsync() => LoadAsync();
+
     private void OnSearchChanged(object s, TextChangedEventArgs e)
     {
         var q = e.NewTextValue?.Trim() ?? "";

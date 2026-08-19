@@ -20,7 +20,10 @@ namespace AveroNova.Infrastructure.Persistence
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<Company> Companies { get; set; }
+        public DbSet<UserCompany> UserCompanies { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }
+        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+        public DbSet<SubscriptionPlanFeature> SubscriptionPlanFeatures { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

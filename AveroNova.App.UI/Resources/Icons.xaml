@@ -21,7 +21,7 @@
     <x:String x:Key="IconForward">&#x2192;</x:String>
     <x:String x:Key="IconUp">&#x2191;</x:String>
     <x:String x:Key="IconDown">&#x2193;</x:String>
-    <x:String x:Key="IconChevronRight">&#x276F;</x:String>
+    <x:String x:Key="IconChevronRight">&#x203A;</x:String>
     <x:String x:Key="IconChevronDown">&#x2304;</x:String>
     <x:String x:Key="IconChevronUp">&#x2303;</x:String>
     <x:String x:Key="IconExpand">&#x25BC;</x:String>
@@ -32,20 +32,22 @@
     <x:String x:Key="IconBreadcrumbSep">&#x203A;</x:String>
 
     <!-- ── ERP Modules (Sidebar) ─────────────────────────────────────── -->
-    <x:String x:Key="IconDashboard">&#x229E;</x:String>
-    <x:String x:Key="IconCompany">&#x1F3DB;</x:String>
-    <x:String x:Key="IconCustomers">&#x1F91D;</x:String>
-    <x:String x:Key="IconProducts">&#x1F4E6;</x:String>
-    <x:String x:Key="IconInventory">&#x1F4CB;</x:String>
-    <x:String x:Key="IconSales">&#x1F4C4;</x:String>
-    <x:String x:Key="IconBilling">&#x1F4B3;</x:String>
-    <x:String x:Key="IconPurchases">&#x1F6D2;</x:String>
-    <x:String x:Key="IconPayments">&#x1F4B0;</x:String>
+    <x:String x:Key="IconDashboard">&#x25A6;</x:String>
+    <x:String x:Key="IconCompany">&#x2302;</x:String>
+    <x:String x:Key="IconCustomers">&#x25C9;</x:String>
+    <x:String x:Key="IconProducts">&#x25A3;</x:String>
+    <x:String x:Key="IconInventory">&#x2261;</x:String>
+    <x:String x:Key="IconSales">&#x25A4;</x:String>
+    <x:String x:Key="IconBilling">&#x25C7;</x:String>
+    <x:String x:Key="IconPurchases">&#x25A5;</x:String>
+    <x:String x:Key="IconPayments">&#x25C8;</x:String>
     <x:String x:Key="IconSalesReturns">&#x21A9;</x:String>
     <x:String x:Key="IconPurchaseReturns">&#x21AA;</x:String>
     <x:String x:Key="IconExpenses">&#x1F4B8;</x:String>
-    <x:String x:Key="IconReports">&#x1F4CA;</x:String>
-    <x:String x:Key="IconUsers">&#x1F465;</x:String>
+    <x:String x:Key="IconReports">&#x25A4;</x:String>
+    <x:String x:Key="IconBusiness">&#x25A8;</x:String>
+    <x:String x:Key="IconUsers">&#x25EF;</x:String>
+    <x:String x:Key="IconAdministration">&#x25A9;</x:String>
     <x:String x:Key="IconRoles">&#x1F6E1;</x:String>
     <x:String x:Key="IconPermissions">&#x1F511;</x:String>
     <x:String x:Key="IconSubscription">&#x2B50;</x:String>

@@ -6,7 +6,7 @@ namespace AveroNova.App.UI.Models;
 /// </summary>
 public class AppSettings
 {
-    public ThemeMode  Theme          { get; set; } = ThemeMode.System;
+    public ThemeMode  Theme          { get; set; } = ThemeMode.Light;
     public string     AccentColor    { get; set; } = "#2563EB";
     public bool       CompactMode    { get; set; }
     public string     Language       { get; set; } = "en";

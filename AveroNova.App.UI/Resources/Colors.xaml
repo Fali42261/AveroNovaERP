@@ -105,12 +105,27 @@
     <Color x:Key="SurfaceColorDark">#1E293B</Color>
     <Color x:Key="CardBackgroundDark">#1E293B</Color>
 
-    <!-- Sidebar -->
+    <!-- Sidebar — theme-aware (do not hard-code a separate sidebar theme) -->
     <Color x:Key="SidebarBackground">#0F172A</Color>
+    <Color x:Key="SidebarBackgroundLight">#FFFFFF</Color>
+    <Color x:Key="SidebarBackgroundDark">#0F172A</Color>
     <Color x:Key="SidebarActiveItem">#1D4ED8</Color>
+    <Color x:Key="SidebarActiveItemLight">#DBEAFE</Color>
+    <Color x:Key="SidebarActiveItemDark">#1E3A8A</Color>
     <Color x:Key="SidebarItemHover">#1E293B</Color>
+    <Color x:Key="SidebarItemHoverLight">#F1F5F9</Color>
+    <Color x:Key="SidebarItemHoverDark">#1E293B</Color>
     <Color x:Key="SidebarText">#CBD5E1</Color>
+    <Color x:Key="SidebarTextLight">#334155</Color>
+    <Color x:Key="SidebarTextDark">#CBD5E1</Color>
+    <Color x:Key="SidebarActiveTextLight">#1D4ED8</Color>
+    <Color x:Key="SidebarActiveTextDark">#FFFFFF</Color>
     <Color x:Key="SidebarGroupLabel">#475569</Color>
+    <Color x:Key="SidebarMutedLight">#64748B</Color>
+    <Color x:Key="SidebarMutedDark">#94A3B8</Color>
+    <Color x:Key="SidebarBorderLight">#E2E8F0</Color>
+    <Color x:Key="SidebarBorderDark">#1E293B</Color>
+    <Color x:Key="SidebarIndicator">#2563EB</Color>
 
     <!-- Borders -->
     <Color x:Key="BorderColor">#E2E8F0</Color>
@@ -131,6 +146,9 @@
     <Color x:Key="InputBorder">#D1D5DB</Color>
     <Color x:Key="InputFocusBorder">#2563EB</Color>
     <Color x:Key="InputPlaceholder">#9CA3AF</Color>
+    <Color x:Key="InputPlaceholderDark">#CBD5E1</Color>
+    <Color x:Key="InputText">#0F172A</Color>
+    <Color x:Key="InputTextDark">#FFFFFF</Color>
 
     <!-- Status — Semantic -->
     <Color x:Key="SuccessColor">#10B981</Color>
@@ -152,6 +170,12 @@
     <Color x:Key="InfoBg">#EFF6FF</Color>
     <Color x:Key="InfoBorder">#BFDBFE</Color>
     <Color x:Key="InfoText">#2563EB</Color>
+
+    <!-- Subscription plan cards -->
+    <Color x:Key="PlanSelectedFill">#EFF6FF</Color>
+    <Color x:Key="PlanSelectedFillDark">#172554</Color>
+    <Color x:Key="PlanInfoFill">#F8FAFC</Color>
+    <Color x:Key="PlanInfoFillDark">#0F172A</Color>
 
     <!-- Connectivity Status -->
     <Color x:Key="StatusOnline">#10B981</Color>

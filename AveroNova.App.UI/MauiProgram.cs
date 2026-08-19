@@ -8,10 +8,16 @@ using AveroNova.App.UI.Views.Dashboard;
 using AveroNova.App.UI.Views.Layout;
 using AveroNova.App.UI.Views.Profile;
 using AveroNova.App.UI.Pages.Customers;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.Services.Local;
 using AveroNova.App.UI.Services.Mock;
+using AveroNova.App.UI.SubscriptionAccess;
+using AveroNova.Application.Interfaces;
+using AveroNova.Application.Interfaces.Repositories;
+using AveroNova.Application.Services;
 using AveroNova.Infrastructure.Persistence;
+using AveroNova.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using AveroNova.App.UI.Navigation;
@@ -26,6 +32,7 @@ using AveroNova.App.UI.Pages.Purchases;
 using AveroNova.App.UI.Pages.Reports;
 using AveroNova.App.UI.Pages.Returns;
 using AveroNova.App.UI.Pages.Settings;
+using AveroNova.App.UI.Pages.Profile;
 using AveroNova.App.UI.Pages.Subscription;
 using AveroNova.App.UI.Pages.SyncCenter;
 
@@ -35,6 +42,7 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        AveroNova.App.UI.Helpers.StartupLog.Write("CreateMauiApp start");
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -59,9 +67,13 @@ public static class MauiProgram
             options.UseSqlite($"Data Source={dbPath}");
         });
         builder.Services.AddSingleton<LocalDatabaseInitializer>();
+        builder.Services.AddSingleton<ISubscriptionAccessRepository, SubscriptionAccessRepository>();
+        builder.Services.AddSingleton<ICompanySubscriptionService, CompanySubscriptionService>();
+        builder.Services.AddSingleton<AveroNova.Application.Interfaces.IAccessControlService, AccessControlService>();
+        builder.Services.AddSingleton<CurrentAccessService>();
+        builder.Services.AddSingleton<TrialReminderPresenter>();
 
         // ── Singletons ────────────────────────────────────────────────────────
-        builder.Services.AddSingleton<App>();
         builder.Services.AddSingleton<AppShell>();
 
         // ── Auth pages ────────────────────────────────────────────────────────
@@ -153,6 +165,12 @@ public static class MauiProgram
         builder.Services.AddTransient<SyncCenterPage>();
         builder.Services.AddTransient<Func<SyncCenterPage>>(sp => () => sp.GetRequiredService<SyncCenterPage>());
 
+        builder.Services.AddTransient<UsersRolesPage>();
+        builder.Services.AddTransient<Func<UsersRolesPage>>(sp => () => sp.GetRequiredService<UsersRolesPage>());
+
+        builder.Services.AddTransient<UserProfilePage>();
+        builder.Services.AddTransient<Func<UserProfilePage>>(sp => () => sp.GetRequiredService<UserProfilePage>());
+
         builder.Services.AddTransient<SettingsPage>();
         builder.Services.AddTransient<Func<SettingsPage>>(sp => () => sp.GetRequiredService<SettingsPage>());
 
@@ -164,7 +182,9 @@ public static class MauiProgram
 
         // ── Mock Services ─────────────────────────────────────────────────────
 
+        builder.Services.AddSingleton<IToastService, ToastService>();
         builder.Services.AddSingleton<IAuthenticationService, LocalAuthenticationService>();
+        builder.Services.AddTransient<IDashboardService, DashboardService>();
         builder.Services.AddTransient<IBillingService, MockBillingService>();
         builder.Services.AddSingleton<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
         builder.Services.AddSingleton<IConnectivityService, DeviceConnectivityService>();
@@ -176,7 +196,7 @@ public static class MauiProgram
         builder.Services.AddTransient<IProductService, MockProductService>();
         builder.Services.AddTransient<IPurchaseService, MockPurchaseService>();
         builder.Services.AddTransient<IReturnService, MockReturnService>();
-        builder.Services.AddTransient<ISettingsService, MockSettingsService>();
+        builder.Services.AddSingleton<ISettingsService, MockSettingsService>();
         builder.Services.AddSingleton<ISubscriptionService, LocalSubscriptionService>();
         builder.Services.AddTransient<ISyncService, MockSyncService>();
         builder.Services.AddTransient<IUserService, MockUserService>();
@@ -192,6 +212,7 @@ public static class MauiProgram
 #endif
 
         var app = builder.Build();
+        AveroNova.App.UI.Helpers.StartupLog.Write("CreateMauiApp built");
 
         // Apply pending EF Core migrations on startup
         //using var scope = app.Services.CreateScope();

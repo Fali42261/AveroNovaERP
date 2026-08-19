@@ -15,16 +15,116 @@ using AveroNova.App.UI.Pages.Returns;
 using AveroNova.App.UI.Pages.Settings;
 using AveroNova.App.UI.Pages.Subscription;
 using AveroNova.App.UI.Pages.SyncCenter;
+using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.SubscriptionAccess;
+using AveroNova.Domain.Constants;
 
 namespace AveroNova.App.UI;
 
 public partial class AppShell : Shell
 {
-    public AppShell()
+    private readonly CurrentAccessService _access;
+    private readonly IAuthenticationService _auth;
+
+    public AppShell(CurrentAccessService access, IAuthenticationService auth)
     {
+        AveroNova.App.UI.Helpers.StartupLog.Write("AppShell ctor start");
         InitializeComponent();
+        AveroNova.App.UI.Helpers.StartupLog.Write("AppShell InitializeComponent done");
+        _access = access;
+        _auth = auth;
         RegisterRoutes();
+        Navigating += OnNavigating;
     }
+
+    private async void OnNavigating(object? sender, ShellNavigatingEventArgs e)
+    {
+        try
+        {
+            await AuthorizeNavigationAsync(e);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] Navigation guard failed: {ex}");
+        }
+    }
+
+    private async Task AuthorizeNavigationAsync(ShellNavigatingEventArgs e)
+    {
+        if (e.Source is ShellNavigationSource.Pop or ShellNavigationSource.PopToRoot)
+            return;
+
+        var target = e.Target?.Location?.OriginalString;
+        if (IsPublicRoute(target))
+            return;
+
+        var isMain = IsMainRoute(target);
+        var hasFeature = FeatureRouteMap.TryResolve(target, out var module, out var permission);
+        if (!isMain && !hasFeature)
+            return;
+
+        // Main/Dashboard requires an authenticated session from Login (or splash restore).
+        // A leftover Preferences user id after registration must not open Dashboard.
+        if (!_auth.IsAuthenticated)
+        {
+            e.Cancel();
+            await GoToLoginAsync();
+            return;
+        }
+
+        if (isMain && !hasFeature)
+            return;
+
+        var decision = string.IsNullOrWhiteSpace(permission)
+            ? await _access.AuthorizeAsync(module)
+            : await _access.AuthorizeFeatureAsync(module, permission);
+        if (decision.IsAllowed)
+            return;
+
+        e.Cancel();
+        if (decision.IsSubscriptionExpired)
+        {
+            await SignOutExpiredAsync();
+            return;
+        }
+
+        var message = decision.Reason ?? SubscriptionMessages.FreeTrialExpiredAccess;
+        var page = Current?.CurrentPage;
+        if (page != null)
+            await page.DisplayAlertAsync("Subscription", message, "OK");
+    }
+
+    private async Task SignOutExpiredAsync()
+    {
+        PendingAuthMessage.Set(SubscriptionMessages.FreeTrialExpiredAccess);
+        await _auth.LogoutAsync();
+        await GoToLoginAsync();
+    }
+
+    private Task GoToLoginAsync()
+        => GoToAsync(AppRoutes.Login);
+
+    private static bool IsMainRoute(string? location)
+        => !string.IsNullOrWhiteSpace(location) && ContainsRoute(location, "Main");
+
+    private static bool IsPublicRoute(string? location)
+    {
+        if (string.IsNullOrWhiteSpace(location))
+            return true;
+
+        return ContainsRoute(location, "Splash")
+               || ContainsRoute(location, "Welcome")
+               || ContainsRoute(location, "Login")
+               || ContainsRoute(location, "Register")
+               || ContainsRoute(location, "ForgotPassword")
+               || ContainsRoute(location, "ResetPassword")
+               || ContainsRoute(location, "OtpVerify");
+    }
+
+    private static bool ContainsRoute(string location, string route)
+        => location.Equals(route, StringComparison.OrdinalIgnoreCase)
+           || location.Contains("//" + route, StringComparison.OrdinalIgnoreCase)
+           || location.Contains("/" + route, StringComparison.OrdinalIgnoreCase);
 
     private static void RegisterRoutes()
     {

@@ -25,6 +25,9 @@ internal static class LocalSessionStore
 
     public static void ClearSession()
     {
+        Preferences.Default.Set(UserIdKey, string.Empty);
+        Preferences.Default.Set(CompanyIdKey, string.Empty);
+        Preferences.Default.Set(EmailKey, string.Empty);
         Preferences.Default.Remove(UserIdKey);
         Preferences.Default.Remove(CompanyIdKey);
         Preferences.Default.Remove(EmailKey);

@@ -1,3 +1,4 @@
+using AveroNova.Domain.Constants;
 using AveroNova.Domain.Entities;
 using AveroNova.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -5,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace AveroNova.App.UI.Services.Local;
 
 /// <summary>
-/// Creates/migrates the existing AppDbContext SQLite schema and seeds
-/// Administrator + permissions. Does not invent tables.
+/// Creates/migrates AppDbContext SQLite, seeds Administrator permissions,
+/// and ensures the subscription plan catalog exists.
 /// </summary>
 public sealed class LocalDatabaseInitializer
 {
@@ -18,22 +19,26 @@ public sealed class LocalDatabaseInitializer
 
     private static readonly (string Name, string Description)[] Permissions =
     [
-        ("dashboard.view", "View Dashboard"),
-        ("billing.view", "View Invoices"),
-        ("billing.create", "Create Invoices"),
-        ("billing.delete", "Delete Invoices"),
-        ("customers.view", "View Customers"),
-        ("customers.manage", "Manage Customers"),
-        ("products.view", "View Products"),
-        ("products.manage", "Manage Products"),
-        ("inventory.view", "View Inventory"),
-        ("inventory.manage", "Manage Inventory"),
-        ("payments.view", "View Payments"),
-        ("payments.manage", "Manage Payments"),
-        ("reports.view", "View Reports"),
-        ("users.manage", "Manage Users"),
-        ("settings.manage", "Manage Settings"),
-        ("subscription.view", "View Subscription")
+        (PermissionNames.DashboardView, "View Dashboard"),
+        (PermissionNames.BillingView, "View Invoices"),
+        (PermissionNames.BillingCreate, "Create Invoices"),
+        (PermissionNames.BillingDelete, "Delete Invoices"),
+        (PermissionNames.CustomersView, "View Customers"),
+        (PermissionNames.CustomersManage, "Manage Customers"),
+        (PermissionNames.ProductsView, "View Products"),
+        (PermissionNames.ProductsManage, "Manage Products"),
+        (PermissionNames.InventoryView, "View Inventory"),
+        (PermissionNames.InventoryManage, "Manage Inventory"),
+        (PermissionNames.PaymentsView, "View Payments"),
+        (PermissionNames.PaymentsManage, "Manage Payments"),
+        (PermissionNames.ReportsView, "View Reports"),
+        (PermissionNames.UsersManage, "Manage Users"),
+        (PermissionNames.SettingsManage, "Manage Settings"),
+        (PermissionNames.SubscriptionView, "View Subscription"),
+        (PermissionNames.CompanyView, "View Company"),
+        (PermissionNames.PurchasesView, "View Purchases"),
+        (PermissionNames.PurchasesManage, "Manage Purchases"),
+        (PermissionNames.ExpensesView, "View Expenses")
     ];
 
     public LocalDatabaseInitializer(IDbContextFactory<AppDbContext> factory)
@@ -53,17 +58,23 @@ public sealed class LocalDatabaseInitializer
                 return;
 
             await using var db = await _factory.CreateDbContextAsync(cancellationToken);
-            try
+            var canConnect = await db.Database.CanConnectAsync(cancellationToken);
+            if (!canConnect)
             {
-                await db.Database.MigrateAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AveroNova] Migrate failed, EnsureCreated: {ex.Message}");
+                AveroNova.App.UI.Helpers.StartupLog.Write("DB creating");
                 await db.Database.EnsureCreatedAsync(cancellationToken);
             }
+            else
+            {
+                AveroNova.App.UI.Helpers.StartupLog.Write("DB already present, skipping migrate");
+            }
 
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB schema ensure start");
+            await SqliteSubscriptionSchema.EnsureAsync(db, cancellationToken);
+            await SqliteUserRoleSchema.EnsureAsync(db, cancellationToken);
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB seed start");
             await SeedAsync(db, cancellationToken);
+            await SubscriptionCatalogSeeder.SeedAsync(db, cancellationToken);
             _ready = true;
             System.Diagnostics.Debug.WriteLine($"[AveroNova] Local SQLite ready: {db.Database.GetDbConnection().DataSource}");
         }

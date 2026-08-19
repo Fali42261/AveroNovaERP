@@ -1,19 +1,28 @@
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.Domain.Constants;
 using AveroNova.Domain.Entities;
+using AveroNova.Domain.Services;
 using AveroNova.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using ICompanySubscriptionService = AveroNova.Application.Interfaces.ICompanySubscriptionService;
 
 namespace AveroNova.App.UI.Services.Local;
 
 public sealed class LocalCompanyService : ICompanyService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
+    private readonly ICompanySubscriptionService _subscriptions;
 
-    public LocalCompanyService(IDbContextFactory<AppDbContext> factory)
+    public LocalCompanyService(
+        IDbContextFactory<AppDbContext> factory,
+        ICompanySubscriptionService subscriptions)
     {
         _factory = factory;
+        _subscriptions = subscriptions;
     }
+
+    public event EventHandler? CurrentCompanyChanged;
 
     public CompanyModel? CurrentCompany
     {
@@ -33,7 +42,18 @@ public sealed class LocalCompanyService : ICompanyService
                 var userId = LocalSessionStore.UserId;
                 if (userId != null)
                 {
-                    company = db.Companies.AsNoTracking()
+                    var membership = db.UserCompanies.AsNoTracking()
+                        .Where(uc => uc.UserId == userId.Value && uc.IsActive && !uc.IsDeleted)
+                        .OrderByDescending(uc => uc.IsOwner)
+                        .ThenBy(uc => uc.CreatedAt)
+                        .FirstOrDefault();
+                    if (membership != null)
+                    {
+                        company = db.Companies.AsNoTracking()
+                            .FirstOrDefault(c => c.Id == membership.CompanyId && !c.IsDeleted);
+                    }
+
+                    company ??= db.Companies.AsNoTracking()
                         .FirstOrDefault(c => c.UserId == userId.Value && !c.IsDeleted);
                     if (company != null)
                         LocalSessionStore.Set(userId.Value, company.Id, LocalSessionStore.Email);
@@ -49,11 +69,24 @@ public sealed class LocalCompanyService : ICompanyService
         var userId = LocalSessionStore.UserId;
         await using var db = await _factory.CreateDbContextAsync();
         var currentId = LocalSessionStore.CompanyId;
-        var query = db.Companies.AsNoTracking().Where(c => !c.IsDeleted);
-        if (userId != null)
-            query = query.Where(c => c.UserId == userId.Value);
+        List<Company> rows;
+        if (userId == null)
+        {
+            rows = [];
+        }
+        else
+        {
+            var companyIds = await db.UserCompanies.AsNoTracking()
+                .Where(uc => uc.UserId == userId.Value && uc.IsActive && !uc.IsDeleted)
+                .Select(uc => uc.CompanyId)
+                .ToListAsync();
 
-        var rows = await query.ToListAsync();
+            var query = db.Companies.AsNoTracking().Where(c => !c.IsDeleted);
+            query = companyIds.Count > 0
+                ? query.Where(c => companyIds.Contains(c.Id) || c.UserId == userId.Value)
+                : query.Where(c => c.UserId == userId.Value);
+            rows = await query.ToListAsync();
+        }
         return rows.Select(c => Map(c, c.Id == currentId)).ToList();
     }
 
@@ -88,6 +121,29 @@ public sealed class LocalCompanyService : ICompanyService
             IsDeleted = false
         };
         db.Companies.Add(entity);
+
+        var now = DateTime.UtcNow;
+        db.UserCompanies.Add(UserCompanyFactory.CreateOwner(userId.Value, entity.Id, now));
+
+        var freeTrial = await db.SubscriptionPlans
+            .FirstOrDefaultAsync(p => p.Code == SubscriptionPlanCodes.FreeTrial && !p.IsDeleted);
+        if (freeTrial != null)
+            db.Subscriptions.Add(FreeTrialSubscriptionFactory.Create(entity.Id, freeTrial, now));
+
+        var ownerRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Administrator" && !r.IsDeleted);
+        if (ownerRole != null)
+        {
+            db.UserRoles.Add(new UserRole
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId.Value,
+                RoleId = ownerRole.Id,
+                CompanyId = entity.Id,
+                CreatedAt = now,
+                IsDeleted = false
+            });
+        }
+
         await db.SaveChangesAsync();
         return (true, null);
     }
@@ -122,13 +178,32 @@ public sealed class LocalCompanyService : ICompanyService
         return (true, null);
     }
 
-    public Task SwitchCompanyAsync(Guid id)
+    public async Task<(bool Ok, string? Error)> SwitchCompanyAsync(Guid id)
     {
         var userId = LocalSessionStore.UserId;
         var email = LocalSessionStore.Email;
-        if (userId != null)
-            LocalSessionStore.Set(userId.Value, id, email);
-        return Task.CompletedTask;
+        if (userId == null)
+            return (false, SubscriptionMessages.CompanyContextRequired);
+
+        await using var db = await _factory.CreateDbContextAsync();
+        var belongs = await db.UserCompanies.AnyAsync(
+            uc => uc.UserId == userId.Value && uc.CompanyId == id && uc.IsActive && !uc.IsDeleted);
+        if (!belongs)
+        {
+            belongs = await db.Companies.AnyAsync(
+                c => c.Id == id && c.UserId == userId.Value && !c.IsDeleted);
+        }
+
+        if (!belongs)
+            return (false, SubscriptionMessages.UserNotInCompany);
+
+        var snapshot = await _subscriptions.GetCurrentAsync(id);
+        if (snapshot == null || snapshot.IsExpired || !snapshot.IsActive)
+            return (false, SubscriptionMessages.FreeTrialExpiredAccess);
+
+        LocalSessionStore.Set(userId.Value, id, email);
+        CurrentCompanyChanged?.Invoke(this, EventArgs.Empty);
+        return (true, null);
     }
 
     private static CompanyModel Map(Company company, bool isCurrent) => new()

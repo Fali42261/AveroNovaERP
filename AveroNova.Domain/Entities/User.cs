@@ -21,7 +21,10 @@ namespace AveroNova.Domain.Entities
         public ICollection<UserRole> UserRoles { get; set; }
             = new List<UserRole>();
         
-        public ICollection<Company> Companies { get; set; } 
+        public ICollection<Company> Companies { get; set; }
             = new List<Company>();
+
+        public ICollection<UserCompany> UserCompanies { get; set; }
+            = new List<UserCompany>();
     }
 }

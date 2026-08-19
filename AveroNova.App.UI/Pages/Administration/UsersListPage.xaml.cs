@@ -63,6 +63,8 @@ public partial class UsersListPage : ContentPage
         RenderList(_all);
     }
 
+    public Task ReloadAsync() => LoadAsync();
+
     private void OnSearchChanged(
         object sender,
         TextChangedEventArgs e)

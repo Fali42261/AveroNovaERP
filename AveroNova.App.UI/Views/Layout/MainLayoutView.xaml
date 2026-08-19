@@ -3,36 +3,16 @@
 <ContentView
     x:Class="AveroNova.App.UI.Views.Layout.MainLayoutView"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:layout="clr-namespace:AveroNova.App.UI.Views.Layout"
+    HorizontalOptions="Fill"
+    VerticalOptions="Fill">
 
-    <ContentView.Resources>
-        <ResourceDictionary>
-
-            <Style x:Key="SidebarNavItem" TargetType="Button">
-                <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="TextColor" Value="White" />
-                <Setter Property="FontSize" Value="13" />
-                <Setter Property="Padding" Value="12,9" />
-                <Setter Property="CornerRadius" Value="8" />
-                <Setter Property="BorderWidth" Value="0" />
-                <Setter Property="HorizontalOptions" Value="Fill" />
-            </Style>
-
-            <Style x:Key="SidebarNavItemActive" TargetType="Button">
-                <Setter Property="BackgroundColor" Value="{StaticResource Primary700}" />
-                <Setter Property="TextColor" Value="White" />
-                <Setter Property="FontSize" Value="13" />
-                <Setter Property="FontAttributes" Value="Bold" />
-                <Setter Property="Padding" Value="12,9" />
-                <Setter Property="CornerRadius" Value="8" />
-                <Setter Property="BorderWidth" Value="0" />
-                <Setter Property="HorizontalOptions" Value="Fill" />                
-            </Style>
-
-        </ResourceDictionary>
-    </ContentView.Resources>
-
-    <Grid>
+    <Grid
+        x:Name="RootLayout"
+        HorizontalOptions="Fill"
+        VerticalOptions="Fill"
+        IsClippedToBounds="True">
 
         <!-- ========================================================= -->
         <!-- DESKTOP                                                   -->
@@ -40,266 +20,28 @@
 
         <Grid
             x:Name="DesktopLayout"
-            ColumnDefinitions="260,*"
             RowDefinitions="64,*"
+            HorizontalOptions="Fill"
+            VerticalOptions="Fill"
             BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
-            <!-- Sidebar -->
-            <Border
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="DesktopSidebarColumnDef" Width="256" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ContentView
+                x:Name="DesktopSidebarColumn"
                 Grid.Column="0"
                 Grid.RowSpan="2"
-                BackgroundColor="{StaticResource SidebarBackground}"
-                StrokeThickness="0">
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill">
+                <layout:AppSidebarView
+                    x:Name="DesktopSidebar"
+                    HorizontalOptions="Fill"
+                    VerticalOptions="Fill" />
+            </ContentView>
 
-                <Grid
-                    RowDefinitions="72,*,Auto"
-                    Padding="14,16">
-
-                    <!-- Logo -->
-                    <Grid
-                        ColumnDefinitions="44,*"
-                        ColumnSpacing="10"
-                        VerticalOptions="Center">
-
-                        <Border
-                            WidthRequest="40"
-                            HeightRequest="40"
-                            BackgroundColor="{StaticResource Primary700}"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 10">
-
-                            <Label
-                                Text="A"
-                                FontSize="22"
-                                FontAttributes="Bold"
-                                TextColor="{StaticResource Primary400}"
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center" />
-                        </Border>
-
-                        <VerticalStackLayout
-                            Grid.Column="1"
-                            Spacing="0"
-                            VerticalOptions="Center">
-
-                            <Label
-                                Text="AveroNova"
-                                FontSize="18"
-                                FontAttributes="Bold"
-                                TextColor="{StaticResource White}" />
-
-                            <Label
-                                Text="ERP System"
-                                FontSize="11"
-                                TextColor="{StaticResource Primary400}" />
-                        </VerticalStackLayout>
-                    </Grid>
-
-                    <!-- Navigation -->
-                    <ScrollView
-                        Grid.Row="1"
-                        Margin="0,10,0,0"
-                        VerticalScrollBarVisibility="Never">
-
-                        <VerticalStackLayout Spacing="2">
-
-                            <Label
-                                Text="DASHBOARD"
-                                Style="{StaticResource SidebarGroupLabel}" />
-
-                            <Button
-                                x:Name="BtnDashboard"
-                                Text="Dashboard"
-                                Style="{StaticResource SidebarNavItemActive}"
-                                Clicked="OnNavClicked" />
-
-                            <Label
-                                Text="BUSINESS"
-                                Style="{StaticResource SidebarGroupLabel}"
-                                Margin="0,12,0,2" />
-
-                            <Button x:Name="BtnCompany" Text="Company"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnCustomers" Text="Customers"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnProducts" Text="Products"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnInventory" Text="Inventory"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnBilling" Text="Billing"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnPurchases" Text="Purchases"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnPayments" Text="Payments"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnSalesReturns" Text="Sales Returns"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnPurchaseReturns" Text="Purchase Returns"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnExpenses" Text="Expenses"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Label
-                                Text="REPORTS"
-                                Style="{StaticResource SidebarGroupLabel}"
-                                Margin="0,12,0,2" />
-
-                            <Button
-                                x:Name="BtnReports"
-                                Text="Reports"
-                                Style="{StaticResource SidebarNavItem}"
-                                Clicked="OnNavClicked" />
-
-                            <Label
-                                Text="ADMINISTRATION"
-                                Style="{StaticResource SidebarGroupLabel}"
-                                Margin="0,12,0,2" />
-
-                            <Button x:Name="BtnUsers" Text="Users"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnRoles" Text="Roles"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnPermissions" Text="Permissions"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Label
-                                Text="SUBSCRIPTION"
-                                Style="{StaticResource SidebarGroupLabel}"
-                                Margin="0,12,0,2" />
-
-                            <Button
-                                x:Name="BtnSubscription"
-                                Text="Subscription"
-                                Style="{StaticResource SidebarNavItem}"
-                                Clicked="OnNavClicked" />
-
-                            <Label
-                                Text="SYSTEM"
-                                Style="{StaticResource SidebarGroupLabel}"
-                                Margin="0,12,0,2" />
-
-                            <Button x:Name="BtnNotifications"
-                                    Text="Notifications"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnSyncCenter"
-                                    Text="Sync Center"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnSettings"
-                                    Text="Settings"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnHelp"
-                                    Text="Help &amp; Support"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                            <Button x:Name="BtnAbout"
-                                    Text="About"
-                                    Style="{StaticResource SidebarNavItem}"
-                                    Clicked="OnNavClicked" />
-
-                        </VerticalStackLayout>
-                    </ScrollView>
-
-                    <!-- Footer -->
-                    <VerticalStackLayout
-                        Grid.Row="2"
-                        Padding="4,12,4,4"
-                        Spacing="2">
-
-                        <BoxView
-                            HeightRequest="1"
-                            BackgroundColor="{StaticResource BorderColorDark}" />
-
-                        <Grid
-                            ColumnDefinitions="36,*,36"
-                            ColumnSpacing="8"
-                            Margin="0,8,0,0">
-
-                            <Border
-                                WidthRequest="36"
-                                HeightRequest="36"
-                                BackgroundColor="{StaticResource Primary800}"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 18">
-
-                                <Label
-                                    x:Name="LblAvatarInitials"
-                                    Text="AU"
-                                    FontSize="13"
-                                    FontAttributes="Bold"
-                                    TextColor="{StaticResource Primary300}"
-                                    HorizontalOptions="Center"
-                                    VerticalOptions="Center" />
-                            </Border>
-
-                            <VerticalStackLayout
-                                Grid.Column="1"
-                                Spacing="1"
-                                VerticalOptions="Center">
-
-                                <Label
-                                    x:Name="LblUserName"
-                                    Text="Admin User"
-                                    FontSize="13"
-                                    FontAttributes="Bold"
-                                    TextColor="{StaticResource White}"
-                                    LineBreakMode="TailTruncation" />
-
-                                <Label
-                                    x:Name="LblUserRole"
-                                    Text="Administrator"
-                                    FontSize="11"
-                                    TextColor="{StaticResource SidebarGroupLabel}" />
-                            </VerticalStackLayout>
-
-                            <Button
-                                Grid.Column="2"
-                                x:Name="BtnLogout"
-                                Text="Logout"
-                                FontSize="11"
-                                BackgroundColor="Transparent"
-                                TextColor="{StaticResource Gray400}"
-                                BorderWidth="0"
-                                Padding="0"
-                                HeightRequest="36"
-                                WidthRequest="36"
-                                Clicked="OnLogoutClicked" />
-                        </Grid>
-                    </VerticalStackLayout>
-                </Grid>
-            </Border>
-
-            <!-- Header -->
             <Border
                 Grid.Column="1"
                 Grid.Row="0"
@@ -309,7 +51,7 @@
                 StrokeThickness="1">
 
                 <Grid
-                    ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                    ColumnDefinitions="*,Auto,Auto,Auto"
                     VerticalOptions="Center"
                     ColumnSpacing="8">
 
@@ -331,7 +73,6 @@
                             TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                     </VerticalStackLayout>
 
-                    <!-- Connectivity -->
                     <Border
                         Grid.Column="1"
                         BackgroundColor="{StaticResource SuccessBg}"
@@ -360,39 +101,35 @@
                         </HorizontalStackLayout>
                     </Border>
 
-                    <!-- Company -->
-                    <Border
+                    <VerticalStackLayout
                         Grid.Column="2"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource SurfaceColorDark}}"
-                        Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 8"
-                        Padding="10,6">
-
+                        Spacing="0"
+                        VerticalOptions="Center"
+                        HorizontalOptions="End">
                         <Label
-                            x:Name="LblCompanyName"
-                            Text="AveroNova Global"
+                            x:Name="LblHeaderName"
                             FontSize="12"
                             FontAttributes="Bold"
+                            HorizontalTextAlignment="End"
                             TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                    </Border>
+                        <Label
+                            x:Name="LblHeaderEmail"
+                            FontSize="10"
+                            HorizontalTextAlignment="End"
+                            LineBreakMode="TailTruncation"
+                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    </VerticalStackLayout>
 
-                    <!-- Theme -->
-                    <Button
-                        Grid.Column="3"
-                        x:Name="BtnTheme"
-                        Text="Theme"
-                        Style="{StaticResource SmallSecondaryButton}"
-                        Clicked="OnThemeClicked" />
-
-                    <!-- User -->
                     <Border
-                        Grid.Column="4"
+                        x:Name="HeaderProfile"
+                        Grid.Column="3"
                         WidthRequest="38"
                         HeightRequest="38"
                         BackgroundColor="{StaticResource Primary100}"
                         StrokeThickness="0"
-                        StrokeShape="RoundRectangle 19">
+                        StrokeShape="RoundRectangle 19"
+                        AutomationId="HeaderUserIcon"
+                        SemanticProperties.Description="Account menu">
 
                         <Label
                             x:Name="LblHeaderInitials"
@@ -406,50 +143,52 @@
                 </Grid>
             </Border>
 
-            <!-- Desktop content -->
             <ContentView
                 x:Name="ContentArea"
                 Grid.Column="1"
-                Grid.Row="1" />
+                Grid.Row="1"
+                MinimumWidthRequest="0" />
         </Grid>
 
         <!-- ========================================================= -->
-        <!-- MOBILE                                                    -->
+        <!-- MOBILE / TABLET DRAWER                                    -->
         <!-- ========================================================= -->
 
         <Grid
             x:Name="MobileLayout"
-            RowDefinitions="56,*,60"
+            RowDefinitions="56,*"
             BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}"
             IsVisible="False">
 
-            <!-- Mobile header -->
             <Border
                 Grid.Row="0"
-                Padding="14,0"
+                Padding="12,0"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
                 StrokeThickness="1">
 
                 <Grid
-                    ColumnDefinitions="36,*,36"
+                    ColumnDefinitions="44,*,Auto,44"
                     ColumnSpacing="8">
 
                     <Border
-                        WidthRequest="32"
-                        HeightRequest="32"
-                        BackgroundColor="{StaticResource Primary700}"
+                        x:Name="BtnMenu"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        MinimumWidthRequest="44"
+                        MinimumHeightRequest="44"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceColorDark}}"
                         StrokeThickness="0"
                         StrokeShape="RoundRectangle 8"
-                        VerticalOptions="Center">
+                        VerticalOptions="Center"
+                        SemanticProperties.Description="Open navigation">
 
                         <Label
-                            Text="A"
+                            Text="{StaticResource IconMenu}"
                             FontSize="16"
-                            FontAttributes="Bold"
-                            TextColor="{StaticResource Primary400}"
                             HorizontalOptions="Center"
-                            VerticalOptions="Center" />
+                            VerticalOptions="Center"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
                     </Border>
 
                     <Label
@@ -459,7 +198,8 @@
                         FontSize="16"
                         FontAttributes="Bold"
                         TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
-                        VerticalOptions="Center" />
+                        VerticalOptions="Center"
+                        LineBreakMode="TailTruncation" />
 
                     <BoxView
                         Grid.Column="2"
@@ -470,81 +210,64 @@
                         BackgroundColor="{StaticResource StatusOnline}"
                         HorizontalOptions="Center"
                         VerticalOptions="Center" />
+
+                    <Border
+                        x:Name="MobileProfile"
+                        Grid.Column="3"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        MinimumWidthRequest="44"
+                        MinimumHeightRequest="44"
+                        BackgroundColor="{StaticResource Primary100}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 22"
+                        VerticalOptions="Center"
+                        AutomationId="MobileHeaderUserIcon"
+                        SemanticProperties.Description="Account menu">
+
+                        <Label
+                            x:Name="MLblHeaderInitials"
+                            Text="AU"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource PrimaryColor}"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center" />
+                    </Border>
                 </Grid>
             </Border>
 
-            <!-- Mobile content -->
             <ContentView
                 x:Name="MobileContentArea"
                 Grid.Row="1" />
 
-            <!-- Mobile navigation -->
-            <Border
-                Grid.Row="2"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
-                StrokeThickness="1">
+            <Grid
+                x:Name="DrawerOverlay"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                IsVisible="False">
 
-                <Grid ColumnDefinitions="*,*,*,*,*">
+                <BoxView
+                    x:Name="DrawerScrim"
+                    Color="{StaticResource OverlayColor}" />
 
-                    <Button
-                        x:Name="MBtnDashboard"
-                        Grid.Column="0"
-                        Text="Dashboard"
-                        FontSize="10"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource PrimaryColor}"
-                        BorderWidth="0"
-                        MinimumHeightRequest="44"
-                        Clicked="OnNavClicked" />
+                <Border
+                    x:Name="DrawerPanel"
+                    WidthRequest="280"
+                    HorizontalOptions="Start"
+                    VerticalOptions="Fill"
+                    StrokeThickness="0"
+                    Padding="0">
 
-                    <Button
-                        x:Name="MBtnBilling"
-                        Grid.Column="1"
-                        Text="Billing"
-                        FontSize="10"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource TextSecondary}"
-                        BorderWidth="0"
-                        MinimumHeightRequest="44"
-                        Clicked="OnNavClicked" />
-
-                    <Button
-                        x:Name="MBtnCustomers"
-                        Grid.Column="2"
-                        Text="Customers"
-                        FontSize="10"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource TextSecondary}"
-                        BorderWidth="0"
-                        MinimumHeightRequest="44"
-                        Clicked="OnNavClicked" />
-
-                    <Button
-                        x:Name="MBtnReports"
-                        Grid.Column="3"
-                        Text="Reports"
-                        FontSize="10"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource TextSecondary}"
-                        BorderWidth="0"
-                        MinimumHeightRequest="44"
-                        Clicked="OnNavClicked" />
-
-                    <Button
-                        x:Name="MBtnSettings"
-                        Grid.Column="4"
-                        Text="Settings"
-                        FontSize="10"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource TextSecondary}"
-                        BorderWidth="0"
-                        MinimumHeightRequest="44"
-                        Clicked="OnNavClicked" />
-
-                </Grid>
-            </Border>
+                    <layout:AppSidebarView
+                        x:Name="MobileSidebar"
+                        HorizontalOptions="Fill"
+                        VerticalOptions="Fill" />
+                </Border>
+            </Grid>
         </Grid>
+
+        <layout:HeaderAccountMenuOverlay x:Name="AccountMenu" />
 
     </Grid>
 </ContentView>

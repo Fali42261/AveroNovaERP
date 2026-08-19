@@ -35,5 +35,7 @@ namespace AveroNova.Domain.Entities
         public ICollection<Subscription> Subscriptions { get; set; }
             = new List<Subscription>();
 
+        public ICollection<UserCompany> UserCompanies { get; set; }
+            = new List<UserCompany>();
     }
 }
