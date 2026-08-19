@@ -215,9 +215,15 @@ public partial class MainLayoutView : ContentView
 
     private async Task NavigateMenuAsync(string menuKey)
     {
-        var definition = NavigationMenuCatalog.Find(menuKey);
-        if (definition == null)
+        if (NavigationMenuCatalog.Find(menuKey) == null)
             return;
+
+        if (!TryResolvePage(menuKey, out var factory, out var title, out var breadcrumb))
+        {
+            DesktopSidebar.SelectedKey = _selectedMenuKey;
+            MobileSidebar.SelectedKey = _selectedMenuKey;
+            return;
+        }
 
         var decision = await _access.AuthorizeMenuAsync(menuKey);
         if (!decision.IsAllowed)
@@ -229,13 +235,6 @@ public partial class MainLayoutView : ContentView
             }
 
             ShowRestriction(decision.Reason ?? SubscriptionMessages.PermissionDenied);
-            return;
-        }
-
-        if (!TryResolvePage(menuKey, out var factory, out var title, out var breadcrumb))
-        {
-            DesktopSidebar.SelectedKey = _selectedMenuKey;
-            MobileSidebar.SelectedKey = _selectedMenuKey;
             return;
         }
 
@@ -445,10 +444,10 @@ public partial class MainLayoutView : ContentView
                 }
 
                 var sidebar = NavigationMenuCatalog.SidebarOnly(snapshot.Menus);
-                var target = FindNavigable(sidebar, _selectedMenuKey)
-                    ?? FindNavigable(snapshot.Menus, _selectedMenuKey)
-                    ?? FirstNavigable(sidebar)
-                    ?? FirstNavigable(snapshot.Menus);
+                var target = FindNavigablePage(sidebar, _selectedMenuKey)
+                    ?? FindNavigablePage(snapshot.Menus, _selectedMenuKey)
+                    ?? FirstNavigablePage(sidebar)
+                    ?? FirstNavigablePage(snapshot.Menus);
                 if (target == null)
                 {
                     ShowRestriction(snapshot.RestrictionReason ?? SubscriptionMessages.PermissionDenied);
@@ -474,16 +473,19 @@ public partial class MainLayoutView : ContentView
         MobileSidebar.BindMenus(sidebar, _selectedMenuKey);
     }
 
-    private static NavigationMenuNode? FindNavigable(IReadOnlyList<NavigationMenuNode> menus, string? key)
+    private NavigationMenuNode? FindNavigablePage(IReadOnlyList<NavigationMenuNode> menus, string? key)
     {
         if (string.IsNullOrWhiteSpace(key))
             return null;
 
         foreach (var item in menus)
         {
-            if (item.Key.Equals(key, StringComparison.OrdinalIgnoreCase) && !item.IsAccordion)
+            if (item.Key.Equals(key, StringComparison.OrdinalIgnoreCase)
+                && !item.IsAccordion
+                && HasPage(item.Key))
                 return item;
-            var child = item.Children.FirstOrDefault(c => c.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            var child = item.Children.FirstOrDefault(c =>
+                c.Key.Equals(key, StringComparison.OrdinalIgnoreCase) && HasPage(c.Key));
             if (child != null)
                 return child;
         }
@@ -491,18 +493,22 @@ public partial class MainLayoutView : ContentView
         return null;
     }
 
-    private static NavigationMenuNode? FirstNavigable(IReadOnlyList<NavigationMenuNode> menus)
+    private NavigationMenuNode? FirstNavigablePage(IReadOnlyList<NavigationMenuNode> menus)
     {
         foreach (var item in menus)
         {
-            if (!item.IsAccordion)
+            if (!item.IsAccordion && HasPage(item.Key))
                 return item;
-            if (item.Children.Count > 0)
-                return item.Children[0];
+            var child = item.Children.FirstOrDefault(c => HasPage(c.Key));
+            if (child != null)
+                return child;
         }
 
         return null;
     }
+
+    private bool HasPage(string menuKey)
+        => TryResolvePage(menuKey, out _, out _, out _);
 
     private async void OnCurrentCompanyChanged(object? sender, EventArgs e)
     {
