@@ -26,7 +26,7 @@ public interface IAuthenticationService
     Task<(bool Success, string? Error)> RegisterAsync(string name, string email, string password);
     Task<RegistrationResult>            RegisterAccountAsync(RegistrationRequest request);
     Task<(bool Success, string? Error)> ForgotPasswordAsync(string email);
-    Task<(bool Success, string? Error)> ResetPasswordAsync(string token, string newPassword);
+    Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword);
     Task<(bool Success, string? Error)> VerifyOtpAsync(string otp);
     Task                                LogoutAsync();
     Task<bool>                          TryAutoLoginAsync();

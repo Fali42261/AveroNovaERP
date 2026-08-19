@@ -104,7 +104,8 @@
                            LineBreakMode="WordWrap"
                            Margin="0,0,0,40"/>
 
-                    <Button Text="Sign In"
+                    <Button x:Name="BtnSignIn"
+                            Text="Sign In"
                             Style="{StaticResource PrimaryButton}"
                             HorizontalOptions="Fill"
                             helpers:CursorBehavior.Cursor="Hand"
@@ -116,11 +117,19 @@
                            TextColor="{StaticResource TextSecondary}"
                            Margin="0,16"/>
 
-                    <Button Text="Create Account"
+                    <Button x:Name="BtnCreateAccount"
+                            Text="Create Account"
                             Style="{StaticResource SecondaryButton}"
                             HorizontalOptions="Fill"
                             helpers:CursorBehavior.Cursor="Hand"
                             Clicked="OnRegisterClicked"/>
+
+                    <ActivityIndicator x:Name="WelcomeSpinner"
+                                       IsRunning="False"
+                                       IsVisible="False"
+                                       Color="{StaticResource PrimaryColor}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,16,0,0"/>
 
                     <Label Text="AveroNova ERP v1.0"
                            FontSize="11"

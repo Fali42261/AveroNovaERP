@@ -1,0 +1,53 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "AveroNova.Application/1.0.0": {
+        "dependencies": {
+          "AveroNova.Domain": "1.0.0",
+          "AveroNova.Shared": "1.0.0"
+        },
+        "runtime": {
+          "AveroNova.Application.dll": {}
+        }
+      },
+      "AveroNova.Domain/1.0.0": {
+        "runtime": {
+          "AveroNova.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AveroNova.Shared/1.0.0": {
+        "runtime": {
+          "AveroNova.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "AveroNova.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AveroNova.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AveroNova.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

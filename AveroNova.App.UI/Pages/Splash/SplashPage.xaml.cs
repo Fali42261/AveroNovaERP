@@ -18,6 +18,7 @@ public partial class SplashPage : ContentPage
         ISyncService sync)
     {
         InitializeComponent();
+        AveroNova.App.UI.Helpers.StartupLog.Write("Splash ctor");
         _auth = auth;
         _db = db;
         _connectivity = connectivity;
@@ -27,33 +28,43 @@ public partial class SplashPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        AveroNova.App.UI.Helpers.StartupLog.Write("Splash OnAppearing");
         await Task.Delay(800);
+        AveroNova.App.UI.Helpers.StartupLog.Write("Splash delay done");
 
+        string nextRoute;
         try
         {
-            await _db.EnsureInitializedAsync();
+            await Task.Run(() => _db.EnsureInitializedAsync());
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB initialized");
+
+            if (await _auth.TryAutoLoginAsync())
+            {
+                AveroNova.App.UI.Helpers.StartupLog.Write("Auto-login OK, going Main");
+                nextRoute = AppRoutes.Main;
+            }
+            else if (await _auth.HasLocalUserAsync())
+            {
+                nextRoute = AppRoutes.Login;
+            }
+            else
+            {
+                nextRoute = AppRoutes.Welcome;
+            }
         }
         catch (Exception ex)
         {
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB init failed: " + ex);
             System.Diagnostics.Debug.WriteLine($"[AveroNova] Local database init failed: {ex}");
+            nextRoute = AppRoutes.Welcome;
         }
 
-        // Local session first. Do not send the user to Login because the API is offline.
-        if (await _auth.TryAutoLoginAsync())
+        await MainThread.InvokeOnMainThreadAsync(async () =>
         {
-            await Shell.Current.GoToAsync(AppRoutes.Main);
-            if (_connectivity.IsOnline)
+            await Shell.Current.GoToAsync(nextRoute);
+            if (nextRoute == AppRoutes.Main && _connectivity.IsOnline)
                 _ = SafeSyncAsync();
-            return;
-        }
-
-        if (await _auth.HasLocalUserAsync())
-        {
-            await Shell.Current.GoToAsync(AppRoutes.Login);
-            return;
-        }
-
-        await Shell.Current.GoToAsync(AppRoutes.Welcome);
+        });
     }
 
     private async Task SafeSyncAsync()

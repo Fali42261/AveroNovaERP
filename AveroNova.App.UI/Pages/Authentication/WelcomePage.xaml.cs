@@ -139,9 +139,38 @@ public partial class WelcomePage : ContentPage
         AuthContent.MaximumWidthRequest = twoColumn ? 440 : ResponsiveBreakpoints.FormMaxCompact;
     }
 
+    private bool _navBusy;
+
     private async void OnLoginClicked(object? sender, EventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.Login);
+        => await NavigateBusyAsync(BtnSignIn, "Please wait...", AppRoutes.Login);
 
     private async void OnRegisterClicked(object? sender, EventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.Register);
+        => await NavigateBusyAsync(BtnCreateAccount, "Please wait...", AppRoutes.Register);
+
+    private async Task NavigateBusyAsync(Button button, string busyText, string route)
+    {
+        if (_navBusy)
+            return;
+
+        _navBusy = true;
+        var original = button.Text;
+        button.Text = busyText;
+        BtnSignIn.IsEnabled = false;
+        BtnCreateAccount.IsEnabled = false;
+        WelcomeSpinner.IsVisible = true;
+        WelcomeSpinner.IsRunning = true;
+        try
+        {
+            await Shell.Current.GoToAsync(route);
+        }
+        finally
+        {
+            WelcomeSpinner.IsVisible = false;
+            WelcomeSpinner.IsRunning = false;
+            button.Text = original;
+            BtnSignIn.IsEnabled = true;
+            BtnCreateAccount.IsEnabled = true;
+            _navBusy = false;
+        }
+    }
 }

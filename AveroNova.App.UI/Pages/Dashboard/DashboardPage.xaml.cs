@@ -1,5 +1,7 @@
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.SubscriptionAccess;
+using AveroNova.Domain.Constants;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Dashboard;
@@ -36,10 +38,11 @@ public partial class DashboardPage : ContentPage
         _subscription = subscription;
     }
 
+    public Task ReloadAsync() => LoadDataAsync();
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        LblDate.Text = DateTime.Today.ToString("dddd, dd MMMM yyyy");
         await LoadDataAsync();
     }
 
@@ -51,6 +54,7 @@ public partial class DashboardPage : ContentPage
 
     private async Task LoadDataAsync()
     {
+        LblDate.Text = DateTime.Today.ToString("dddd, dd MMMM yyyy");
         var user = _auth.CurrentUser;
         var hour = DateTime.Now.Hour;
         var greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -59,12 +63,18 @@ public partial class DashboardPage : ContentPage
             : $"{greeting}, {user.Name}";
 
         var company = _company.CurrentCompany;
-        var cid = company?.LocalId ?? Guid.Empty;
+        if (company == null && user?.CompanyId is Guid linkedCompanyId && linkedCompanyId != Guid.Empty)
+            company = await _company.GetByIdAsync(linkedCompanyId);
+
+        var cid = company?.LocalId ?? user?.CompanyId ?? Guid.Empty;
         var subscription = cid == Guid.Empty
             ? null
             : await _subscription.GetCurrentAsync(cid);
 
         BuildCompanySection(company, user, subscription);
+
+        if (subscription?.IsExpired == true)
+            return;
 
         var invoices = cid == Guid.Empty ? [] : await _billing.GetAllAsync(cid);
         var products = cid == Guid.Empty ? [] : await _product.GetAllAsync(cid);
@@ -120,45 +130,24 @@ public partial class DashboardPage : ContentPage
     {
         CompanyDetailsHost.Children.Clear();
 
-        if (IsUnderReview(subscription))
-            CompanyDetailsHost.Children.Add(BuildUnderReviewCard(subscription));
+        if (subscription?.IsExpired == true)
+            CompanyDetailsHost.Children.Add(SubscriptionRestrictionView.Create(SubscriptionMessages.FreeTrialExpired));
 
         CompanyDetailsHost.Children.Add(BuildCompanyDetailsCard(company, user, subscription));
     }
 
-    private static bool IsUnderReview(SubscriptionModel? subscription)
+    private static string FormatSubscription(SubscriptionModel? subscription)
     {
         if (subscription == null)
-            return false;
+            return "No data";
 
-        var plan = (subscription.PlanId ?? subscription.PlanName ?? string.Empty).Trim().ToLowerInvariant();
-        if (plan is "business" or "enterprise")
-            return true;
+        if (subscription.IsExpired && subscription.IsTrial)
+            return SubscriptionMessages.FreeTrialExpired;
 
-        return subscription.Status is SubscriptionStatus.PendingRenewal or SubscriptionStatus.Cancelled;
-    }
+        if (subscription.IsTrial)
+            return $"{subscription.PlanName} — 15-day free trial (ends {subscription.ExpiryDate:dd MMM yyyy})";
 
-    private static View BuildUnderReviewCard(SubscriptionModel? subscription)
-    {
-        var card = new Border { Style = ResolveStyle("AppCard"), Padding = 18 };
-        var stack = new VerticalStackLayout { Spacing = 8 };
-        stack.Children.Add(new Label
-        {
-            Text = "Under Review",
-            FontSize = 16,
-            FontAttributes = FontAttributes.Bold
-        });
-        stack.Children.Add(new Label
-        {
-            Text = string.IsNullOrWhiteSpace(subscription?.PlanName)
-                ? "Your account is under review."
-                : $"{subscription.PlanName} is under review. You can continue using AveroNova with locally saved company data.",
-            FontSize = 13,
-            TextColor = Color.FromArgb("#64748B"),
-            LineBreakMode = LineBreakMode.WordWrap
-        });
-        card.Content = stack;
-        return card;
+        return $"{subscription.PlanName} — {subscription.StatusLabel}";
     }
 
     private static View BuildCompanyDetailsCard(CompanyModel? company, UserModel? user, SubscriptionModel? subscription)
@@ -238,17 +227,6 @@ public partial class DashboardPage : ContentPage
             company.Country
         }.Where(p => !string.IsNullOrWhiteSpace(p));
         return string.Join(", ", parts);
-    }
-
-    private static string FormatSubscription(SubscriptionModel? subscription)
-    {
-        if (subscription == null)
-            return "No data";
-
-        if (subscription.IsTrial)
-            return $"{subscription.PlanName} — 15-day free trial (ends {subscription.ExpiryDate:dd MMM yyyy})";
-
-        return $"{subscription.PlanName} — {subscription.StatusLabel}";
     }
 
     private static Style? ResolveStyle(string key)

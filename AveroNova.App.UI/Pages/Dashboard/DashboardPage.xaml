@@ -23,11 +23,8 @@
                             BackgroundColor="{StaticResource Primary50}"
                             Stroke="{StaticResource Primary200}" StrokeThickness="1"
                             StrokeShape="RoundRectangle 10" Padding="12,6" VerticalOptions="Center">
-                        <HorizontalStackLayout Spacing="6">
-                            <Label Text="&#x1F4C6;" FontSize="13" VerticalOptions="Center"/>
-                            <Label Text="FY 2026" FontSize="12" FontAttributes="Bold"
-                                   TextColor="{StaticResource InfoText}" VerticalOptions="Center"/>
-                        </HorizontalStackLayout>
+                        <Label Text="FY 2026" FontSize="12" FontAttributes="Bold"
+                               TextColor="{StaticResource InfoText}" VerticalOptions="Center"/>
                     </Border>
                 </Grid>
 

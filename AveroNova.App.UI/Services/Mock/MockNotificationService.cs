@@ -15,7 +15,7 @@ public class MockNotificationService : INotificationService
                 Category = NotificationCategory.Payment,    CreatedAt = DateTime.UtcNow.AddDays(-1),   IsRead = true },
         new() { Title = "Sync Completed",     Message = "12 records synced successfully.",
                 Category = NotificationCategory.Sync,       CreatedAt = DateTime.UtcNow.AddHours(-1),  IsRead = true },
-        new() { Title = "Subscription Renews", Message = "Your Professional plan renews in 15 days.",
+        new() { Title = "Free Trial", Message = "Your Free Trial is active for the current company.",
                 Category = NotificationCategory.Subscription, CreatedAt = DateTime.UtcNow.AddDays(-2), IsRead = false },
     };
 

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="AveroNova.App.UI.Controls.Cards.SubscriptionPlanCard"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:helpers="clr-namespace:AveroNova.App.UI.Helpers"
+    xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:DataType="vm:RegisterPlanOption"
+    HorizontalOptions="Fill"
+    VerticalOptions="Fill"
+    MinimumWidthRequest="0"
+    SemanticProperties.Description="{Binding SemanticSummary}">
+
+    <Border
+        x:Name="CardBorder"
+        Style="{StaticResource PlanCard}"
+        Padding="20"
+        HorizontalOptions="Fill"
+        VerticalOptions="Fill">
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnCardTapped" />
+            <PointerGestureRecognizer PointerEntered="OnPointerEntered" PointerExited="OnPointerExited" />
+        </Border.GestureRecognizers>
+
+        <Grid
+            x:Name="CardBody"
+            HorizontalOptions="Fill"
+            VerticalOptions="Fill"
+            RowSpacing="0"
+            RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+
+            <!-- Plan name + badge -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalOptions="Start" MinimumHeightRequest="28">
+                <Label
+                    Text="{Binding Name}"
+                    Style="{StaticResource PlanCardTitle}"
+                    VerticalOptions="Center" />
+                <Border
+                    x:Name="BadgeBorder"
+                    Grid.Column="1"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 999"
+                    Padding="10,4"
+                    VerticalOptions="Start"
+                    HorizontalOptions="End"
+                    IsVisible="{Binding HasBadge}">
+                    <Label
+                        x:Name="BadgeLabel"
+                        Text="{Binding Badge}"
+                        FontSize="10"
+                        FontAttributes="Bold"
+                        LineBreakMode="NoWrap" />
+                </Border>
+            </Grid>
+
+            <!-- Price + validity / availability -->
+            <VerticalStackLayout Grid.Row="1" Spacing="2" Margin="0,12,0,0">
+                <Label Text="{Binding PriceText}" Style="{StaticResource PlanCardPrice}" />
+                <Label
+                    Text="{Binding ValidityText}"
+                    Style="{StaticResource PlanCardSupporting}"
+                    IsVisible="{Binding HasValidityText}" />
+            </VerticalStackLayout>
+
+            <!-- Package Summary -->
+            <VerticalStackLayout Grid.Row="2" Spacing="6" Margin="0,16,0,0">
+                <Label
+                    Text="{Binding PackageSummaryHeading}"
+                    Style="{StaticResource PlanCardSectionHeading}" />
+                <Label
+                    Text="{Binding Description}"
+                    Style="{StaticResource PlanCardDescription}"
+                    MinimumHeightRequest="40"
+                    LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+
+            <!-- Benefits checklist. Viewport height is set in code so nested page scroll cannot collapse it. -->
+            <Grid
+                Grid.Row="3"
+                RowDefinitions="Auto,Auto"
+                RowSpacing="8"
+                Margin="0,16,0,0"
+                VerticalOptions="Start">
+                <Label
+                    Text="{Binding FeatureSectionHeading}"
+                    Style="{StaticResource PlanCardSectionHeading}" />
+                <Grid
+                    x:Name="BenefitsViewport"
+                    Grid.Row="1"
+                    HorizontalOptions="Fill"
+                    VerticalOptions="Start"
+                    MinimumHeightRequest="80">
+                    <ScrollView
+                        x:Name="BenefitsScroll"
+                        Orientation="Vertical"
+                        HorizontalScrollBarVisibility="Never"
+                        VerticalScrollBarVisibility="Never"
+                        HorizontalOptions="Fill"
+                        VerticalOptions="Fill">
+                        <VerticalStackLayout
+                            x:Name="BenefitsList"
+                            Spacing="0"
+                            InputTransparent="True" />
+                    </ScrollView>
+                </Grid>
+            </Grid>
+
+            <BoxView Grid.Row="4" Color="Transparent" InputTransparent="True" />
+
+            <!-- Action -->
+            <Grid Grid.Row="5" Margin="0,20,0,0" VerticalOptions="End" MinimumHeightRequest="{StaticResource ButtonHeight}">
+                <Button
+                    x:Name="ActionPrimary"
+                    Text="{Binding ActionText}"
+                    Style="{StaticResource PrimaryButton}"
+                    IsVisible="{Binding IsSelectable}"
+                    Clicked="OnActionClicked"
+                    helpers:CursorBehavior.Cursor="Hand"
+                    SemanticProperties.Hint="Select this subscription plan" />
+                <Border
+                    x:Name="LockedActionBorder"
+                    IsVisible="{Binding IsLocked}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 10"
+                    HeightRequest="{StaticResource ButtonHeight}"
+                    Padding="16,0"
+                    InputTransparent="True"
+                    SemanticProperties.Description="This plan is not available yet">
+                    <HorizontalStackLayout
+                        Spacing="8"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center">
+                        <Label
+                            x:Name="LockedActionIcon"
+                            Text="{StaticResource IconLock}"
+                            FontSize="14"
+                            VerticalOptions="Center" />
+                        <Label
+                            x:Name="LockedActionLabel"
+                            Text="{Binding ActionText}"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            LineBreakMode="NoWrap"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</ContentView>

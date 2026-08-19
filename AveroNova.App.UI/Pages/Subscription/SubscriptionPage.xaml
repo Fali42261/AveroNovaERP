@@ -15,7 +15,7 @@
             <VerticalStackLayout Spacing="2">
                 <Label Text="Subscription" FontSize="20" FontAttributes="Bold"
                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                <Label Text="Manage your plan" FontSize="12"
+                <Label Text="Current trial" FontSize="12"
                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
             </VerticalStackLayout>
         </Border>

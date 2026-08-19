@@ -5,6 +5,8 @@ namespace AveroNova.App.UI.Services.Mock;
 
 public class MockCompanyService : ICompanyService
 {
+    public event EventHandler? CurrentCompanyChanged;
+
     public CompanyModel? CurrentCompany
         => MockDataStore.Companies.FirstOrDefault(c => c.IsCurrentCompany)
         ?? MockDataStore.Companies.FirstOrDefault();
@@ -41,9 +43,10 @@ public class MockCompanyService : ICompanyService
         return Task.FromResult<(bool, string?)>((true, null));
     }
 
-    public Task SwitchCompanyAsync(Guid id)
+    public Task<(bool Ok, string? Error)> SwitchCompanyAsync(Guid id)
     {
         foreach (var c in MockDataStore.Companies) c.IsCurrentCompany = c.LocalId == id;
-        return Task.CompletedTask;
+        CurrentCompanyChanged?.Invoke(this, EventArgs.Empty);
+        return Task.FromResult<(bool, string?)>((true, null));
     }
 }

@@ -1,3 +1,5 @@
+using AveroNova.Domain.Constants;
+
 namespace AveroNova.App.UI.Models;
 
 public sealed class RegistrationRequest
@@ -17,8 +19,8 @@ public sealed class RegistrationRequest
     public string City { get; set; } = string.Empty;
     public string PinCode { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
-    public string PlanId { get; set; } = "starter";
-    public string PlanName { get; set; } = "Starter";
+    public string PlanId { get; set; } = SubscriptionPlanCodes.FreeTrial;
+    public string PlanName { get; set; } = "Free Trial";
 }
 
 public sealed class RegistrationResult

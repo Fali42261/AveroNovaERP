@@ -69,14 +69,12 @@
                     <Label Text="Email" Style="{StaticResource InputLabel}" />
                     <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
                         <Entry x:Name="EntryEmail"
-                               Placeholder="you@company.com"
-                               PlaceholderColor="{StaticResource Gray400}"
+                               Placeholder="Enter your user email"
                                Keyboard="Email"
                                ReturnType="Next"
                                BackgroundColor="Transparent"
-                               TextColor="{StaticResource TextPrimary}"
                                ClearButtonVisibility="Never"
-                               SemanticProperties.Description="Email address"
+                               SemanticProperties.Description="User email"
                                Completed="OnEmailCompleted" />
                     </Border>
                     <Label x:Name="LblEmailError"
@@ -90,11 +88,9 @@
                     <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
                         <Entry x:Name="EntryPassword"
                                Placeholder="Enter password"
-                               PlaceholderColor="{StaticResource Gray400}"
                                IsPassword="True"
                                ReturnType="Done"
                                BackgroundColor="Transparent"
-                               TextColor="{StaticResource TextPrimary}"
                                ClearButtonVisibility="Never"
                                SemanticProperties.Description="Password"
                                Completed="OnPasswordCompleted" />

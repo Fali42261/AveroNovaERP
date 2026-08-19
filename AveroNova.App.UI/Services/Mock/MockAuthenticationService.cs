@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Services.Mock;
@@ -57,16 +58,21 @@ public class MockAuthenticationService : IAuthenticationService
 
     public async Task<RegistrationResult> RegisterAccountAsync(RegistrationRequest request)
     {
-        var (success, error) = await RegisterAsync(request.FullName, request.Email, request.Password);
-        if (!success)
-            return RegistrationResult.Fail(error ?? "Registration failed.");
+        if (request == null
+            || string.IsNullOrWhiteSpace(request.FullName)
+            || string.IsNullOrWhiteSpace(request.Email)
+            || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return RegistrationResult.Fail("All fields are required.");
+        }
 
-        return new RegistrationResult
+        _currentUser = null;
+        return await Task.FromResult(new RegistrationResult
         {
             Success = true,
             LocalAccountCreated = true,
             ServerSynced = false
-        };
+        });
     }
 
     public Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
@@ -77,8 +83,13 @@ public class MockAuthenticationService : IAuthenticationService
         return Task.FromResult<(bool, string?)>((true, null));
     }
 
-    public Task<(bool Success, string? Error)> ResetPasswordAsync(string token, string newPassword)
-        => Task.FromResult<(bool, string?)>((true, null));
+    public Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(newPassword))
+            return Task.FromResult((false, "Email and new password are required."));
+
+        return Task.FromResult<(bool, string?)>((true, null));
+    }
 
     public Task<(bool Success, string? Error)> VerifyOtpAsync(string otp)
     {

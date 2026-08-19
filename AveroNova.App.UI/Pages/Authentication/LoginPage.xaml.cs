@@ -1,27 +1,35 @@
 using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.SubscriptionAccess;
 
 namespace AveroNova.App.UI.Pages.Authentication;
 
 public partial class LoginPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
+    private readonly IToastService _toasts;
     private bool _layoutBusy;
     private double _appliedMinHeight = double.NaN;
     private ScreenSize? _appliedSize;
 
-    public LoginPage(IAuthenticationService auth)
+    public LoginPage(IAuthenticationService auth, IToastService toasts)
     {
         InitializeComponent();
         _auth = auth;
+        _toasts = toasts;
         SizeChanged += (_, _) => ApplyLayout();
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        _toasts.AttachTo(this);
         ApplyLayout();
+        var pending = PendingAuthMessage.Take();
+        if (!string.IsNullOrWhiteSpace(pending))
+            ShowBanner(pending);
     }
 
     private void ApplyLayout()
@@ -96,8 +104,13 @@ public partial class LoginPage : ContentPage
 
     private void OnPasswordCompleted(object? sender, EventArgs e) => OnLoginClicked(sender, e);
 
+    private bool _navBusy;
+
     private async void OnLoginClicked(object? sender, EventArgs e)
     {
+        if (_navBusy)
+            return;
+
         HideFieldErrors();
 
         var emailMissing = string.IsNullOrWhiteSpace(EntryEmail.Text);
@@ -125,12 +138,12 @@ public partial class LoginPage : ContentPage
             }
             else
             {
-                ShowBanner(error ?? "Invalid credentials. Please try again.");
+                ShowCredentialFailure(error);
             }
         }
         catch
         {
-            ShowBanner("Unable to sign in. Please try again.");
+            ShowCredentialFailure(AuthenticationMessages.InvalidEmailOrPassword);
         }
         finally
         {
@@ -139,10 +152,26 @@ public partial class LoginPage : ContentPage
     }
 
     private async void OnRegisterTapped(object? sender, TappedEventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.Register);
+        => await NavigateBusyAsync(AppRoutes.Register);
 
     private async void OnResetPasswordTapped(object? sender, TappedEventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.ResetPassword);
+        => await NavigateBusyAsync(AppRoutes.ResetPassword);
+
+    private async Task NavigateBusyAsync(string route)
+    {
+        if (_navBusy)
+            return;
+
+        SetLoading(true, "Please wait...");
+        try
+        {
+            await Shell.Current.GoToAsync(route);
+        }
+        finally
+        {
+            SetLoading(false);
+        }
+    }
 
     private static void ShowFieldError(Label label, string message)
     {
@@ -163,10 +192,31 @@ public partial class LoginPage : ContentPage
         ErrorBanner.IsVisible = true;
     }
 
-    private void SetLoading(bool loading)
+    private void ShowCredentialFailure(string? error)
     {
+        ErrorBanner.IsVisible = false;
+        var isInvalidCredentials = string.IsNullOrWhiteSpace(error)
+            || string.Equals(error, AuthenticationMessages.InvalidEmailOrPassword, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(error, "Invalid email or password", StringComparison.OrdinalIgnoreCase);
+
+        if (!isInvalidCredentials)
+        {
+            ShowBanner(error!);
+            return;
+        }
+
+        _toasts.Show(
+            AuthenticationMessages.InvalidEmailOrPassword,
+            string.Empty,
+            ToastKind.Error,
+            TimeSpan.FromSeconds(4));
+    }
+
+    private void SetLoading(bool loading, string? busyText = null)
+    {
+        _navBusy = loading;
         BtnLogin.IsEnabled = !loading;
-        BtnLogin.Text = loading ? "Signing in..." : "Sign In";
+        BtnLogin.Text = loading ? (busyText ?? "Signing in...") : "Sign In";
         Loader.IsRunning = loading;
         Loader.IsVisible = loading;
         if (loading)

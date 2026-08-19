@@ -56,7 +56,17 @@ public partial class CompanyListPage : ContentPage
         else
         {
             var switchBtn = new Button { Text = "Switch", Style = (Style)Resources["SmallSecondaryButton"] };
-            switchBtn.Clicked += async (_, _) => { await _svc.SwitchCompanyAsync(c.LocalId); await LoadAsync(); };
+            switchBtn.Clicked += async (_, _) =>
+            {
+                var (ok, error) = await _svc.SwitchCompanyAsync(c.LocalId);
+                if (!ok)
+                {
+                    await DisplayAlertAsync("Subscription", error ?? "Unable to switch company.", "OK");
+                    return;
+                }
+
+                await LoadAsync();
+            };
             actions.Children.Add(switchBtn);
         }
 

@@ -30,7 +30,7 @@ public class SubscriptionModel : BaseModel
     public Guid CompanyId { get; set; }
 
     public bool IsExpired =>
-        ExpiryDate < DateTime.Today;
+        Status == SubscriptionStatus.Expired || ExpiryDate.Date < DateTime.UtcNow.Date;
 
     public bool IsActive =>
         Status == SubscriptionStatus.Active && !IsExpired;
@@ -49,6 +49,7 @@ public class SubscriptionModel : BaseModel
     public int MaxUsers { get; set; }
     public int MaxCompanies { get; set; }
     public int MaxStorageMB { get; set; } = 500;
+    public List<string> EnabledModules { get; set; } = [];
 }
 
 public class SubscriptionPaymentModel : BaseModel
