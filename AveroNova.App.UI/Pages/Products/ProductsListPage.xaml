@@ -13,19 +13,19 @@
     <Grid x:Name="Root">
         <Grid x:Name="ListPanel" RowDefinitions="Auto,Auto,*,Auto">
             <Border Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-                <Grid x:Name="PageHeader" ColumnDefinitions="*,Auto" ColumnSpacing="12" RowSpacing="8">
+                <Grid x:Name="PageHeader" ColumnDefinitions="*,Auto" ColumnSpacing="16" RowSpacing="8">
                     <VerticalStackLayout x:Name="HeaderTitle" Spacing="2" VerticalOptions="Center" HorizontalOptions="Fill">
                         <Label Text="Products" FontSize="20" FontAttributes="Bold" LineBreakMode="TailTruncation" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
                         <Label Text="Product management" FontSize="12" LineBreakMode="TailTruncation" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                     </VerticalStackLayout>
-                    <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center" HorizontalOptions="End">
-                        <Border x:Name="SearchHost" Style="{StaticResource InputContainer}" WidthRequest="300" HeightRequest="42" Padding="12,0" VerticalOptions="Center">
+                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center" HorizontalOptions="Fill" MinimumWidthRequest="0">
+                        <Border x:Name="SearchHost" Grid.Column="0" Style="{StaticResource InputContainer}" WidthRequest="320" MinimumWidthRequest="240" HeightRequest="42" Padding="12,0" VerticalOptions="Center" HorizontalOptions="Fill">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" HeightRequest="42" VerticalOptions="Center" IsClippedToBounds="True">
                                 <Label Text="{StaticResource IconSearch}" Style="{StaticResource AuthFieldIcon}" FontSize="14" WidthRequest="18" VerticalOptions="Center" VerticalTextAlignment="Center" />
                                 <Entry Grid.Column="1" Placeholder="Search Product" Text="{Binding SearchText, Mode=TwoWay}" BackgroundColor="Transparent" FontSize="13" HeightRequest="42" MinimumHeightRequest="40" VerticalOptions="Fill" VerticalTextAlignment="Center" IsEnabled="{Binding IsDeleting, Converter={StaticResource InverseBoolConverter}}" SemanticProperties.Description="Search products by name, SKU, or barcode" />
                             </Grid>
                         </Border>
-                        <Border x:Name="StatusHost" Grid.Column="1" Style="{StaticResource InputContainer}" WidthRequest="160" HeightRequest="42" Padding="12,0" VerticalOptions="Center">
+                        <Border x:Name="StatusHost" Grid.Column="1" Style="{StaticResource InputContainer}" WidthRequest="150" HeightRequest="42" Padding="12,0" VerticalOptions="Center">
                             <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnStatusFieldTapped" /></Border.GestureRecognizers>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" HeightRequest="42" VerticalOptions="Center" InputTransparent="True" IsClippedToBounds="True">
                                 <Label Text="{Binding SelectedStatusFilter}" FontSize="13" MaxLines="1" LineBreakMode="TailTruncation" VerticalOptions="Center" VerticalTextAlignment="Center" HorizontalOptions="Fill" InputTransparent="True" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" SemanticProperties.Description="Product status filter" />
@@ -38,7 +38,6 @@
             </Border>
 
             <Grid Grid.Row="1" />
-
             <Grid Grid.Row="2">
                 <state:LoadingView IsVisible="{Binding ShowLoading}" Message="Loading products..." />
                 <state:ErrorView x:Name="ErrorState" IsVisible="{Binding ShowError}" Title="Unable to load products." Message="Please try again." />
