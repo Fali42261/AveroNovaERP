@@ -57,7 +57,7 @@ public partial class DashboardPage : ContentPage
             LblOutstandingMeta.Text = snapshot.PendingPaymentCount == 0 ? "No data" : $"{snapshot.PendingPaymentCount} invoices";
             LblCustomersMeta.Text = snapshot.TotalCustomers == 0 ? "No data" : $"{snapshot.TotalCustomers} total";
             LblProductsMeta.Text = snapshot.LowStockCount == 0 ? "No data" : $"{snapshot.LowStockCount} low stock";
-            LblPaymentsMeta.Text = snapshot.TodayPaymentCount == 0 ? "No data" : $"{snapshot.TodayPaymentCount} received"; LblLowStockCount.Text = $"{snapshot.LowStockCount} items";
+            LblPaymentsMeta.Text = snapshot.TodayPaymentCount == 0 ? "No data" : $"{snapshot.TodayPaymentCount} received";
 
             InvoiceList.Children.Clear(); foreach (var transaction in snapshot.RecentTransactions) InvoiceList.Children.Add(BuildInvoiceRow(transaction));
             if (snapshot.RecentTransactions.Count == 0) InvoiceList.Children.Add(new Label { Text = "No recent invoices.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
