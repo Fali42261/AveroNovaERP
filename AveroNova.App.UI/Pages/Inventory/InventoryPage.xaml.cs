@@ -37,16 +37,10 @@ public partial class InventoryPage : ContentPage
         var border = new Border
         {
             BackgroundColor = Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White,
-            Stroke = item.IsLowStock ? Color.FromArgb("#FECACA") : Color.FromArgb("#E2E8F0"),
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) },
-            Padding = new Thickness(14, 12)
+            Stroke = item.IsLowStock ? Color.FromArgb("#FECACA") : Color.FromArgb("#E2E8F0"), StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(14, 12)
         };
-        var grid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Auto)),
-            ColumnSpacing = 12
-        };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Auto)), ColumnSpacing = 12 };
         var info = new VerticalStackLayout { Spacing = 3, VerticalOptions = LayoutOptions.Center };
         info.Children.Add(new Label { Text = item.ProductName, FontSize = 14, FontAttributes = FontAttributes.Bold });
         info.Children.Add(new Label { Text = $"SKU: {item.SKU}  •  {item.Category}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
@@ -56,8 +50,7 @@ public partial class InventoryPage : ContentPage
         stockInfo.Children.Add(new Label { Text = $"Min: {item.MinimumStock}", FontSize = 11, TextColor = Color.FromArgb("#94A3B8"), HorizontalOptions = LayoutOptions.End });
         var adjBtn = new Button { Text = "Adjust", Style = TryStyle("SmallButton") };
         adjBtn.Clicked += async (_, _) => await OpenStockAdjustAsync(item.ProductId);
-        grid.Add(info, 0, 0); grid.Add(stockInfo, 1, 0); grid.Add(adjBtn, 2, 0);
-        border.Content = grid;
+        grid.Add(info, 0, 0); grid.Add(stockInfo, 1, 0); grid.Add(adjBtn, 2, 0); border.Content = grid;
         return border;
     }
 
@@ -70,17 +63,17 @@ public partial class InventoryPage : ContentPage
 
     private Task OpenStockHistoryAsync()
     {
-        var page = new StockMovementPage(_svc, _company);
-        page.CloseRequested = CloseActionOverlay;
+        var page = new StockMovementPage(_svc, _company) { CloseRequested = CloseActionOverlay };
         return ShowActionPageAsync(page);
     }
 
-    private Task ShowActionPageAsync(ContentPage page)
+    private async Task ShowActionPageAsync(ContentPage page)
     {
-        if (page.Content == null) return Task.CompletedTask;
+        if (page.Content == null) return;
+        if (page is StockAdjustPage adjust) await adjust.ReloadAsync();
+        else if (page is StockMovementPage history) await history.ReloadAsync();
         ActionContent.Content = page.Content;
         ActionOverlay.IsVisible = true;
-        return Task.CompletedTask;
     }
 
     private void CloseActionOverlay()
