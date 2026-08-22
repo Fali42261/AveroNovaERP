@@ -35,6 +35,9 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.Email)
                    .IsUnique();
 
+            builder.Property(x => x.MobileNumber)
+                   .HasMaxLength(15);
+
             builder.Property(x => x.PasswordHash)
                    .IsRequired();
 
@@ -43,6 +46,9 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.IsActiveUser)
                    .HasDefaultValue(true);
+
+            builder.Property(x => x.IsDeleted)
+                   .HasDefaultValue(false);
 
             // Relationships
 

@@ -13,6 +13,8 @@ public partial class PaymentsListPage : ContentPage
     public PaymentsListPage(IPaymentService svc, ICompanyService company)
     { InitializeComponent(); _svc = svc; _company = company; }
 
+    public Task ReloadAsync() => LoadAsync();
+
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
@@ -37,7 +39,7 @@ public partial class PaymentsListPage : ContentPage
 
         var right = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = $"${p.Amount:N2}", FontSize = 16, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#059669"), HorizontalOptions = LayoutOptions.End });
-        var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
+        var viewBtn = new Button { Text = "View", Style = TryStyle("SmallSecondaryButton") };
         viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PaymentView}?id={p.LocalId}");
         right.Children.Add(viewBtn);
 
@@ -48,4 +50,10 @@ public partial class PaymentsListPage : ContentPage
     }
 
     private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.PaymentAdd);
+
+    private static Style? TryStyle(string key)
+        => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
+           && value is Style style
+            ? style
+            : null;
 }

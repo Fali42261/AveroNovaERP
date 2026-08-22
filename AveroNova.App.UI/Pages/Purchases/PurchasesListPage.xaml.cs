@@ -13,6 +13,8 @@ public partial class PurchasesListPage : ContentPage
     public PurchasesListPage(IPurchaseService svc, ICompanyService company)
     { InitializeComponent(); _svc = svc; _company = company; }
 
+    public Task ReloadAsync() => LoadAsync();
+
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
@@ -48,7 +50,7 @@ public partial class PurchasesListPage : ContentPage
         var badge = new Border { BackgroundColor = Color.FromArgb(bg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(8, 3) };
         badge.Content = new Label { Text = p.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(color) };
         right.Children.Add(badge);
-        var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
+        var viewBtn = new Button { Text = "View", Style = TryStyle("SmallSecondaryButton") };
         viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PurchaseView}?id={p.LocalId}");
         right.Children.Add(viewBtn);
 
@@ -59,4 +61,10 @@ public partial class PurchasesListPage : ContentPage
     }
 
     private async void OnNewClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.PurchaseNew);
+
+    private static Style? TryStyle(string key)
+        => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
+           && value is Style style
+            ? style
+            : null;
 }

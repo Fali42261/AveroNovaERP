@@ -13,7 +13,7 @@ public static class DialogHelper
     public static Task<bool> ConfirmDeleteAsync(string entityName, string? detail = null)
     {
         string message = string.IsNullOrEmpty(detail)
-            ? $"Are you sure you want to delete this {entityName}? This action cannot be undone."
+            ? "Are you sure you want to delete this record?"
             : detail;
 
         return ConfirmAsync($"Delete {entityName}?", message, "Delete", "Cancel");

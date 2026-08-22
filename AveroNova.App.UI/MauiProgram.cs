@@ -117,14 +117,27 @@ public static class MauiProgram
         builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<Func<DashboardPage>>(sp => () => sp.GetRequiredService<DashboardPage>());
 
-        builder.Services.AddTransient<CompanyListPage>();
-        builder.Services.AddTransient<Func<CompanyListPage>>(sp => () => sp.GetRequiredService<CompanyListPage>());
+        builder.Services.AddTransient<CompanyPageViewModel>();
+        builder.Services.AddTransient<CompanyPage>();
+        builder.Services.AddTransient<Func<CompanyPage>>(sp => () => sp.GetRequiredService<CompanyPage>());
 
         builder.Services.AddTransient<CustomersListPage>();
         builder.Services.AddTransient<Func<CustomersListPage>>(sp => () => sp.GetRequiredService<CustomersListPage>());
+        builder.Services.AddTransient<CustomerFormPage>();
+        builder.Services.AddTransient<Func<CustomerFormPage>>(sp => () => sp.GetRequiredService<CustomerFormPage>());
+        builder.Services.AddTransient<CustomerViewPage>();
+        builder.Services.AddTransient<Func<CustomerViewPage>>(sp => () => sp.GetRequiredService<CustomerViewPage>());
+        builder.Services.AddTransient<CustomersViewModel>();
+        builder.Services.AddTransient<CustomerFormViewModel>();
+        builder.Services.AddTransient<CustomerViewViewModel>();
 
         builder.Services.AddTransient<ProductsListPage>();
         builder.Services.AddTransient<Func<ProductsListPage>>(sp => () => sp.GetRequiredService<ProductsListPage>());
+        builder.Services.AddTransient<ProductFormPage>();
+        builder.Services.AddTransient<ProductViewPage>();
+        builder.Services.AddTransient<ProductsViewModel>();
+        builder.Services.AddTransient<ProductFormViewModel>();
+        builder.Services.AddTransient<ProductViewViewModel>();
 
         builder.Services.AddTransient<InventoryPage>();
         builder.Services.AddTransient<Func<InventoryPage>>(sp => () => sp.GetRequiredService<InventoryPage>());
@@ -150,8 +163,11 @@ public static class MauiProgram
         builder.Services.AddTransient<ReportsPage>();
         builder.Services.AddTransient<Func<ReportsPage>>(sp => () => sp.GetRequiredService<ReportsPage>());
 
+        builder.Services.AddTransient<UsersViewModel>();
         builder.Services.AddTransient<UsersListPage>();
         builder.Services.AddTransient<Func<UsersListPage>>(sp => () => sp.GetRequiredService<UsersListPage>());
+        builder.Services.AddTransient<UserFormPage>();
+        builder.Services.AddTransient<UserViewPage>();
 
         builder.Services.AddTransient<RolesListPage>();
         builder.Services.AddTransient<Func<RolesListPage>>(sp => () => sp.GetRequiredService<RolesListPage>());
@@ -186,26 +202,24 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAuthenticationService, LocalAuthenticationService>();
         builder.Services.AddTransient<IDashboardService, DashboardService>();
         builder.Services.AddTransient<IBillingService, MockBillingService>();
+        builder.Services.AddSingleton<ICompanyRepository, CompanyRepository>();
         builder.Services.AddSingleton<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
         builder.Services.AddSingleton<IConnectivityService, DeviceConnectivityService>();
-        builder.Services.AddTransient<ICustomerService, MockCustomerService>();
+        builder.Services.AddSingleton<ICustomerRepository, CustomerRepository>();
+        builder.Services.AddTransient<ICustomerService, LocalCustomerService>();
         builder.Services.AddTransient<IExpenseService, MockExpenseService>();
         builder.Services.AddTransient<IInventoryService, MockInventoryService>();
         builder.Services.AddTransient<INotificationService, MockNotificationService>();
         builder.Services.AddTransient<IPaymentService, MockPaymentService>();
-        builder.Services.AddTransient<IProductService, MockProductService>();
+        builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+        builder.Services.AddTransient<IProductService, LocalProductService>();
         builder.Services.AddTransient<IPurchaseService, MockPurchaseService>();
         builder.Services.AddTransient<IReturnService, MockReturnService>();
         builder.Services.AddSingleton<ISettingsService, MockSettingsService>();
         builder.Services.AddSingleton<ISubscriptionService, LocalSubscriptionService>();
         builder.Services.AddTransient<ISyncService, MockSyncService>();
-        builder.Services.AddTransient<IUserService, MockUserService>();
-
-        // Company DB services — DB setup complete hone ke baad enable karenge
-        //builder.Services.AddTransient<ICompanyService, CompanyService>();
-        //builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
-        //builder.Services.AddTransient<ICompanyService,    CompanyService>();
-        //builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
+        builder.Services.AddSingleton<ICompanyUserRepository, CompanyUserRepository>();
+        builder.Services.AddTransient<IUserService, LocalUserService>();
 
 #if DEBUG
         builder.Logging.AddDebug();

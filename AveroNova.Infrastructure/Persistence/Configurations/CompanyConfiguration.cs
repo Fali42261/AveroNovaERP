@@ -60,7 +60,8 @@ namespace AveroNova.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.PinCode)
                    .HasMaxLength(10);
-            builder.Property(x => x.IsDeleted);
+            builder.Property(x => x.IsDeleted)
+                   .HasDefaultValue(false);
 
             // Relationship : Company -> User (Many Companies, One User)
             builder.HasOne(x => x.User)

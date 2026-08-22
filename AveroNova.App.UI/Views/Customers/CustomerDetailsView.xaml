@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Customers.CustomerDetailsView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:forms="clr-namespace:AveroNova.App.UI.Controls.Forms"
+    xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State"
+    xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:DataType="vm:CustomerViewViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Border
+            Padding="16,12"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+            StrokeThickness="1">
+            <Grid
+                x:Name="HeaderBar"
+                ColumnDefinitions="*,Auto"
+                ColumnSpacing="12"
+                RowSpacing="8"
+                SizeChanged="OnHeaderSizeChanged">
+                <HorizontalStackLayout
+                    x:Name="HeaderTitle"
+                    Spacing="4"
+                    VerticalOptions="Center"
+                    HorizontalOptions="Start">
+                    <Button
+                        Text="{StaticResource IconBack}"
+                        Style="{StaticResource GhostButton}"
+                        Padding="0"
+                        WidthRequest="40"
+                        HeightRequest="40"
+                        MinimumHeightRequest="40"
+                        MaximumHeightRequest="44"
+                        MinimumWidthRequest="40"
+                        VerticalOptions="Center"
+                        Command="{Binding BackCommand}"
+                        SemanticProperties.Description="Back to customers" />
+                    <Label
+                        Text="Customer Details"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        VerticalOptions="Center"
+                        LineBreakMode="TailTruncation"
+                        MaxLines="1"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                </HorizontalStackLayout>
+
+                <HorizontalStackLayout
+                    x:Name="HeaderActions"
+                    Grid.Column="1"
+                    Spacing="8"
+                    VerticalOptions="Center"
+                    HorizontalOptions="End">
+                    <Button
+                        Text="Edit"
+                        Style="{StaticResource SmallButton}"
+                        HeightRequest="42"
+                        MinimumHeightRequest="40"
+                        MaximumHeightRequest="44"
+                        MinimumWidthRequest="0"
+                        Padding="16,0"
+                        FontSize="13"
+                        HorizontalOptions="Start"
+                        VerticalOptions="Center"
+                        Command="{Binding EditCommand}"
+                        IsVisible="{Binding ShowEditButton}"
+                        IsEnabled="{Binding IsDeleting, Converter={StaticResource InverseBoolConverter}}" />
+                    <Grid
+                        HeightRequest="42"
+                        VerticalOptions="Center"
+                        IsVisible="{Binding ShowDeleteButton}">
+                        <Button
+                            Text="{Binding DeleteButtonText}"
+                            Style="{StaticResource SmallButton}"
+                            BackgroundColor="{StaticResource ErrorColor}"
+                            HeightRequest="42"
+                            MinimumHeightRequest="40"
+                            MaximumHeightRequest="44"
+                            MinimumWidthRequest="0"
+                            Padding="16,0"
+                            FontSize="13"
+                            HorizontalOptions="Start"
+                            VerticalOptions="Center"
+                            Command="{Binding DeleteCommand}"
+                            IsEnabled="{Binding CanPressDelete}" />
+                        <ActivityIndicator
+                            IsVisible="{Binding IsDeleting}"
+                            IsRunning="{Binding IsDeleting}"
+                            Color="{StaticResource White}"
+                            WidthRequest="14"
+                            HeightRequest="14"
+                            HorizontalOptions="End"
+                            VerticalOptions="Center"
+                            Margin="0,0,8,0"
+                            InputTransparent="True" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <state:LoadingView
+                IsVisible="{Binding ShowLoading}"
+                Message="Loading customer..." />
+
+            <state:ErrorView
+                x:Name="ErrorState"
+                IsVisible="{Binding ShowError}"
+                Title="Unable to load customer"
+                Message="Please try again." />
+
+            <ScrollView IsVisible="{Binding ShowContent}">
+                <VerticalStackLayout Padding="20,16" Spacing="16">
+                    <Border Style="{StaticResource AppCard}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                            <Border
+                                WidthRequest="60"
+                                HeightRequest="60"
+                                BackgroundColor="{StaticResource Primary50}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 30"
+                                VerticalOptions="Center">
+                                <Label
+                                    Text="{Binding DisplayInitials}"
+                                    FontSize="22"
+                                    FontAttributes="Bold"
+                                    TextColor="{StaticResource PrimaryColor}"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                <Label
+                                    Text="{Binding DisplayName}"
+                                    FontSize="18"
+                                    FontAttributes="Bold"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                                <Label
+                                    Text="{Binding DisplayStatus}"
+                                    FontSize="13"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource ReviewCard}">
+                        <VerticalStackLayout Spacing="12">
+                            <Label
+                                Text="Details"
+                                FontSize="14"
+                                FontAttributes="Bold"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <BoxView Style="{StaticResource Divider}" />
+                            <forms:ReviewFieldRow LabelText="Customer Name" ValueText="{Binding DisplayName}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Mobile Number" ValueText="{Binding DisplayMobile}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Email" ValueText="{Binding DisplayEmail}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Address" ValueText="{Binding DisplayAddress}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="City" ValueText="{Binding DisplayCity}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="State" ValueText="{Binding DisplayState}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Country" ValueText="{Binding DisplayCountry}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="PIN / ZIP" ValueText="{Binding DisplayPinCode}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Tax Number" ValueText="{Binding DisplayTaxNumber}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Notes" ValueText="{Binding DisplayNotes}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Status" ValueText="{Binding DisplayStatus}" IsInline="{Binding IsInlineLayout}" />
+                            <forms:ReviewFieldRow LabelText="Created Date" ValueText="{Binding DisplayCreated}" IsInline="{Binding IsInlineLayout}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+    </Grid>
+</ContentView>

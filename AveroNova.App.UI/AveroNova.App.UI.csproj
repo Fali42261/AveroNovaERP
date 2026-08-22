@@ -227,6 +227,30 @@
 		<MauiXaml Update="Resources\Typography.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
+		<MauiXaml Update="Views\Customers\CustomerFormView.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\Customers\CustomerDetailsView.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\Products\ProductFormView.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\Products\ProductDetailsView.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Pages\Products\ProductsListPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+			<Inflator>Runtime</Inflator>
+		</MauiXaml>
+		<MauiXaml Update="Pages\Products\ProductFormPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+			<Inflator>Runtime</Inflator>
+		</MauiXaml>
+		<MauiXaml Update="Pages\Products\ProductViewPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+			<Inflator>Runtime</Inflator>
+		</MauiXaml>
 		<MauiXaml Update="Views\Company\AdminAccountView.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>

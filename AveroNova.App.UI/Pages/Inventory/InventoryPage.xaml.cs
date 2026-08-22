@@ -13,6 +13,8 @@ public partial class InventoryPage : ContentPage
     public InventoryPage(IInventoryService svc, ICompanyService company)
     { InitializeComponent(); _svc = svc; _company = company; }
 
+    public Task ReloadAsync() => LoadAsync();
+
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
@@ -62,7 +64,7 @@ public partial class InventoryPage : ContentPage
         stockInfo.Children.Add(new Label { Text = item.CurrentStock.ToString(), FontSize = 20, FontAttributes = FontAttributes.Bold, TextColor = item.IsLowStock ? Color.FromArgb("#DC2626") : Color.FromArgb("#059669"), HorizontalOptions = LayoutOptions.End });
         stockInfo.Children.Add(new Label { Text = $"Min: {item.MinimumStock}", FontSize = 11, TextColor = Color.FromArgb("#94A3B8"), HorizontalOptions = LayoutOptions.End });
 
-        var adjBtn = new Button { Text = "Adjust", Style = (Style)Resources["SmallButton"] };
+        var adjBtn = new Button { Text = "Adjust", Style = TryStyle("SmallButton") };
         adjBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.StockAdjust}?productId={item.ProductId}");
 
         grid.Add(info,     0, 0);
@@ -74,4 +76,10 @@ public partial class InventoryPage : ContentPage
 
     private async void OnAdjustClicked(object s, EventArgs e)  => await Shell.Current.GoToAsync(AppRoutes.StockAdjust);
     private async void OnHistoryClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.StockMovement);
+
+    private static Style? TryStyle(string key)
+        => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
+           && value is Style style
+            ? style
+            : null;
 }

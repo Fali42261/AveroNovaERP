@@ -12,6 +12,8 @@ namespace AveroNova.Domain.Entities
 
         public string Email { get; set; } = string.Empty;
 
+        public string MobileNumber { get; set; } = string.Empty;
+
         public string PasswordHash { get; set; } = string.Empty;
 
         public bool IsActiveUser { get; set; }

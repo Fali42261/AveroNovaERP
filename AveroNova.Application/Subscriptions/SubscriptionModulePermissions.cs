@@ -7,7 +7,7 @@ namespace AveroNova.Application.Subscriptions
         public static IReadOnlyList<string> RequiredAny(string moduleKey) => moduleKey switch
         {
             SubscriptionModules.Dashboard => [PermissionNames.DashboardView],
-            SubscriptionModules.Company => [PermissionNames.CompanyView, PermissionNames.SettingsManage],
+            SubscriptionModules.Company => [PermissionNames.CompanyView, PermissionNames.CompanyUpdate, PermissionNames.SettingsManage],
             SubscriptionModules.Customers => [PermissionNames.CustomersView, PermissionNames.CustomersManage],
             SubscriptionModules.Products => [PermissionNames.ProductsView, PermissionNames.ProductsManage],
             SubscriptionModules.Inventory => [PermissionNames.InventoryView, PermissionNames.InventoryManage],
@@ -15,7 +15,16 @@ namespace AveroNova.Application.Subscriptions
             SubscriptionModules.Purchase => [PermissionNames.PurchasesView, PermissionNames.PurchasesManage],
             SubscriptionModules.Payments => [PermissionNames.PaymentsView, PermissionNames.PaymentsManage],
             SubscriptionModules.Reports => [PermissionNames.ReportsView],
-            SubscriptionModules.Settings => [PermissionNames.UsersManage, PermissionNames.SettingsManage],
+            SubscriptionModules.Settings =>
+            [
+                PermissionNames.UsersView,
+                PermissionNames.UsersCreate,
+                PermissionNames.UsersUpdate,
+                PermissionNames.UsersDelete,
+                PermissionNames.UsersAssignRole,
+                PermissionNames.UsersManage,
+                PermissionNames.SettingsManage
+            ],
             SubscriptionModules.Expenses => [PermissionNames.ExpensesView, PermissionNames.SettingsManage],
             _ => []
         };

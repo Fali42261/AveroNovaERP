@@ -43,16 +43,6 @@ public static class NavigationMenuCatalog
         },
         new()
         {
-            Key = Business,
-            Label = "Business",
-            IconResourceKey = "IconBusiness",
-            SubscriptionModule = SubscriptionModules.Company,
-            PermissionName = PermissionNames.CompanyView,
-            SortOrder = 2,
-            GroupLabel = GroupBusiness
-        },
-        new()
-        {
             Key = Company,
             Label = "Company",
             IconResourceKey = "IconCompany",
@@ -137,7 +127,7 @@ public static class NavigationMenuCatalog
             Label = "Administration",
             IconResourceKey = "IconAdministration",
             SubscriptionModule = SubscriptionModules.Settings,
-            PermissionName = PermissionNames.UsersManage,
+            PermissionName = PermissionNames.UsersView,
             SortOrder = 11,
             IsGroup = true,
             GroupLabel = GroupAdministration,
@@ -149,7 +139,7 @@ public static class NavigationMenuCatalog
             Label = "Users & Roles",
             IconResourceKey = "IconUsers",
             SubscriptionModule = SubscriptionModules.Settings,
-            PermissionName = PermissionNames.UsersManage,
+            PermissionName = PermissionNames.UsersView,
             SortOrder = 1,
             ParentKey = Administration,
             Surface = NavigationSurface.HeaderAccount
@@ -233,7 +223,8 @@ public static class NavigationMenuCatalog
         if (!enabledModules.Contains(definition.SubscriptionModule))
             return false;
 
-        return permissions.Contains(definition.PermissionName);
+        return permissions.Contains(definition.PermissionName)
+            || PermissionNames.Grants(permissions, definition.PermissionName);
     }
 
     private static NavigationMenuNode ToNode(

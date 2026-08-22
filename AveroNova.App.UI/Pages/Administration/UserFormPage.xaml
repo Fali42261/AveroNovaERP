@@ -3,6 +3,7 @@
     x:Class="AveroNova.App.UI.Pages.Administration.UserFormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
@@ -19,43 +20,62 @@
             </Grid>
         </Border>
 
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16">
-                <Border Style="{StaticResource AppCard}">
-                    <VerticalStackLayout Spacing="14">
-                        <Label Text="User Information" FontSize="14" FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                        <BoxView Style="{StaticResource Divider}"/>
-                        <Label Text="Full Name *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryFullName" Placeholder="John Doe"/></Border>
-                        <Label Text="Email *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryEmail" Placeholder="email@example.com" Keyboard="Email"/></Border>
-                        <Label Text="Phone" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="+1 555-0000" Keyboard="Telephone"/></Border>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Role" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PickerRole" Title="Select role"/></Border></VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Status" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Switch x:Name="SwitchActive" IsToggled="True" HorizontalOptions="Start"/></Border></VerticalStackLayout>
-                        </Grid>
-                        <Label Text="Notes" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}" HeightRequest="80" VerticalOptions="Start">
-                            <Editor x:Name="EditorNotes" Placeholder="Additional notes..." AutoSize="TextChanges"/>
-                        </Border>
-                    </VerticalStackLayout>
-                </Border>
-                <Border x:Name="ErrorBanner" IsVisible="False"
-                        BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}"
-                        StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10">
-                    <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/>
-                </Border>
-            </VerticalStackLayout>
-        </ScrollView>
+        <Grid Grid.Row="1">
+            <state:LoadingView x:Name="LoadingState" IsVisible="False" Message="Loading user..."/>
+            <ScrollView x:Name="FormScroll">
+                <VerticalStackLayout Padding="20,16" Spacing="16" MaximumWidthRequest="720" HorizontalOptions="Center">
+                    <Border Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="14">
+                            <Label Text="User Information" FontSize="14" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                            <BoxView Style="{StaticResource Divider}"/>
+                            <Label Text="Full Name *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryFullName" Placeholder="Ahmed Khan"/></Border>
+                            <Label Text="Email *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryEmail" Placeholder="ahmed@company.com" Keyboard="Email"/></Border>
+                            <Label x:Name="LblEmailHint" Text="This email is the user's login email." FontSize="11"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                            <Label Text="Mobile Number *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="03001234567" Keyboard="Telephone" MaxLength="15"/></Border>
+
+                            <VerticalStackLayout x:Name="PasswordSection" Spacing="14">
+                                <Label Text="Password *" Style="{StaticResource InputLabel}"/>
+                                <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPassword" Placeholder="Enter password" IsPassword="True"/></Border>
+                                <Label Text="Confirm Password *" Style="{StaticResource InputLabel}"/>
+                                <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryConfirmPassword" Placeholder="Re-enter password" IsPassword="True"/></Border>
+                            </VerticalStackLayout>
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="Role *" Style="{StaticResource InputLabel}"/>
+                                    <Border Style="{StaticResource InputContainer}">
+                                        <Picker x:Name="PickerRole" Title="Select Role"/>
+                                    </Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <Label Text="Status" Style="{StaticResource InputLabel}"/>
+                                    <Border Style="{StaticResource InputContainer}">
+                                        <Picker x:Name="PickerStatus" Title="Status"/>
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border x:Name="ErrorBanner" IsVisible="False"
+                            BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}"
+                            StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10">
+                        <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
 
         <Border Grid.Row="2" Padding="20,12"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Button Text="Cancel" Style="{StaticResource SecondaryButton}" Clicked="OnBackClicked"/>
-                <Button Grid.Column="1" Text="Save User" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
+                <Button Grid.Column="1" x:Name="BtnSave" Text="Save User" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
             </Grid>
         </Border>
 

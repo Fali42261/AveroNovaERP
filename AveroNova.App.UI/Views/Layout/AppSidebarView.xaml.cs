@@ -22,6 +22,14 @@ public partial class AppSidebarView : ContentView
             SidebarDensity.Desktop,
             propertyChanged: OnDensityChanged);
 
+    public static readonly BindableProperty IsCollapsedProperty =
+        BindableProperty.Create(
+            nameof(IsCollapsed),
+            typeof(bool),
+            typeof(AppSidebarView),
+            false,
+            propertyChanged: OnCollapsedChanged);
+
     private IReadOnlyList<NavigationMenuNode> _items = [];
     private string? _expandedGroup;
     private readonly Dictionary<string, SidebarItemVisual> _visuals = new(StringComparer.OrdinalIgnoreCase);
@@ -29,6 +37,7 @@ public partial class AppSidebarView : ContentView
     private int _animationSerial;
 
     public event EventHandler<string>? MenuSelected;
+    public event EventHandler? ExpandRequested;
 
     public AppSidebarView()
     {
@@ -50,6 +59,12 @@ public partial class AppSidebarView : ContentView
     {
         get => (SidebarDensity)GetValue(DensityProperty);
         set => SetValue(DensityProperty, value);
+    }
+
+    public bool IsCollapsed
+    {
+        get => (bool)GetValue(IsCollapsedProperty);
+        set => SetValue(IsCollapsedProperty, value);
     }
 
     public void BindMenus(IReadOnlyList<NavigationMenuNode> items, string? selectedKey = null)
@@ -74,7 +89,21 @@ public partial class AppSidebarView : ContentView
     {
         var view = (AppSidebarView)bindable;
         if (view._items.Count == 0)
+        {
+            view.ApplyBrandDensity();
             return;
+        }
+        view.Rebuild();
+    }
+
+    private static void OnCollapsedChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        var view = (AppSidebarView)bindable;
+        if (view._items.Count == 0)
+        {
+            view.ApplyBrandDensity();
+            return;
+        }
         view.Rebuild();
     }
 
@@ -94,7 +123,8 @@ public partial class AppSidebarView : ContentView
         foreach (var item in _items)
         {
             var section = SectionTitle(item);
-            if (!string.IsNullOrWhiteSpace(section)
+            if (!IsCollapsed
+                && !string.IsNullOrWhiteSpace(section)
                 && !string.Equals(section, lastSection, StringComparison.Ordinal))
             {
                 MenuHost.Children.Add(BuildSection(section, firstSection));
@@ -107,7 +137,7 @@ public partial class AppSidebarView : ContentView
             if (!item.IsAccordion)
                 continue;
 
-            var open = IsExpanded(item.Key);
+            var open = IsExpanded(item.Key) && !IsCollapsed;
             var host = new VerticalStackLayout
             {
                 Spacing = 2,
@@ -141,16 +171,27 @@ public partial class AppSidebarView : ContentView
 
     private void ApplyBrandDensity()
     {
+        var collapsed = IsCollapsed;
         var tablet = Density == SidebarDensity.Tablet;
-        var logo = tablet ? 40 : 42;
+        var logo = collapsed ? 42 : tablet ? 40 : 42;
         BrandLogo.WidthRequest = logo;
         BrandLogo.HeightRequest = logo;
-        BrandHeader.Padding = tablet
-            ? new Thickness(12, 12, 12, 10)
-            : new Thickness(16, 14, 16, 12);
-        MenuHost.Padding = tablet
-            ? new Thickness(6, 8, 6, 16)
-            : new Thickness(8, 8, 8, 16);
+        BrandLogo.HorizontalOptions = collapsed ? LayoutOptions.Center : LayoutOptions.Start;
+        BrandText.IsVisible = !collapsed;
+        BrandHeader.ColumnSpacing = collapsed ? 0 : 10;
+        BrandHeader.Padding = collapsed
+            ? new Thickness(11, 11, 11, 11)
+            : tablet
+                ? new Thickness(12, 12, 12, 10)
+                : new Thickness(16, 14, 16, 12);
+        BrandHeader.ColumnDefinitions = new ColumnDefinitionCollection(
+            new ColumnDefinition(logo),
+            new ColumnDefinition(GridLength.Star));
+        MenuHost.Padding = collapsed
+            ? new Thickness(8, 8, 8, 16)
+            : tablet
+                ? new Thickness(6, 8, 6, 16)
+                : new Thickness(8, 8, 8, 16);
     }
 
     private View BuildSection(string title, bool first)
@@ -179,11 +220,14 @@ public partial class AppSidebarView : ContentView
         var gap = SidebarTokens.Number("SidebarIconTextGap", 10);
         var chevronSize = SidebarTokens.Number("SidebarChevronSize", 14);
 
+        var collapsed = IsCollapsed;
         var root = new Border
         {
             StrokeThickness = 0,
             StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(radius) },
-            Padding = new Thickness(isChild ? padH + 12 : padH, 0, 12, 0),
+            Padding = collapsed
+                ? new Thickness(8, 0)
+                : new Thickness(isChild ? padH + 12 : padH, 0, 12, 0),
             HeightRequest = height,
             MinimumHeightRequest = height,
             BackgroundColor = Colors.Transparent
@@ -193,11 +237,13 @@ public partial class AppSidebarView : ContentView
 
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitionCollection(
-                new ColumnDefinition(iconSlot),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Auto)),
-            ColumnSpacing = gap,
+            ColumnDefinitions = collapsed
+                ? new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star))
+                : new ColumnDefinitionCollection(
+                    new ColumnDefinition(iconSlot),
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto)),
+            ColumnSpacing = collapsed ? 0 : gap,
             VerticalOptions = LayoutOptions.Fill
         };
 
@@ -206,7 +252,8 @@ public partial class AppSidebarView : ContentView
             Text = SidebarTokens.Glyph(item.IconResourceKey),
             Style = SidebarTokens.Style("SidebarIcon"),
             WidthRequest = iconSlot,
-            FontSize = SidebarTokens.Number("SidebarIconSize", 16)
+            FontSize = SidebarTokens.Number("SidebarIconSize", 16),
+            HorizontalOptions = collapsed ? LayoutOptions.Center : LayoutOptions.Start
         };
         icon.SetValue(Grid.ColumnProperty, 0);
 
@@ -217,7 +264,8 @@ public partial class AppSidebarView : ContentView
             VerticalOptions = LayoutOptions.Center,
             LineBreakMode = LineBreakMode.TailTruncation,
             MaxLines = 1,
-            HorizontalOptions = LayoutOptions.Fill
+            HorizontalOptions = LayoutOptions.Fill,
+            IsVisible = !collapsed
         };
         if (mobile)
             label.FontSize = isChild ? 14 : 15;
@@ -231,7 +279,7 @@ public partial class AppSidebarView : ContentView
             WidthRequest = item.IsAccordion ? chevronSize : 0,
             VerticalOptions = LayoutOptions.Center,
             HorizontalOptions = LayoutOptions.End,
-            IsVisible = item.IsAccordion,
+            IsVisible = item.IsAccordion && !collapsed,
             Rotation = IsExpanded(item.Key) ? 90 : 0,
             AnchorX = 0.5,
             AnchorY = 0.5
@@ -243,7 +291,7 @@ public partial class AppSidebarView : ContentView
         grid.Children.Add(chevron);
         root.Content = grid;
 
-        var visual = new SidebarItemVisual(item, icon, label, chevron, isChild);
+        var visual = new SidebarItemVisual(item, root, icon, label, chevron, isChild);
         root.BindingContext = visual;
         _visuals[item.Key] = visual;
 
@@ -270,6 +318,13 @@ public partial class AppSidebarView : ContentView
     {
         if (item.IsAccordion)
         {
+            if (IsCollapsed)
+            {
+                _expandedGroup = item.Key;
+                ExpandRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
             if (IsExpanded(item.Key))
             {
                 var locked = item.Children.Any(child => IsSelected(child.Key));
@@ -287,6 +342,7 @@ public partial class AppSidebarView : ContentView
 
         _expandedGroup = FindParentKey(item.Key);
         ApplyExpandState(animate: true);
+        SelectedKey = item.Key;
         MenuSelected?.Invoke(this, item.Key);
     }
 
@@ -295,7 +351,7 @@ public partial class AppSidebarView : ContentView
         var serial = ++_animationSerial;
         foreach (var pair in _childHosts)
         {
-            var open = IsExpanded(pair.Key);
+            var open = IsExpanded(pair.Key) && !IsCollapsed;
             var host = pair.Value;
 
             if (_visuals.TryGetValue(pair.Key, out var visual))
@@ -347,10 +403,7 @@ public partial class AppSidebarView : ContentView
     private void ApplySelection()
     {
         foreach (var visual in _visuals.Values)
-        {
-            if (visual.Icon.Parent?.Parent is Border border)
-                ApplyItemChrome(border, IsSelected(visual.Item.Key), hovered: false, focused: false);
-        }
+            ApplyItemChrome(visual.Root, IsSelected(visual.Item.Key), hovered: false, focused: false);
     }
 
     private void SetHover(Border border, bool hovered)
@@ -458,9 +511,8 @@ public partial class AppSidebarView : ContentView
     {
         foreach (var visual in _visuals.Values)
         {
-            if (visual.Icon.Parent?.Parent is Border border
-                && ReferenceEquals(border.Handler?.PlatformView, native))
-                return border;
+            if (ReferenceEquals(visual.Root.Handler?.PlatformView, native))
+                return visual.Root;
         }
 
         return null;
@@ -552,6 +604,7 @@ public partial class AppSidebarView : ContentView
 
     private sealed record SidebarItemVisual(
         NavigationMenuNode Item,
+        Border Root,
         Label Icon,
         Label Label,
         Label Chevron,

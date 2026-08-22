@@ -49,7 +49,7 @@ namespace AveroNova.API.Controllers
         public IActionResult Settings() => Ok(new { module = SubscriptionModules.Settings });
 
         [HttpGet("users-roles")]
-        [RequireSubscriptionModule(SubscriptionModules.Settings, PermissionNames.UsersManage)]
-        public IActionResult UsersRoles() => Ok(new { module = SubscriptionModules.Settings, permission = PermissionNames.UsersManage });
+        [RequireSubscriptionModule(SubscriptionModules.Settings, PermissionNames.UsersView)]
+        public IActionResult UsersRoles() => Ok(new { module = SubscriptionModules.Settings, permission = PermissionNames.UsersView });
     }
 }

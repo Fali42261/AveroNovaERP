@@ -19,11 +19,29 @@ public static class PermissionNames
     public const string PaymentsView = "payments.view";
     public const string PaymentsManage = "payments.manage";
     public const string ReportsView = "reports.view";
+    public const string UsersView = "users.view";
+    public const string UsersCreate = "users.create";
+    public const string UsersUpdate = "users.update";
+    public const string UsersDelete = "users.delete";
+    public const string UsersAssignRole = "users.assignrole";
     public const string UsersManage = "users.manage";
     public const string SettingsManage = "settings.manage";
     public const string SubscriptionView = "subscription.view";
     public const string CompanyView = "company.view";
+    public const string CompanyUpdate = "company.update";
     public const string PurchasesView = "purchases.view";
     public const string PurchasesManage = "purchases.manage";
     public const string ExpensesView = "expenses.view";
+
+    public static bool Grants(IReadOnlySet<string> held, string required)
+    {
+        if (held.Contains(required))
+            return true;
+
+        if (required is UsersView or UsersCreate or UsersUpdate or UsersDelete or UsersAssignRole
+            && held.Contains(UsersManage))
+            return true;
+
+        return required is ProductsView && held.Contains(ProductsManage);
+    }
 }

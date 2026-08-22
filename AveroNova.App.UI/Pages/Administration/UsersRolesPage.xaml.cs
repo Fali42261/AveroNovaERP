@@ -1,3 +1,5 @@
+using AveroNova.App.UI.Services.Interfaces;
+
 namespace AveroNova.App.UI.Pages.Administration;
 
 public partial class UsersRolesPage : ContentPage
@@ -8,11 +10,17 @@ public partial class UsersRolesPage : ContentPage
     private RolesListPage? _rolesPage;
     private bool _rolesSelected;
 
-    public UsersRolesPage(Func<UsersListPage> usersFactory, Func<RolesListPage> rolesFactory)
+    private readonly IToastService _toasts;
+
+    public UsersRolesPage(
+        Func<UsersListPage> usersFactory,
+        Func<RolesListPage> rolesFactory,
+        IToastService toasts)
     {
         InitializeComponent();
         _usersFactory = usersFactory;
         _rolesFactory = rolesFactory;
+        _toasts = toasts;
     }
 
     public Task ReloadAsync() => ShowTabAsync(roles: _rolesSelected);
@@ -20,6 +28,7 @@ public partial class UsersRolesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _toasts.AttachTo(this);
         await ReloadAsync();
     }
 

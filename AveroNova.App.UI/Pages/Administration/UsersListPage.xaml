@@ -3,50 +3,124 @@
     x:Class="AveroNova.App.UI.Pages.Administration.UsersListPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State"
+    xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:DataType="vm:UsersViewModel"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid x:Name="Root" RowDefinitions="Auto,Auto,*">
 
-        <Border Grid.Row="0" Padding="20,14"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
-                StrokeThickness="1">
+        <Border
+            Padding="20,14"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+            StrokeThickness="1">
             <Grid ColumnDefinitions="*,Auto">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="Users" FontSize="20" FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                    <Label x:Name="LblCount" Text="0 users" FontSize="12"
-                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                    <Label
+                        Text="Users"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                    <Label
+                        Text="{Binding CountLabel}"
+                        FontSize="12"
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                 </VerticalStackLayout>
-               <Button Grid.Column="1"
-        Text="Add"
-        Style="{StaticResource PrimaryButton}"
-        HeightRequest="40"
-        FontSize="13"
-        Clicked="OnAddClicked"/>
+                <Button
+                    Grid.Column="1"
+                    Text="+ Add User"
+                    Style="{StaticResource PrimaryButton}"
+                    HeightRequest="40"
+                    FontSize="13"
+                    Command="{Binding AddCommand}"
+                    IsVisible="{Binding ShowAddButton}" />
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Padding="16,10"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
-                StrokeThickness="1">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                <Border Style="{StaticResource InputContainer}" HeightRequest="40">
-                    <SearchBar x:Name="SearchBar" Placeholder="Search users..."
-                               TextChanged="OnSearchChanged" BackgroundColor="Transparent"/>
-                </Border>
-                <Button Grid.Column="1" Text="{StaticResource IconFilter}" Style="{StaticResource SmallSecondaryButton}" Clicked="OnFilterClicked"/>
-                <Button Grid.Column="2" Text="{StaticResource IconRefresh}" Style="{StaticResource SmallSecondaryButton}" Clicked="OnRefreshClicked"/>
+        <Border
+            Grid.Row="1"
+            Padding="16,10"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+            StrokeThickness="1">
+            <Grid
+                x:Name="FilterGrid"
+                ColumnDefinitions="*,Auto,Auto"
+                ColumnSpacing="8"
+                RowDefinitions="Auto,Auto,Auto"
+                RowSpacing="8">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Search" Style="{StaticResource InputLabel}" />
+                    <Border Style="{StaticResource InputContainer}" HeightRequest="40">
+                        <SearchBar
+                            Placeholder="Name, email, or mobile"
+                            Text="{Binding SearchText, Mode=TwoWay}"
+                            BackgroundColor="Transparent" />
+                    </Border>
+                </VerticalStackLayout>
+                <VerticalStackLayout
+                    x:Name="RoleFilterHost"
+                    Grid.Column="1"
+                    Spacing="4"
+                    WidthRequest="160">
+                    <Label Text="Role" Style="{StaticResource InputLabel}" />
+                    <Border Style="{StaticResource InputContainer}" HeightRequest="40">
+                        <Picker
+                            Title="Role"
+                            ItemsSource="{Binding RoleFilters}"
+                            SelectedItem="{Binding SelectedRoleFilter}"
+                            BackgroundColor="Transparent"
+                            FontSize="13" />
+                    </Border>
+                </VerticalStackLayout>
+                <VerticalStackLayout
+                    x:Name="StatusFilterHost"
+                    Grid.Column="2"
+                    Spacing="4"
+                    WidthRequest="140">
+                    <Label Text="Status" Style="{StaticResource InputLabel}" />
+                    <Border Style="{StaticResource InputContainer}" HeightRequest="40">
+                        <Picker
+                            Title="Status"
+                            ItemsSource="{Binding StatusFilters}"
+                            SelectedItem="{Binding SelectedStatusFilter}"
+                            BackgroundColor="Transparent"
+                            FontSize="13" />
+                    </Border>
+                </VerticalStackLayout>
             </Grid>
         </Border>
 
-        <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing">
-            <ScrollView>
-                <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="UserList"/>
-            </ScrollView>
-        </RefreshView>
+        <Grid Grid.Row="2">
+            <state:LoadingView
+                IsVisible="{Binding ShowLoading}"
+                Message="Loading users..." />
 
+            <state:ErrorView
+                x:Name="ErrorState"
+                IsVisible="{Binding ShowError}"
+                Title="Unable to load users."
+                Message="Please try again." />
+
+            <state:EmptyView
+                x:Name="EmptyState"
+                IsVisible="{Binding ShowEmpty}"
+                Title="No users found."
+                Subtitle="Users you add for this company will appear here."
+                ActionLabel="{Binding EmptyActionLabel}" />
+
+            <RefreshView
+                IsVisible="{Binding ShowList}"
+                Refreshing="OnRefreshing">
+                <ScrollView>
+                    <VerticalStackLayout
+                        x:Name="ListHost"
+                        Padding="16,12"
+                        Spacing="10" />
+                </ScrollView>
+            </RefreshView>
+        </Grid>
     </Grid>
 </ContentPage>

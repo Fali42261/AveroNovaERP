@@ -32,10 +32,16 @@ public sealed class LocalDatabaseInitializer
         (PermissionNames.PaymentsView, "View Payments"),
         (PermissionNames.PaymentsManage, "Manage Payments"),
         (PermissionNames.ReportsView, "View Reports"),
+        (PermissionNames.UsersView, "View Users"),
+        (PermissionNames.UsersCreate, "Create Users"),
+        (PermissionNames.UsersUpdate, "Update Users"),
+        (PermissionNames.UsersDelete, "Delete Users"),
+        (PermissionNames.UsersAssignRole, "Assign User Roles"),
         (PermissionNames.UsersManage, "Manage Users"),
         (PermissionNames.SettingsManage, "Manage Settings"),
         (PermissionNames.SubscriptionView, "View Subscription"),
         (PermissionNames.CompanyView, "View Company"),
+        (PermissionNames.CompanyUpdate, "Update Company"),
         (PermissionNames.PurchasesView, "View Purchases"),
         (PermissionNames.PurchasesManage, "Manage Purchases"),
         (PermissionNames.ExpensesView, "View Expenses")
@@ -72,8 +78,12 @@ public sealed class LocalDatabaseInitializer
             AveroNova.App.UI.Helpers.StartupLog.Write("DB schema ensure start");
             await SqliteSubscriptionSchema.EnsureAsync(db, cancellationToken);
             await SqliteUserRoleSchema.EnsureAsync(db, cancellationToken);
+            await SqliteCustomerSchema.EnsureAsync(db, cancellationToken);
+            await SqliteProductSchema.EnsureAsync(db, cancellationToken);
+            await SqliteUserSchema.EnsureAsync(db, cancellationToken);
             AveroNova.App.UI.Helpers.StartupLog.Write("DB seed start");
             await SeedAsync(db, cancellationToken);
+            await RoleCatalogSeeder.SeedAsync(db, cancellationToken);
             await SubscriptionCatalogSeeder.SeedAsync(db, cancellationToken);
             _ready = true;
             System.Diagnostics.Debug.WriteLine($"[AveroNova] Local SQLite ready: {db.Database.GetDbConnection().DataSource}");

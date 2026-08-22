@@ -26,6 +26,7 @@ public static class ResponsiveBreakpoints
     public const double SidebarDesktopWidth = 256;
     public const double SidebarTabletWidth = 240;
     public const double SidebarMobileDrawerWidth = 280;
+    public const double SidebarCollapsedWidth = 64;
 
     public static double DockedSidebarWidth(ScreenSize size) => size switch
     {

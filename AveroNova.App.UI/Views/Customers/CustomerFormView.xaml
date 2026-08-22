@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="AveroNova.App.UI.Views.Customers.CustomerFormView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:AveroNova.App.UI.Controls.Inputs"
+    xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State"
+    xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:DataType="vm:CustomerFormViewModel">
+
+    <ContentView.Resources>
+        <Style x:Key="CustomerFormInput" TargetType="Border" BasedOn="{StaticResource InputContainer}">
+            <Setter Property="HeightRequest" Value="42" />
+            <Setter Property="MinimumHeightRequest" Value="42" />
+            <Setter Property="MaximumHeightRequest" Value="44" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="VerticalOptions" Value="Start" />
+        </Style>
+        <Style x:Key="CustomerFormFieldEntry" TargetType="Entry">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="HeightRequest" Value="42" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+            <Setter Property="VerticalOptions" Value="Fill" />
+            <Setter Property="VerticalTextAlignment" Value="Center" />
+            <Setter Property="ClearButtonVisibility" Value="Never" />
+        </Style>
+        <Style x:Key="CustomerFormActionButton" TargetType="Button">
+            <Setter Property="HeightRequest" Value="42" />
+            <Setter Property="WidthRequest" Value="120" />
+            <Setter Property="MinimumHeightRequest" Value="42" />
+            <Setter Property="MaximumHeightRequest" Value="44" />
+            <Setter Property="MinimumWidthRequest" Value="110" />
+            <Setter Property="MaximumWidthRequest" Value="130" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            <Setter Property="FontAttributes" Value="None" />
+            <Setter Property="HorizontalOptions" Value="Fill" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="LineBreakMode" Value="NoWrap" />
+        </Style>
+        <Style x:Key="CustomerFormCancelButton" TargetType="Button" BasedOn="{StaticResource CustomerFormActionButton}">
+            <Setter Property="TextColor" Value="{StaticResource PrimaryColor}" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="{StaticResource PrimaryColor}" />
+            <Setter Property="BorderWidth" Value="1.5" />
+        </Style>
+        <Style x:Key="CustomerFormSaveButton" TargetType="Button" BasedOn="{StaticResource CustomerFormActionButton}">
+            <Setter Property="TextColor" Value="{StaticResource White}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryColor}" />
+            <Setter Property="BorderWidth" Value="0" />
+        </Style>
+    </ContentView.Resources>
+
+    <Grid x:Name="Root" RowDefinitions="Auto,*" SizeChanged="OnRootSizeChanged">
+
+        <Border
+            Padding="20,14"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
+            StrokeThickness="1">
+            <Grid ColumnDefinitions="Auto,*">
+                <Button
+                    Text="{StaticResource IconBack}"
+                    Style="{StaticResource GhostButton}"
+                    Padding="0"
+                    WidthRequest="40"
+                    HeightRequest="40"
+                    MinimumHeightRequest="40"
+                    Command="{Binding CancelCommand}" />
+                <Label
+                    Grid.Column="1"
+                    Text="{Binding PageTitle}"
+                    FontSize="18"
+                    FontAttributes="Bold"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <state:LoadingView
+                IsVisible="{Binding ShowLoading}"
+                Message="Loading customer..." />
+
+            <state:ErrorView
+                x:Name="ErrorState"
+                IsVisible="{Binding ShowError}"
+                Title="Unable to load customer"
+                Message="Please try again." />
+
+            <ScrollView IsVisible="{Binding ShowForm}">
+                <VerticalStackLayout
+                    x:Name="FormBody"
+                    Padding="20,16"
+                    Spacing="16">
+
+                    <Border Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="14">
+                            <Label
+                                Text="Customer Details"
+                                FontSize="14"
+                                FontAttributes="Bold"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <BoxView Style="{StaticResource Divider}" />
+
+                            <Grid
+                                x:Name="DetailsGrid"
+                                ColumnDefinitions="*,*"
+                                RowDefinitions="Auto,Auto"
+                                ColumnSpacing="16"
+                                RowSpacing="14"
+                                HorizontalOptions="Fill">
+
+                                <VerticalStackLayout Spacing="0" HorizontalOptions="Fill" MinimumWidthRequest="0">
+                                    <Label Text="Customer Name *" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding HasNameError}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource ErrorColor}" />
+                                                <Setter Property="StrokeThickness" Value="1" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter customer name"
+                                            Text="{Binding Name}"
+                                            SemanticProperties.Description="Customer name" />
+                                    </Border>
+                                    <Label
+                                        Text="{Binding NameError}"
+                                        Style="{StaticResource ErrorText}"
+                                        IsVisible="{Binding HasNameError}" />
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="Mobile Number" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding HasMobileError}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource ErrorColor}" />
+                                                <Setter Property="StrokeThickness" Value="1" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter mobile number"
+                                            Keyboard="Telephone"
+                                            Text="{Binding MobileNumber}"
+                                            SemanticProperties.Description="Mobile number" />
+                                    </Border>
+                                    <Label
+                                        Text="{Binding MobileError}"
+                                        Style="{StaticResource ErrorText}"
+                                        IsVisible="{Binding HasMobileError}" />
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Row="1"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="Email" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding HasEmailError}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource ErrorColor}" />
+                                                <Setter Property="StrokeThickness" Value="1" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter email address"
+                                            Keyboard="Email"
+                                            Text="{Binding Email}"
+                                            SemanticProperties.Description="Email" />
+                                    </Border>
+                                    <Label
+                                        Text="{Binding EmailError}"
+                                        Style="{StaticResource ErrorText}"
+                                        IsVisible="{Binding HasEmailError}" />
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="Status" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Picker
+                                            ItemsSource="{Binding StatusOptions}"
+                                            SelectedItem="{Binding SelectedStatus}"
+                                            FontSize="14"
+                                            HeightRequest="42"
+                                            MinimumHeightRequest="40"
+                                            HorizontalOptions="Fill"
+                                            VerticalOptions="Center"
+                                            BackgroundColor="Transparent"
+                                            SemanticProperties.Description="Customer status" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="14">
+                            <Label
+                                Text="Address"
+                                FontSize="14"
+                                FontAttributes="Bold"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <BoxView Style="{StaticResource Divider}" />
+
+                            <Grid
+                                x:Name="AddressGrid"
+                                ColumnDefinitions="*,*"
+                                RowDefinitions="Auto,Auto,Auto"
+                                ColumnSpacing="16"
+                                RowSpacing="14"
+                                HorizontalOptions="Fill">
+
+                                <VerticalStackLayout Spacing="0" HorizontalOptions="Fill" MinimumWidthRequest="0">
+                                    <Label Text="Address" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter address"
+                                            Text="{Binding Address}"
+                                            SemanticProperties.Description="Address" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="City" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter city"
+                                            Text="{Binding City}"
+                                            SemanticProperties.Description="City" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Row="1"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="State" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter state"
+                                            Text="{Binding State}"
+                                            SemanticProperties.Description="State" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="Country" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter country"
+                                            Text="{Binding Country}"
+                                            SemanticProperties.Description="Country" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Row="2"
+                                    Spacing="0"
+                                    HorizontalOptions="Fill"
+                                    MinimumWidthRequest="0">
+                                    <Label Text="PIN / ZIP" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter PIN or ZIP"
+                                            Keyboard="Numeric"
+                                            Text="{Binding PinCode}"
+                                            SemanticProperties.Description="PIN or ZIP" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="14">
+                            <Label
+                                Text="Additional information"
+                                FontSize="14"
+                                FontAttributes="Bold"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <BoxView Style="{StaticResource Divider}" />
+
+                            <Grid
+                                x:Name="AdditionalGrid"
+                                ColumnDefinitions="*,*"
+                                ColumnSpacing="16"
+                                RowSpacing="14"
+                                HorizontalOptions="Fill">
+                                <VerticalStackLayout Spacing="0" HorizontalOptions="Fill" MinimumWidthRequest="0">
+                                    <Label Text="Tax Number" Style="{StaticResource InputLabel}" />
+                                    <Border Style="{StaticResource CustomerFormInput}">
+                                        <Entry
+                                            Style="{StaticResource CustomerFormFieldEntry}"
+                                            Placeholder="Enter tax number"
+                                            Text="{Binding TaxNumber}"
+                                            SemanticProperties.Description="Tax number" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <controls:AppEditor
+                                Label="Notes"
+                                Placeholder="Enter notes"
+                                Text="{Binding Notes}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <HorizontalStackLayout
+                        x:Name="FormActions"
+                        Spacing="10"
+                        HorizontalOptions="End"
+                        Margin="0,4,0,8">
+                        <Button
+                            Text="Cancel"
+                            Style="{StaticResource CustomerFormCancelButton}"
+                            Command="{Binding CancelCommand}" />
+                        <Grid
+                            WidthRequest="120"
+                            HeightRequest="42"
+                            MinimumWidthRequest="110"
+                            MaximumWidthRequest="130">
+                            <Button
+                                Text="{Binding SaveButtonText}"
+                                Style="{StaticResource CustomerFormSaveButton}"
+                                Command="{Binding SaveCommand}"
+                                IsEnabled="{Binding CanPressSave}" />
+                            <ActivityIndicator
+                                IsVisible="{Binding IsSaving}"
+                                IsRunning="{Binding IsSaving}"
+                                Color="{StaticResource White}"
+                                WidthRequest="18"
+                                HeightRequest="18"
+                                HorizontalOptions="End"
+                                VerticalOptions="Center"
+                                Margin="0,0,10,0"
+                                InputTransparent="True" />
+                        </Grid>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+    </Grid>
+</ContentView>

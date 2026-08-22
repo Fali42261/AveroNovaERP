@@ -18,6 +18,7 @@ public interface ICompanyService
     event EventHandler? CurrentCompanyChanged;
 
     Task<List<CompanyModel>> GetAllAsync();
+    Task<CompanyModel?>      GetCurrentAsync();
     Task<CompanyModel?>      GetByIdAsync(Guid id);
     Task<(bool Ok, string? Error)> CreateAsync(CompanyModel company);
     Task<(bool Ok, string? Error)> UpdateAsync(CompanyModel company);

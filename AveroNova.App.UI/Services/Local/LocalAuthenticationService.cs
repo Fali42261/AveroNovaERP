@@ -414,7 +414,9 @@ public sealed class LocalAuthenticationService : IAuthenticationService
             LocalId = user.Id,
             Name = name,
             Email = user.Email,
-            Phone = company?.MobileNumber ?? string.Empty,
+            Phone = string.IsNullOrWhiteSpace(user.MobileNumber)
+                ? (company?.MobileNumber ?? string.Empty)
+                : user.MobileNumber,
             Role = roleName,
             AvatarInitials = Initials(name),
             CompanyId = company?.Id,

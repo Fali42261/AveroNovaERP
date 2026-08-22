@@ -24,16 +24,33 @@ public sealed class LocalSubscriptionService : ISubscriptionService
 
     public async Task<SubscriptionModel?> GetCurrentAsync(Guid companyId)
     {
+        if (companyId == Guid.Empty)
+            return null;
+
         var snapshot = await _subscriptions.GetCurrentAsync(companyId);
-        if (snapshot != null)
-            return MapSnapshot(snapshot);
 
         await using var db = await _factory.CreateDbContextAsync();
         var row = await db.Subscriptions
             .AsNoTracking()
+            .Include(s => s.SubscriptionPlan)
             .Where(s => s.CompanyId == companyId && !s.IsDeleted)
             .OrderByDescending(s => s.StartDate)
             .FirstOrDefaultAsync();
+
+        if (snapshot != null)
+        {
+            var model = MapSnapshot(snapshot);
+            if (row != null)
+            {
+                model.Price = row.Price != 0m
+                    ? row.Price
+                    : row.SubscriptionPlan?.Price ?? 0m;
+                if (string.IsNullOrWhiteSpace(model.PlanName))
+                    model.PlanName = row.PlanName;
+            }
+            return model;
+        }
+
         return row == null ? null : Map(row);
     }
 
@@ -102,7 +119,7 @@ public sealed class LocalSubscriptionService : ISubscriptionService
             PlanId = row.PlanId?.ToString() ?? string.Empty,
             PlanName = string.IsNullOrWhiteSpace(row.PlanName) ? "Free Trial" : row.PlanName,
             BillingCycle = BillingCycle.Monthly,
-            Price = row.Price,
+            Price = row.Price != 0m ? row.Price : row.SubscriptionPlan?.Price ?? 0m,
             StartDate = row.StartDate,
             ExpiryDate = row.ExpiryDate,
             IsTrial = row.IsTrial,

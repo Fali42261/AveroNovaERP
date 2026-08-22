@@ -23,6 +23,7 @@
             RowDefinitions="64,*"
             HorizontalOptions="Fill"
             VerticalOptions="Fill"
+            IsClippedToBounds="True"
             BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
             <Grid.ColumnDefinitions>
@@ -45,17 +46,27 @@
             <Border
                 Grid.Column="1"
                 Grid.Row="0"
-                Padding="20,0"
+                Padding="12,0,20,0"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
                 StrokeThickness="1">
 
                 <Grid
-                    ColumnDefinitions="*,Auto,Auto,Auto"
+                    ColumnDefinitions="Auto,*,Auto,Auto,Auto"
                     VerticalOptions="Center"
                     ColumnSpacing="8">
 
+                    <Button
+                        x:Name="BtnDesktopMenu"
+                        Text="{StaticResource IconMenu}"
+                        Style="{StaticResource HeaderIconButton}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceColorDark}}"
+                        Clicked="OnDesktopMenuClicked"
+                        AutomationId="HeaderSidebarToggle"
+                        SemanticProperties.Description="Toggle navigation" />
+
                     <VerticalStackLayout
+                        Grid.Column="1"
                         VerticalOptions="Center"
                         Spacing="2">
 
@@ -74,7 +85,7 @@
                     </VerticalStackLayout>
 
                     <Border
-                        Grid.Column="1"
+                        Grid.Column="2"
                         BackgroundColor="{StaticResource SuccessBg}"
                         Stroke="{StaticResource SuccessBorder}"
                         StrokeThickness="1"
@@ -102,7 +113,7 @@
                     </Border>
 
                     <VerticalStackLayout
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Spacing="0"
                         VerticalOptions="Center"
                         HorizontalOptions="End">
@@ -122,7 +133,7 @@
 
                     <Border
                         x:Name="HeaderProfile"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         WidthRequest="38"
                         HeightRequest="38"
                         BackgroundColor="{StaticResource Primary100}"
@@ -147,7 +158,8 @@
                 x:Name="ContentArea"
                 Grid.Column="1"
                 Grid.Row="1"
-                MinimumWidthRequest="0" />
+                MinimumWidthRequest="0"
+                IsClippedToBounds="True" />
         </Grid>
 
         <!-- ========================================================= -->
@@ -171,25 +183,15 @@
                     ColumnDefinitions="44,*,Auto,44"
                     ColumnSpacing="8">
 
-                    <Border
+                    <Button
                         x:Name="BtnMenu"
-                        WidthRequest="44"
-                        HeightRequest="44"
-                        MinimumWidthRequest="44"
-                        MinimumHeightRequest="44"
+                        Text="{StaticResource IconMenu}"
+                        Style="{StaticResource HeaderIconButton}"
                         BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceColorDark}}"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 8"
+                        Clicked="OnMobileMenuClicked"
                         VerticalOptions="Center"
-                        SemanticProperties.Description="Open navigation">
-
-                        <Label
-                            Text="{StaticResource IconMenu}"
-                            FontSize="16"
-                            HorizontalOptions="Center"
-                            VerticalOptions="Center"
-                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                    </Border>
+                        AutomationId="MobileHeaderSidebarToggle"
+                        SemanticProperties.Description="Toggle navigation" />
 
                     <Label
                         Grid.Column="1"
@@ -239,12 +241,12 @@
 
             <ContentView
                 x:Name="MobileContentArea"
-                Grid.Row="1" />
+                Grid.Row="1"
+                IsClippedToBounds="True" />
 
             <Grid
                 x:Name="DrawerOverlay"
-                Grid.Row="0"
-                Grid.RowSpan="2"
+                Grid.Row="1"
                 IsVisible="False">
 
                 <BoxView

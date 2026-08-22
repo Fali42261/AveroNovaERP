@@ -46,6 +46,7 @@
                 </Border>
 
                 <VerticalStackLayout
+                    x:Name="BrandText"
                     Grid.Column="1"
                     Spacing="0"
                     VerticalOptions="Center">

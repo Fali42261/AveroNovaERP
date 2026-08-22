@@ -15,6 +15,8 @@ public partial class BillingListPage : ContentPage
     public BillingListPage(IBillingService svc, ICompanyService company)
     { InitializeComponent(); _svc = svc; _company = company; BuildFilterTabs(); }
 
+    public Task ReloadAsync() => LoadAsync();
+
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
@@ -79,7 +81,7 @@ public partial class BillingListPage : ContentPage
         if (inv.DueAmount > 0) right.Children.Add(new Label { Text = $"Due: ${inv.DueAmount:N2}", FontSize = 11, TextColor = Color.FromArgb("#D97706"), HorizontalOptions = LayoutOptions.End });
 
         var actRow = new HorizontalStackLayout { Spacing = 6 };
-        var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
+        var viewBtn = new Button { Text = "View", Style = TryStyle("SmallSecondaryButton") };
         viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceView}?id={inv.LocalId}");
         actRow.Children.Add(viewBtn);
         right.Children.Add(actRow);
@@ -91,4 +93,10 @@ public partial class BillingListPage : ContentPage
     }
 
     private async void OnNewClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.InvoiceNew);
+
+    private static Style? TryStyle(string key)
+        => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
+           && value is Style style
+            ? style
+            : null;
 }

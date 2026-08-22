@@ -8,14 +8,17 @@ public class MockCompanyService : ICompanyService
     public event EventHandler? CurrentCompanyChanged;
 
     public CompanyModel? CurrentCompany
-        => MockDataStore.Companies.FirstOrDefault(c => c.IsCurrentCompany)
-        ?? MockDataStore.Companies.FirstOrDefault();
+        => MockDataStore.Companies.FirstOrDefault(c => c.IsCurrentCompany && !c.IsDeleted)
+        ?? MockDataStore.Companies.FirstOrDefault(c => !c.IsDeleted);
 
     public Task<List<CompanyModel>> GetAllAsync()
-        => Task.FromResult(MockDataStore.Companies.ToList());
+        => Task.FromResult(MockDataStore.Companies.Where(c => !c.IsDeleted).ToList());
+
+    public Task<CompanyModel?> GetCurrentAsync()
+        => Task.FromResult(MockDataStore.Companies.FirstOrDefault(c => c.IsCurrentCompany && !c.IsDeleted));
 
     public Task<CompanyModel?> GetByIdAsync(Guid id)
-        => Task.FromResult(MockDataStore.Companies.FirstOrDefault(c => c.LocalId == id));
+        => Task.FromResult(MockDataStore.Companies.FirstOrDefault(c => c.LocalId == id && !c.IsDeleted));
 
     public Task<(bool Ok, string? Error)> CreateAsync(CompanyModel company)
     {
@@ -27,19 +30,36 @@ public class MockCompanyService : ICompanyService
 
     public Task<(bool Ok, string? Error)> UpdateAsync(CompanyModel company)
     {
-        var existing = MockDataStore.Companies.FirstOrDefault(c => c.LocalId == company.LocalId);
-        if (existing == null) return Task.FromResult((false, "Company not found."));
-        var idx = MockDataStore.Companies.IndexOf(existing);
-        company.SyncStatus = SyncStatus.PendingSync;
-        MockDataStore.Companies[idx] = company;
+        var current = CurrentCompany;
+        if (current == null)
+            return Task.FromResult((false, "Unable to update company details."));
+
+        var existing = MockDataStore.Companies.FirstOrDefault(c => c.LocalId == current.LocalId);
+        if (existing == null)
+            return Task.FromResult((false, "Unable to update company details."));
+
+        existing.OwnerName = company.OwnerName;
+        existing.Email = company.Email;
+        existing.Phone = company.Phone;
+        existing.Address = company.Address;
+        existing.City = company.City;
+        existing.State = company.State;
+        existing.PinCode = company.PinCode;
+        existing.Country = company.Country;
+        existing.TaxNumber = company.TaxNumber;
+        existing.RegistrationNo = company.RegistrationNo;
+        existing.SyncStatus = SyncStatus.PendingSync;
         return Task.FromResult<(bool, string?)>((true, null));
     }
 
     public Task<(bool Ok, string? Error)> DeleteAsync(Guid id)
     {
-        var item = MockDataStore.Companies.FirstOrDefault(c => c.LocalId == id);
+        var item = MockDataStore.Companies.FirstOrDefault(c => c.LocalId == id && !c.IsDeleted);
         if (item == null) return Task.FromResult((false, "Company not found."));
-        MockDataStore.Companies.Remove(item);
+        item.IsDeleted = true;
+        item.UpdatedAt = DateTime.UtcNow;
+        item.IsCurrentCompany = false;
+        item.SyncStatus = SyncStatus.PendingSync;
         return Task.FromResult<(bool, string?)>((true, null));
     }
 

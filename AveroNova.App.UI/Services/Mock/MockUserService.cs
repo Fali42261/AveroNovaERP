@@ -5,11 +5,14 @@ namespace AveroNova.App.UI.Services.Mock;
 
 public class MockUserService : IUserService
 {
+    public Task<List<UserModel>> QueryAsync(UserListQuery query)
+        => GetAllAsync(Guid.Empty);
+
     public Task<List<UserModel>> GetAllAsync(Guid companyId)
-        => Task.FromResult(MockDataStore.Users.Where(u => u.CompanyId == companyId).ToList());
+        => Task.FromResult(MockDataStore.Users.Where(u => u.CompanyId == companyId && !u.IsDeleted).ToList());
 
     public Task<UserModel?> GetByIdAsync(Guid id)
-        => Task.FromResult(MockDataStore.Users.FirstOrDefault(u => u.LocalId == id));
+        => Task.FromResult(MockDataStore.Users.FirstOrDefault(u => u.LocalId == id && !u.IsDeleted));
 
     public Task<(bool Ok, string? Error)> CreateAsync(UserModel user)
     {
@@ -30,9 +33,11 @@ public class MockUserService : IUserService
 
     public Task<(bool Ok, string? Error)> DeleteAsync(Guid id)
     {
-        var item = MockDataStore.Users.FirstOrDefault(u => u.LocalId == id);
+        var item = MockDataStore.Users.FirstOrDefault(u => u.LocalId == id && !u.IsDeleted);
         if (item == null) return Task.FromResult((false, "User not found."));
-        MockDataStore.Users.Remove(item);
+        item.IsDeleted = true;
+        item.UpdatedAt = DateTime.UtcNow;
+        item.SyncStatus = SyncStatus.PendingSync;
         return Task.FromResult<(bool, string?)>((true, null));
     }
 
@@ -58,10 +63,10 @@ public class MockUserService : IUserService
         => Task.FromResult<(bool, string?)>((true, null));
 
     public Task<List<RoleModel>> GetRolesAsync(Guid companyId)
-        => Task.FromResult(MockDataStore.Roles.Where(r => r.CompanyId == companyId).ToList());
+        => Task.FromResult(MockDataStore.Roles.Where(r => r.CompanyId == companyId && !r.IsDeleted).ToList());
 
     public Task<RoleModel?> GetRoleByIdAsync(Guid id)
-        => Task.FromResult(MockDataStore.Roles.FirstOrDefault(r => r.LocalId == id));
+        => Task.FromResult(MockDataStore.Roles.FirstOrDefault(r => r.LocalId == id && !r.IsDeleted));
 
     public Task<(bool Ok, string? Error)> CreateRoleAsync(RoleModel role)
     {
@@ -70,6 +75,9 @@ public class MockUserService : IUserService
         MockDataStore.Roles.Add(role);
         return Task.FromResult<(bool, string?)>((true, null));
     }
+
+    public Task<List<RoleModel>> GetAssignableRolesAsync()
+        => GetAllRolesAsync();
 
     public Task<List<RoleModel>> GetAllRolesAsync()
     {
@@ -105,10 +113,13 @@ public class MockUserService : IUserService
 
     public Task<(bool Ok, string? Error)> DeleteRoleAsync(Guid id)
     {
-        var item = MockDataStore.Roles.FirstOrDefault(r => r.LocalId == id);
+        var item = MockDataStore.Roles.FirstOrDefault(r => r.LocalId == id && !r.IsDeleted);
         if (item == null) return Task.FromResult((false, "Role not found."));
         if (item.IsSystem) return Task.FromResult((false, "Cannot delete a system role."));
-        MockDataStore.Roles.Remove(item);
+        if (item.UserCount > 0) return Task.FromResult((false, "Role cannot be deleted while users are assigned."));
+        item.IsDeleted = true;
+        item.UpdatedAt = DateTime.UtcNow;
+        item.SyncStatus = SyncStatus.PendingSync;
         return Task.FromResult<(bool, string?)>((true, null));
     }
 

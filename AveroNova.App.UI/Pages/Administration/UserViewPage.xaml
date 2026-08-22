@@ -16,14 +16,14 @@
                 <Label Grid.Column="1" Text="User Details" FontSize="18" FontAttributes="Bold"
                        VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                <Button Grid.Column="2" Text="Edit" Style="{StaticResource SmallButton}" Clicked="OnEditClicked"/>
-                <Button Grid.Column="3" Text="Delete" Style="{StaticResource DangerButton}"
+                <Button x:Name="BtnEdit" Grid.Column="2" Text="Edit" Style="{StaticResource SmallButton}" Clicked="OnEditClicked"/>
+                <Button x:Name="BtnDelete" Grid.Column="3" Text="Delete" Style="{StaticResource DangerButton}"
                         HeightRequest="36" FontSize="12" Margin="8,0,0,0" Clicked="OnDeleteClicked"/>
             </Grid>
         </Border>
 
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16" x:Name="Content"/>
+            <VerticalStackLayout Padding="20,16" Spacing="16" x:Name="DetailsHost"/>
         </ScrollView>
 
     </Grid>

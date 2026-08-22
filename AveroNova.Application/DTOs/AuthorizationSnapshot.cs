@@ -54,11 +54,14 @@ public sealed class AuthorizationSnapshot
             return AccessDecision.Deny(CompanyId, moduleKey, SubscriptionMessages.ModuleNotIncluded);
 
         if (requiredAnyPermission.Count > 0
-            && !requiredAnyPermission.Any(p => Permissions.Contains(p)))
+            && !requiredAnyPermission.Any(p => HasPermission(p)))
         {
             return AccessDecision.Deny(CompanyId, moduleKey, SubscriptionMessages.PermissionDenied);
         }
 
         return AccessDecision.Allow(CompanyId, moduleKey);
     }
+
+    private bool HasPermission(string permissionName)
+        => PermissionNames.Grants(Permissions, permissionName);
 }

@@ -30,7 +30,7 @@ public partial class MainLayoutView : ContentView
     private readonly TrialReminderPresenter _trialReminder;
 
     private readonly Func<DashboardPage> _dashboardFactory;
-    private readonly Func<CompanyListPage> _companyFactory;
+    private readonly Func<CompanyPage> _companyFactory;
     private readonly Func<CustomersListPage> _customersFactory;
     private readonly Func<ProductsListPage> _productsFactory;
     private readonly Func<InventoryPage> _inventoryFactory;
@@ -43,10 +43,13 @@ public partial class MainLayoutView : ContentView
     private readonly Func<UserProfilePage> _profileFactory;
 
     private IReadOnlyList<NavigationMenuNode> _menus = [];
+    private readonly Dictionary<string, EmbeddedMenuPage> _embeddedPages = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedMenuKey;
     private View? _pageContent;
     private bool _accessStarted;
     private bool _isDesktop = true;
+    private bool _sidebarCollapsed;
+    private int _navigationSerial;
 
     public MainLayoutView(
         IConnectivityService connectivity,
@@ -56,7 +59,7 @@ public partial class MainLayoutView : ContentView
         CurrentAccessService access,
         TrialReminderPresenter trialReminder,
         Func<DashboardPage> dashboardFactory,
-        Func<CompanyListPage> companyFactory,
+        Func<CompanyPage> companyFactory,
         Func<CustomersListPage> customersFactory,
         Func<ProductsListPage> productsFactory,
         Func<InventoryPage> inventoryFactory,
@@ -97,12 +100,12 @@ public partial class MainLayoutView : ContentView
 
         DesktopSidebar.MenuSelected += OnSidebarMenuSelected;
         MobileSidebar.MenuSelected += OnSidebarMenuSelected;
+        DesktopSidebar.ExpandRequested += OnDesktopSidebarExpandRequested;
         AccountMenu.ChoiceMade += OnAccountMenuChoice;
         AccountMenu.ThemeChosen += OnAccountThemeChosen;
 
         AttachTap(HeaderProfile, ToggleAccountMenu);
         AttachTap(MobileProfile, ToggleAccountMenu);
-        AttachTap(BtnMenu, OpenDrawer);
         AttachTap(DrawerScrim, CloseDrawer);
 
         UpdateUserInfo();
@@ -134,16 +137,13 @@ public partial class MainLayoutView : ContentView
         var size = ResponsiveBreakpoints.FromWidth(width);
         var compact = size == ScreenSize.Compact;
         var desktop = !compact;
-        var dockedWidth = ResponsiveBreakpoints.DockedSidebarWidth(size);
         var compactChanged = desktop != _isDesktop;
 
         _isDesktop = desktop;
 
         DesktopLayout.IsVisible = desktop;
         MobileLayout.IsVisible = compact;
-        var columnWidth = Math.Max(dockedWidth, 1);
-        if (Math.Abs(DesktopSidebarColumnDef.Width.Value - columnWidth) >= 0.5)
-            DesktopSidebarColumnDef.Width = new GridLength(columnWidth);
+        ApplyDesktopSidebarWidth(size);
         if (Math.Abs(DrawerPanel.WidthRequest - ResponsiveBreakpoints.SidebarMobileDrawerWidth) >= 0.5)
             DrawerPanel.WidthRequest = ResponsiveBreakpoints.SidebarMobileDrawerWidth;
 
@@ -216,29 +216,62 @@ public partial class MainLayoutView : ContentView
     private async Task NavigateMenuAsync(string menuKey)
     {
         if (NavigationMenuCatalog.Find(menuKey) == null)
+        {
+            RestoreSidebarSelection();
             return;
+        }
 
         if (!TryResolvePage(menuKey, out var factory, out var title, out var breadcrumb))
         {
-            DesktopSidebar.SelectedKey = _selectedMenuKey;
-            MobileSidebar.SelectedKey = _selectedMenuKey;
+            RestoreSidebarSelection();
             return;
         }
 
-        var decision = await _access.AuthorizeMenuAsync(menuKey);
-        if (!decision.IsAllowed)
+        var serial = ++_navigationSerial;
+        var previousKey = _selectedMenuKey;
+        SetActiveMenu(menuKey);
+
+        try
         {
-            if (decision.IsSubscriptionExpired)
+            var decision = await _access.AuthorizeMenuAsync(menuKey);
+            if (serial != _navigationSerial)
+                return;
+
+            if (!decision.IsAllowed)
             {
-                await SignOutExpiredAsync();
+                if (decision.IsSubscriptionExpired)
+                {
+                    await SignOutExpiredAsync();
+                    return;
+                }
+
+                SetActiveMenu(previousKey);
+                ShowRestriction(decision.Reason ?? SubscriptionMessages.PermissionDenied);
                 return;
             }
-
-            ShowRestriction(decision.Reason ?? SubscriptionMessages.PermissionDenied);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] Menu authorize failed: {ex}");
+            if (serial == _navigationSerial)
+                SetActiveMenu(previousKey);
             return;
         }
 
-        ShowPage(factory(), title, breadcrumb, menuKey);
+        if (serial != _navigationSerial)
+            return;
+
+        try
+        {
+            var page = GetOrCreatePage(menuKey, factory);
+            ShowPage(page, title, breadcrumb, menuKey);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] Menu page failed: {ex}");
+            if (serial == _navigationSerial)
+                SetActiveMenu(previousKey);
+        }
     }
 
     private bool TryResolvePage(
@@ -311,11 +344,34 @@ public partial class MainLayoutView : ContentView
         }
     }
 
+    private ContentPage GetOrCreatePage(string menuKey, Func<ContentPage> factory)
+    {
+        if (_embeddedPages.TryGetValue(menuKey, out var embedded) && embedded.Content != null)
+            return embedded.Page;
+
+        var page = factory();
+        var content = page.Content;
+        page.Content = null;
+        if (content == null)
+            throw new InvalidOperationException($"Page '{menuKey}' has no content.");
+
+        _embeddedPages[menuKey] = new EmbeddedMenuPage(page, content);
+        return page;
+    }
+
     private void ShowPage(ContentPage page, string title, string breadcrumb, string? menuKey)
     {
         AccountMenu.Close();
         CloseDrawer();
-        _pageContent = page.Content;
+
+        if (menuKey != null && _embeddedPages.TryGetValue(menuKey, out var embedded))
+            _pageContent = embedded.Content;
+        else
+        {
+            _pageContent = page.Content;
+            page.Content = null;
+        }
+
         AttachPageContent();
 
         LblPageTitle.Text = title;
@@ -323,13 +379,52 @@ public partial class MainLayoutView : ContentView
         MLblPageTitle.Text = title;
         UpdateUserInfo();
         SetActiveMenu(menuKey);
+        ReloadPage(page);
+    }
 
-        if (page is DashboardPage dashboard)
-            _ = dashboard.ReloadAsync();
-        if (page is UsersRolesPage usersRoles)
-            _ = usersRoles.ReloadAsync();
-        if (page is UserProfilePage profile)
-            profile.Reload();
+    private static void ReloadPage(ContentPage page)
+    {
+        switch (page)
+        {
+            case DashboardPage dashboard:
+                _ = dashboard.ReloadAsync();
+                break;
+            case CompanyPage company:
+                _ = company.ReloadAsync();
+                break;
+            case CustomersListPage customers:
+                _ = customers.ReloadAsync();
+                break;
+            case ProductsListPage products:
+                _ = products.ReloadAsync();
+                break;
+            case InventoryPage inventory:
+                _ = inventory.ReloadAsync();
+                break;
+            case BillingListPage billing:
+                _ = billing.ReloadAsync();
+                break;
+            case PurchasesListPage purchases:
+                _ = purchases.ReloadAsync();
+                break;
+            case PaymentsListPage payments:
+                _ = payments.ReloadAsync();
+                break;
+            case UsersRolesPage usersRoles:
+                _ = usersRoles.ReloadAsync();
+                break;
+            case UserProfilePage profile:
+                profile.Reload();
+                break;
+        }
+    }
+
+    private void ClearEmbeddedPages()
+    {
+        _embeddedPages.Clear();
+        _pageContent = null;
+        ContentArea.Content = null;
+        MobileContentArea.Content = null;
     }
 
     private void AttachPageContent()
@@ -350,6 +445,57 @@ public partial class MainLayoutView : ContentView
         _selectedMenuKey = menuKey;
         DesktopSidebar.SelectedKey = menuKey;
         MobileSidebar.SelectedKey = menuKey;
+    }
+
+    private void RestoreSidebarSelection()
+    {
+        DesktopSidebar.SelectedKey = _selectedMenuKey;
+        MobileSidebar.SelectedKey = _selectedMenuKey;
+    }
+
+    private void OnDesktopMenuClicked(object? sender, EventArgs e)
+        => ToggleDesktopSidebar();
+
+    private void OnMobileMenuClicked(object? sender, EventArgs e)
+        => ToggleMobileDrawer();
+
+    private void ToggleDesktopSidebar()
+    {
+        if (!_isDesktop)
+            return;
+
+        AccountMenu.Close();
+        _sidebarCollapsed = !_sidebarCollapsed;
+        ApplyDesktopSidebarWidth(ResponsiveBreakpoints.FromWidth(Width));
+    }
+
+    private void OnDesktopSidebarExpandRequested(object? sender, EventArgs e)
+    {
+        if (!_sidebarCollapsed)
+            return;
+
+        _sidebarCollapsed = false;
+        ApplyDesktopSidebarWidth(ResponsiveBreakpoints.FromWidth(Width));
+    }
+
+    private void ApplyDesktopSidebarWidth(ScreenSize size)
+    {
+        var dockedWidth = _sidebarCollapsed
+            ? ResponsiveBreakpoints.SidebarCollapsedWidth
+            : ResponsiveBreakpoints.DockedSidebarWidth(size);
+        var columnWidth = Math.Max(dockedWidth, 1);
+        if (Math.Abs(DesktopSidebarColumnDef.Width.Value - columnWidth) >= 0.5)
+            DesktopSidebarColumnDef.Width = new GridLength(columnWidth);
+        if (DesktopSidebar.IsCollapsed != _sidebarCollapsed)
+            DesktopSidebar.IsCollapsed = _sidebarCollapsed;
+    }
+
+    private void ToggleMobileDrawer()
+    {
+        if (DrawerOverlay.IsVisible)
+            CloseDrawer();
+        else
+            OpenDrawer();
     }
 
     private async void OpenDrawer()
@@ -513,6 +659,7 @@ public partial class MainLayoutView : ContentView
     private async void OnCurrentCompanyChanged(object? sender, EventArgs e)
     {
         _access.Invalidate();
+        ClearEmbeddedPages();
         await InitializeAccessAsync();
     }
 
@@ -543,8 +690,12 @@ public partial class MainLayoutView : ContentView
         _company.CurrentCompanyChanged -= OnCurrentCompanyChanged;
         DesktopSidebar.MenuSelected -= OnSidebarMenuSelected;
         MobileSidebar.MenuSelected -= OnSidebarMenuSelected;
+        DesktopSidebar.ExpandRequested -= OnDesktopSidebarExpandRequested;
         AccountMenu.ChoiceMade -= OnAccountMenuChoice;
         AccountMenu.ThemeChosen -= OnAccountThemeChosen;
         AccountMenu.Close();
+        ClearEmbeddedPages();
     }
+
+    private sealed record EmbeddedMenuPage(ContentPage Page, View Content);
 }
