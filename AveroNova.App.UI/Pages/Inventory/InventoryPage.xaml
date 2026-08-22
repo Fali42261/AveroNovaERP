@@ -5,65 +5,29 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
-
-    <!--
-    ONLINE:  Inventory data loaded from API.
-    OFFLINE: Inventory data served from local database.
-    TODO: Connect IInventoryService to API + local DB during backend phase.
-    -->
-
-    <Grid RowDefinitions="Auto,Auto,*">
-
-        <Border Grid.Row="0" Padding="20,14"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+    <Grid x:Name="Root" RowDefinitions="Auto,Auto,*">
+        <Border Grid.Row="0" Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <VerticalStackLayout Spacing="2">
-                    <Label Text="Inventory" FontSize="20" FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                    <Label x:Name="LblCount" Text="0 items" FontSize="12"
-                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                    <Label Text="Inventory" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}/>
+                    <Label x:Name="LblCount" Text="0 items" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}/>
                 </VerticalStackLayout>
-                <Button Grid.Column="1" Text="Stock History" Style="{StaticResource SmallSecondaryButton}"
-                        Margin="0,0,8,0" Clicked="OnHistoryClicked"/>
-                <Button Grid.Column="2" Text="Adjust Stock" Style="{StaticResource PrimaryButton}"
-                        HeightRequest="40" FontSize="13" Clicked="OnAdjustClicked"/>
+                <Button Grid.Column="1" Text="Stock History" Style="{StaticResource SmallSecondaryButton}" Margin="0,0,8,0" Clicked="OnHistoryClicked"/>
+                <Button Grid.Column="2" Text="Adjust Stock" Style="{StaticResource PrimaryButton}" HeightRequest="40" FontSize="13" Clicked="OnAdjustClicked"/>
             </Grid>
         </Border>
-
-        <!-- Summary bar -->
-        <Border Grid.Row="1" Padding="16,10"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+        <Border Grid.Row="1" Padding="16,10" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
-                    <Label x:Name="LblTotalItems" Text="0" FontSize="18" FontAttributes="Bold"
-                           TextColor="{StaticResource PrimaryColor}" HorizontalOptions="Center"/>
-                    <Label Text="Total Items" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/>
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2">
-                    <Label x:Name="LblLowStock" Text="0" FontSize="18" FontAttributes="Bold"
-                           TextColor="{StaticResource ErrorColor}" HorizontalOptions="Center"/>
-                    <Label Text="Low Stock" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/>
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2">
-                    <Label x:Name="LblInStock" Text="0" FontSize="18" FontAttributes="Bold"
-                           TextColor="{StaticResource SuccessColor}" HorizontalOptions="Center"/>
-                    <Label Text="In Stock" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/>
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="3" HorizontalOptions="Center" Spacing="2">
-                    <Label x:Name="LblOutOfStock" Text="0" FontSize="18" FontAttributes="Bold"
-                           TextColor="{StaticResource WarningColor}" HorizontalOptions="Center"/>
-                    <Label Text="Out of Stock" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/>
-                </VerticalStackLayout>
+                <VerticalStackLayout HorizontalOptions="Center" Spacing="2"><Label x:Name="LblTotalItems" Text="0" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" HorizontalOptions="Center"/><Label Text="Total Items" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/></VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2"><Label x:Name="LblLowStock" Text="0" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource ErrorColor}" HorizontalOptions="Center"/><Label Text="Low Stock" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/></VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2"><Label x:Name="LblInStock" Text="0" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource SuccessColor}" HorizontalOptions="Center"/><Label Text="In Stock" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/></VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="3" HorizontalOptions="Center" Spacing="2"><Label x:Name="LblOutOfStock" Text="0" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource WarningColor}" HorizontalOptions="Center"/><Label Text="Out of Stock" FontSize="10" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center"/></VerticalStackLayout>
             </Grid>
         </Border>
+        <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing"><ScrollView><VerticalStackLayout Padding="16,12" Spacing="10" x:Name="InventoryList"/></ScrollView></RefreshView>
 
-        <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing">
-            <ScrollView>
-                <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="InventoryList"/>
-            </ScrollView>
-        </RefreshView>
-
+        <Grid x:Name="ActionOverlay" Grid.RowSpan="3" IsVisible="False" ZIndex="50" BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+            <ContentView x:Name="ActionContent" HorizontalOptions="Fill" VerticalOptions="Fill" />
+        </Grid>
     </Grid>
 </ContentPage>
