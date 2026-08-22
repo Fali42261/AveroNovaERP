@@ -44,8 +44,10 @@ public sealed class LocalPaymentService : IPaymentService
         var row = await db.Payments.FirstOrDefaultAsync(x => x.Id == payment.LocalId && !x.IsDeleted);
         if (row == null) return (false, "Payment not found.");
         if (payment.Amount <= 0) return (false, "Payment amount must be greater than zero.");
-        row.Amount = payment.Amount; row.PaymentDate = payment.PaymentDate; row.PaymentMethod = (int)payment.PaymentMethod;
-        row.PartyName = payment.PartyName; row.Reference = payment.Reference; row.Notes = payment.Notes;
+        row.Amount = payment.Amount; row.PaymentDate = payment.PaymentDate; row.Method = (int)payment.Method;
+        row.PartyId = payment.PartyId; row.PartyName = payment.PartyName; row.IsSupplier = payment.IsSupplier;
+        row.InvoiceId = payment.InvoiceId; row.InvoiceNumber = payment.InvoiceNumber;
+        row.Reference = payment.Reference; row.Notes = payment.Notes; row.Status = (int)payment.Status;
         row.UpdatedAt = DateTime.UtcNow; row.SyncStatus = (int)SyncStatus.PendingSync;
         await db.SaveChangesAsync();
         return (true, null);
@@ -70,18 +72,21 @@ public sealed class LocalPaymentService : IPaymentService
 
     private static Payment ToEntity(PaymentModel x, DateTime now) => new()
     {
-        Id = x.LocalId, CompanyId = x.CompanyId, PaymentNumber = x.PaymentNumber, CustomerId = x.CustomerId,
-        SupplierId = x.SupplierId, PartyName = x.PartyName, Amount = x.Amount, PaymentDate = x.PaymentDate,
-        PaymentMethod = (int)x.PaymentMethod, Reference = x.Reference, Notes = x.Notes,
-        SyncStatus = (int)SyncStatus.PendingSync, CreatedAt = now, UpdatedAt = now, IsDeleted = false
+        Id = x.LocalId, CompanyId = x.CompanyId, PaymentNumber = x.PaymentNumber, PartyId = x.PartyId,
+        PartyName = x.PartyName, IsSupplier = x.IsSupplier, InvoiceId = x.InvoiceId, InvoiceNumber = x.InvoiceNumber,
+        Amount = x.Amount, PaymentDate = x.PaymentDate, Method = (int)x.Method, Reference = x.Reference,
+        Notes = x.Notes, Status = (int)x.Status, SyncStatus = (int)SyncStatus.PendingSync,
+        CreatedAt = now, UpdatedAt = now, IsDeleted = false
     };
 
     private static PaymentModel Map(Payment x) => new()
     {
-        LocalId = x.Id, CompanyId = x.CompanyId, PaymentNumber = x.PaymentNumber, CustomerId = x.CustomerId,
-        SupplierId = x.SupplierId, PartyName = x.PartyName, Amount = x.Amount, PaymentDate = x.PaymentDate,
-        PaymentMethod = Enum.IsDefined(typeof(PaymentMethod), x.PaymentMethod) ? (PaymentMethod)x.PaymentMethod : PaymentMethod.Cash,
+        LocalId = x.Id, CompanyId = x.CompanyId, PaymentNumber = x.PaymentNumber, PartyId = x.PartyId,
+        PartyName = x.PartyName, IsSupplier = x.IsSupplier, InvoiceId = x.InvoiceId, InvoiceNumber = x.InvoiceNumber,
+        Amount = x.Amount, PaymentDate = x.PaymentDate,
+        Method = Enum.IsDefined(typeof(PaymentMethod), x.Method) ? (PaymentMethod)x.Method : PaymentMethod.Cash,
         Reference = x.Reference, Notes = x.Notes,
+        Status = Enum.IsDefined(typeof(PaymentStatus), x.Status) ? (PaymentStatus)x.Status : PaymentStatus.Completed,
         SyncStatus = Enum.IsDefined(typeof(SyncStatus), x.SyncStatus) ? (SyncStatus)x.SyncStatus : SyncStatus.PendingSync,
         CreatedAt = x.CreatedAt, UpdatedAt = x.UpdatedAt ?? x.CreatedAt, IsDeleted = x.IsDeleted
     };
