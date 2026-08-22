@@ -81,6 +81,7 @@ public sealed class LocalDatabaseInitializer
             await SqliteCustomerSchema.EnsureAsync(db, cancellationToken);
             await SqliteProductSchema.EnsureAsync(db, cancellationToken);
             await SqliteUserSchema.EnsureAsync(db, cancellationToken);
+            await SqliteInvoiceSchema.EnsureAsync(db, cancellationToken);
             AveroNova.App.UI.Helpers.StartupLog.Write("DB seed start");
             await SeedAsync(db, cancellationToken);
             await RoleCatalogSeeder.SeedAsync(db, cancellationToken);
