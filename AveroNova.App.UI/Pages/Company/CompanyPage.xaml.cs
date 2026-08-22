@@ -71,10 +71,10 @@ public partial class CompanyPage : ContentPage
                 new RowDefinition(GridLength.Auto),
                 new RowDefinition(GridLength.Auto)
             };
-            Grid.SetColumn(HeaderTitle, 0);
-            Grid.SetRow(HeaderTitle, 0);
-            Grid.SetColumn(HeaderActions, 0);
-            Grid.SetRow(HeaderActions, 1);
+            Microsoft.Maui.Controls.Grid.SetColumn(HeaderTitle, 0);
+            Microsoft.Maui.Controls.Grid.SetRow(HeaderTitle, 0);
+            Microsoft.Maui.Controls.Grid.SetColumn(HeaderActions, 0);
+            Microsoft.Maui.Controls.Grid.SetRow(HeaderActions, 1);
             HeaderActions.HorizontalOptions = LayoutOptions.End;
             return;
         }
@@ -88,10 +88,10 @@ public partial class CompanyPage : ContentPage
         {
             new RowDefinition(GridLength.Auto)
         };
-        Grid.SetColumn(HeaderTitle, 0);
-        Grid.SetRow(HeaderTitle, 0);
-        Grid.SetColumn(HeaderActions, 1);
-        Grid.SetRow(HeaderActions, 0);
+        Microsoft.Maui.Controls.Grid.SetColumn(HeaderTitle, 0);
+        Microsoft.Maui.Controls.Grid.SetRow(HeaderTitle, 0);
+        Microsoft.Maui.Controls.Grid.SetColumn(HeaderActions, 1);
+        Microsoft.Maui.Controls.Grid.SetRow(HeaderActions, 0);
         HeaderActions.HorizontalOptions = LayoutOptions.End;
     }
 
@@ -108,8 +108,8 @@ public partial class CompanyPage : ContentPage
 
         foreach (var child in children)
         {
-            Grid.SetColumn(child, 0);
-            Grid.SetRow(child, 0);
+            Microsoft.Maui.Controls.Grid.SetColumn(child, 0);
+            Microsoft.Maui.Controls.Grid.SetRow(child, 0);
         }
 
         grid.ColumnDefinitions.Clear();
@@ -123,8 +123,8 @@ public partial class CompanyPage : ContentPage
 
         for (var index = 0; index < children.Count; index++)
         {
-            Grid.SetColumn(children[index], index % columns);
-            Grid.SetRow(children[index], index / columns);
+            Microsoft.Maui.Controls.Grid.SetColumn(children[index], index % columns);
+            Microsoft.Maui.Controls.Grid.SetRow(children[index], index / columns);
         }
     }
 }
