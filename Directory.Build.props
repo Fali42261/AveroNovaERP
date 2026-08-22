@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup Condition="'$(UseMaui)' == 'true'">
     <!-- Keep the build output clean while legacy/generated MAUI code is migrated to the nullable/async APIs. -->
-    <NoWarn>$(NoWarn);CS0108;CS0414;CS0608;CS0618;CS8600;CS8604;CS8618;CS8619;CS8622;NU1903</NoWarn>
+    <NoWarn>$(NoWarn);CS0108;CS0414;CS0608;CS0618;CS8600;CS8604;CS8618;CS8619;CS8622;NU1903;MVVMTK0045</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseMaui)' == 'true'">
