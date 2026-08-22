@@ -129,9 +129,6 @@ public partial class ProductsListPage : ContentPage
             };
             Grid.SetColumn(HeaderTitle, 0);
             Grid.SetRow(HeaderTitle, 0);
-            Grid.SetColumn(ActionHost, 0);
-            Grid.SetRow(ActionHost, 1);
-            ActionHost.HorizontalOptions = LayoutOptions.Start;
             return;
         }
 
@@ -146,9 +143,6 @@ public partial class ProductsListPage : ContentPage
         };
         Grid.SetColumn(HeaderTitle, 0);
         Grid.SetRow(HeaderTitle, 0);
-        Grid.SetColumn(ActionHost, 1);
-        Grid.SetRow(ActionHost, 0);
-        ActionHost.HorizontalOptions = LayoutOptions.End;
     }
 
     private void ApplyToolbarLayout(bool compact)
@@ -189,9 +183,7 @@ public partial class ProductsListPage : ContentPage
 
     private void ApplySearchWidth()
     {
-        var innerWidth = ToolbarGrid.Width > 1
-            ? ToolbarGrid.Width
-            : Math.Max(Root.Width - ToolbarGutter, 0);
+        var innerWidth = Root.Width > 1 ? Root.Width : 0;
         if (innerWidth <= 0)
             return;
 
@@ -281,17 +273,17 @@ public partial class ProductsListPage : ContentPage
         if (!StatusDropdownLayer.IsVisible)
             return;
 
-        var width = StatusField.Width > 1 ? StatusField.Width : StatusControlWidth;
+        var width = StatusHost.Width > 1 ? StatusHost.Width : StatusControlWidth;
         width = Math.Max(160, width);
         StatusDropdown.WidthRequest = width;
 
 #if WINDOWS
-        if (StatusField.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement field
+        if (StatusHost.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement field
             && Root.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement root)
         {
             var point = field.TransformToVisual(root)
                 .TransformPoint(new Windows.Foundation.Point(0, 0));
-            var height = field.ActualHeight > 0 ? field.ActualHeight : StatusField.Height;
+            var height = field.ActualHeight > 0 ? field.ActualHeight : StatusHost.Height;
             if (field.ActualWidth > 0)
                 StatusDropdown.WidthRequest = Math.Max(160, field.ActualWidth);
             StatusDropdown.Margin = new Thickness(point.X, point.Y + height + 4, 0, 0);
@@ -301,7 +293,7 @@ public partial class ProductsListPage : ContentPage
 
         double x = 0;
         double y = 0;
-        VisualElement? current = StatusField;
+        VisualElement? current = StatusHost;
         while (current is not null && !ReferenceEquals(current, Root))
         {
             x += current.X;
@@ -315,7 +307,7 @@ public partial class ProductsListPage : ContentPage
             current = current.Parent as VisualElement;
         }
 
-        var fieldHeight = StatusField.Height > 0 ? StatusField.Height : 42;
+        var fieldHeight = StatusHost.Height > 0 ? StatusHost.Height : 42;
         StatusDropdown.Margin = new Thickness(x, y + fieldHeight + 4, 0, 0);
     }
 
@@ -380,255 +372,67 @@ public partial class ProductsListPage : ContentPage
 
     private void RenderList()
     {
+        if (!ListPanel.IsVisible || ListHost == null)
+            return;
+
         ListHost.Children.Clear();
-        if (!_list.ShowList)
-            return;
-
-        if (_isCompact)
-        {
-            foreach (var product in _list.Items)
-                ListHost.Children.Add(BuildCard(product));
-            return;
-        }
-
-        ListHost.Children.Add(BuildTableHeader());
         foreach (var product in _list.Items)
-            ListHost.Children.Add(BuildTableRow(product));
+            ListHost.Children.Add(BuildProductRow(product));
     }
 
-    private View BuildTableHeader()
+    private View BuildProductRow(ProductModel product)
     {
-        var grid = CreateRowGrid();
-        AddHeader(grid, "Product Name", 0);
-        AddHeader(grid, "SKU", 1);
-        AddHeader(grid, "Category", 2);
-        AddHeader(grid, "Unit", 3);
-        AddHeader(grid, "Sale Price", 4);
-        AddHeader(grid, "Stock", 5);
-        AddHeader(grid, "Status", 6);
-        AddHeader(grid, "Actions", 7);
-
-        return new Border
+        var grid = new Grid
         {
-            Style = TryStyle("ListRow"),
-            Padding = new Thickness(16, 10),
-            Content = grid
+            ColumnDefinitions = new ColumnDefinitionCollection(
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Auto)),
+            Padding = new Thickness(16, 12),
+            ColumnSpacing = 12
         };
-    }
 
-    private View BuildTableRow(ProductModel product)
-    {
-        var grid = CreateRowGrid();
-        AddCell(grid, product.Name, 0, bold: true);
-        AddCell(grid, Display(product.SKU), 1);
-        AddCell(grid, Display(product.Category), 2);
-        AddCell(grid, Display(product.Unit), 3);
-        AddCell(grid, $"₹{product.SellingPrice:N2}", 4);
-        AddCell(grid, product.Stock.ToString(), 5);
-        grid.Add(BuildStatusBadge(product), 6);
-        grid.Add(BuildActions(product), 7);
-
-        return new Border
-        {
-            Style = TryStyle("ListRow"),
-            Content = grid
-        };
-    }
-
-    private View BuildCard(ProductModel product)
-    {
-        var info = new VerticalStackLayout { Spacing = 6 };
-        info.Children.Add(new Label
+        var left = new VerticalStackLayout { Spacing = 2 };
+        left.Children.Add(new Label
         {
             Text = product.Name,
+            FontSize = 13,
             FontAttributes = FontAttributes.Bold,
-            FontSize = 14,
-            MaxLines = 1,
-            LineBreakMode = LineBreakMode.TailTruncation,
-            TextColor = Res("TextPrimary", Colors.Black)
+            LineBreakMode = LineBreakMode.TailTruncation
         });
-        info.Children.Add(Labeled("SKU", Display(product.SKU)));
-        info.Children.Add(Labeled("Category", Display(product.Category)));
-        info.Children.Add(Labeled("Unit", Display(product.Unit)));
-        info.Children.Add(Labeled("Sale Price", $"₹{product.SellingPrice:N2}"));
-        info.Children.Add(Labeled("Stock", product.Stock.ToString()));
-        info.Children.Add(BuildStatusBadge(product));
-        info.Children.Add(BuildActions(product));
-
-        return new Border
+        left.Children.Add(new Label
         {
-            Style = TryStyle("ListRow"),
-            Content = info
-        };
-    }
-
-    private static Grid CreateRowGrid()
-        => new()
-        {
-            ColumnDefinitions =
-            [
-                new ColumnDefinition(new GridLength(1.4, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(1.0, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(1.0, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(0.6, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(0.9, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(0.6, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(0.8, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(1.8, GridUnitType.Star))
-            ],
-            ColumnSpacing = 8,
-            VerticalOptions = LayoutOptions.Center
-        };
-
-    private View BuildActions(ProductModel product)
-    {
-        var row = new HorizontalStackLayout
-        {
-            Spacing = 6,
-            HorizontalOptions = LayoutOptions.Start
-        };
-
-        var viewBtn = new Button
-        {
-            Text = "View",
-            Style = TryStyle("SmallSecondaryButton"),
-            IsEnabled = !_list.IsDeleting && !_list.IsLoading
-        };
-        viewBtn.Clicked += (_, _) => _list.ViewCommand.Execute(product);
-        row.Children.Add(viewBtn);
-
-        if (_list.CanUpdate)
-        {
-            var editBtn = new Button
-            {
-                Text = "Edit",
-                Style = TryStyle("SmallButton"),
-                IsEnabled = !_list.IsDeleting && !_list.IsLoading
-            };
-            editBtn.Clicked += (_, _) => _list.EditCommand.Execute(product);
-            row.Children.Add(editBtn);
-        }
-
-        if (_list.CanDelete)
-        {
-            var deleteHost = new Grid
-            {
-                HeightRequest = 36,
-                VerticalOptions = LayoutOptions.Center
-            };
-            var deleteBtn = new Button
-            {
-                Text = _list.IsDeleting ? "Deleting..." : "Delete",
-                Style = TryStyle("DangerButton"),
-                HeightRequest = 36,
-                MinimumHeightRequest = 36,
-                FontSize = 12,
-                Padding = new Thickness(12, 0),
-                IsEnabled = _list.CanRunDelete
-            };
-            deleteBtn.Clicked += (_, _) => _ = _list.DeleteCommand.ExecuteAsync(product);
-            deleteHost.Children.Add(deleteBtn);
-            if (_list.IsDeleting)
-            {
-                deleteHost.Children.Add(new ActivityIndicator
-                {
-                    IsVisible = true,
-                    IsRunning = true,
-                    Color = Colors.White,
-                    WidthRequest = 14,
-                    HeightRequest = 14,
-                    HorizontalOptions = LayoutOptions.End,
-                    VerticalOptions = LayoutOptions.Center,
-                    Margin = new Thickness(0, 0, 8, 0),
-                    InputTransparent = true
-                });
-            }
-            row.Children.Add(deleteHost);
-        }
-
-        return row;
-    }
-
-    private View BuildStatusBadge(ProductModel product)
-    {
-        var (bg, fg) = product.Status switch
-        {
-            ProductStatus.Active => ("SuccessBg", "SuccessText"),
-            ProductStatus.Inactive => ("ErrorBg", "ErrorText"),
-            _ => ("WarningBg", "WarningText")
-        };
-
-        return new Border
-        {
-            Style = TryStyle("BadgeBase"),
-            BackgroundColor = Res(bg, Colors.Transparent),
-            HorizontalOptions = LayoutOptions.Start,
-            Content = new Label
-            {
-                Text = product.StatusLabel,
-                FontSize = 10,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Res(fg, Colors.Black)
-            }
-        };
-    }
-
-    private static void AddHeader(Grid grid, string text, int column)
-    {
-        var label = new Label
-        {
-            Text = text,
+            Text = string.IsNullOrWhiteSpace(product.SKU) ? "No SKU" : product.SKU,
             FontSize = 11,
+            TextColor = Res("TextSecondary", Color.FromArgb("#64748B"))
+        });
+
+        var right = new HorizontalStackLayout { Spacing = 8, HorizontalOptions = LayoutOptions.End };
+        right.Children.Add(new Label
+        {
+            Text = $"{product.SellingPrice:N2}",
+            FontSize = 13,
             FontAttributes = FontAttributes.Bold,
-            LineBreakMode = LineBreakMode.TailTruncation,
-            TextColor = Res("TextSecondary", Colors.Gray)
-        };
-        grid.Add(label, column, 0);
-    }
-
-    private static void AddCell(Grid grid, string text, int column, bool bold = false)
-    {
-        grid.Add(new Label
+            VerticalOptions = LayoutOptions.Center
+        });
+        right.Children.Add(new Label
         {
-            Text = text,
-            FontSize = 12,
-            FontAttributes = bold ? FontAttributes.Bold : FontAttributes.None,
-            LineBreakMode = LineBreakMode.TailTruncation,
-            TextColor = Res("TextPrimary", Colors.Black)
-        }, column, 0);
+            Text = $"Stock {product.Stock}",
+            FontSize = 11,
+            TextColor = Res("TextSecondary", Color.FromArgb("#64748B")),
+            VerticalOptions = LayoutOptions.Center
+        });
+
+        grid.Add(left, 0, 0);
+        grid.Add(right, 1, 0);
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += async (_, _) => await ShowDetailsAsync(product.LocalId);
+        grid.GestureRecognizers.Add(tap);
+        return grid;
     }
-
-    private static Label Labeled(string label, string value)
-        => new()
-        {
-            Text = $"{label}: {value}",
-            FontSize = 12,
-            LineBreakMode = LineBreakMode.TailTruncation,
-            TextColor = Res("TextSecondary", Colors.Gray)
-        };
-
-    private static string Display(string? value)
-        => string.IsNullOrWhiteSpace(value) ? "—" : value.Trim();
 
     private static Color Res(string key, Color fallback)
-    {
-        if (Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
-            && value is Color color)
-        {
-            return color;
-        }
-
-        return fallback;
-    }
-
-    private static Style? TryStyle(string key)
-    {
-        if (Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
-            && value is Style style)
-        {
-            return style;
-        }
-
-        return null;
-    }
+        => Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+            ? color
+            : fallback;
 }
