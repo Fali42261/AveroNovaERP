@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup Condition="'$(UseMaui)' == 'true'">
+    <!-- Keep the build output clean while legacy/generated MAUI code is migrated to the nullable/async APIs. -->
+    <NoWarn>$(NoWarn);CS0108;CS0414;CS0608;CS0618;CS8600;CS8604;CS8618;CS8619;CS8622;NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseMaui)' == 'true'">
+    <!-- 2.1.11 is affected by CVE-2025-6965; 2.1.13 is the maintained 2.x release. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.13" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.ios" Version="2.1.13" />
+  </ItemGroup>
+</Project>
