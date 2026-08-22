@@ -13,6 +13,7 @@ public partial class StockMovementPage : ContentPage
     public StockMovementPage(IInventoryService svc, ICompanyService company)
     { InitializeComponent(); _svc = svc; _company = company; }
 
+    public Task ReloadAsync() => LoadAsync();
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
