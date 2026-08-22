@@ -11,7 +11,7 @@
                     <Label Text="Reports" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
                     <Label Text="Financial &amp; Operational Reports" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                 </VerticalStackLayout>
-                <Button Grid.Column="1" Text="Refresh" Style="{StaticResource LightSecondaryButton}" Command="{Binding RefreshCommand}" />
+                <Button Grid.Column="1" Text="Refresh" Style="{StaticResource LightSecondaryButton}" Clicked="OnRefreshClicked" />
             </Grid>
         </Border>
         <RefreshView Grid.Row="1" x:Name="Refresher" Refreshing="OnRefreshing">
