@@ -5,9 +5,7 @@ namespace AveroNova.Infrastructure.Persistence
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
@@ -23,6 +21,7 @@ namespace AveroNova.Infrastructure.Persistence
         public DbSet<SubscriptionPlanFeature> SubscriptionPlanFeatures { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+        public DbSet<StockMovement> StockMovements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -34,20 +33,22 @@ namespace AveroNova.Infrastructure.Persistence
                 entity.HasKey(x => x.Id);
                 entity.HasIndex(x => new { x.CompanyId, x.InvoiceNumber });
                 entity.HasIndex(x => new { x.CompanyId, x.CustomerId });
-                entity.HasOne(x => x.Company)
-                    .WithMany()
-                    .HasForeignKey(x => x.CompanyId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                entity.HasMany(x => x.Items)
-                    .WithOne(x => x.Invoice)
-                    .HasForeignKey(x => x.InvoiceId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.Company).WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasMany(x => x.Items).WithOne(x => x.Invoice).HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<InvoiceItem>(entity =>
             {
                 entity.HasKey(x => x.Id);
                 entity.HasIndex(x => new { x.InvoiceId, x.ProductId });
+            });
+
+            modelBuilder.Entity<StockMovement>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.CompanyId, x.ProductId, x.CreatedAt });
+                entity.HasOne(x => x.Company).WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
             });
         }
     }
