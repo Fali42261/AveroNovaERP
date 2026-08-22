@@ -15,12 +15,7 @@ public sealed class DashboardService : IDashboardService
 
     public DashboardService(IBillingService billing, IProductService product, ICustomerService customer, IPaymentService payment, ICompanyService company, IAuthenticationService auth)
     {
-        _billing = billing;
-        _product = product;
-        _customer = customer;
-        _payment = payment;
-        _company = company;
-        _auth = auth;
+        _billing = billing; _product = product; _customer = customer; _payment = payment; _company = company; _auth = auth;
     }
 
     public async Task<DashboardSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
@@ -46,16 +41,8 @@ public sealed class DashboardService : IDashboardService
         var paymentsTask = _payment.GetAllAsync(companyId);
         await Task.WhenAll(invoicesTask, productsTask, customersTask, paymentsTask);
 
-        var invoices = invoicesTask.Result;
-        var products = productsTask.Result;
-        var customers = customersTask.Result;
-        var payments = paymentsTask.Result;
-        var today = DateTime.Today;
-        var yesterday = today.AddDays(-1);
-        var weekStart = StartOfWeek(today);
-        var prevWeekStart = weekStart.AddDays(-7);
-        var monthStart = new DateTime(today.Year, today.Month, 1);
-        var prevMonthStart = monthStart.AddMonths(-1);
+        var invoices = invoicesTask.Result; var products = productsTask.Result; var customers = customersTask.Result; var payments = paymentsTask.Result;
+        var today = DateTime.Today; var yesterday = today.AddDays(-1); var weekStart = StartOfWeek(today); var prevWeekStart = weekStart.AddDays(-7); var monthStart = new DateTime(today.Year, today.Month, 1); var prevMonthStart = monthStart.AddMonths(-1);
         static bool IsActiveSale(InvoiceModel i) => i.Status != InvoiceStatus.Cancelled;
         var sales = invoices.Where(IsActiveSale).ToList();
         decimal SalesOn(DateTime day) => sales.Where(i => i.InvoiceDate.Date == day).Sum(i => i.GrandTotal);
@@ -65,12 +52,7 @@ public sealed class DashboardService : IDashboardService
         var lowStock = products.Where(p => p.IsLowStock).OrderBy(p => p.Stock).ThenBy(p => p.Name).Take(10).ToList();
         var todayPayments = payments.Where(p => p.PaymentDate.Date == today && p.Status == PaymentStatus.Completed).ToList();
 
-        var recent = invoices.OrderByDescending(i => i.InvoiceDate).ThenByDescending(i => i.InvoiceNumber).Take(6).Select(i => new DashboardTransactionItem
-        {
-            Id = i.LocalId, InvoiceNumber = i.InvoiceNumber, CustomerName = string.IsNullOrWhiteSpace(i.CustomerName) ? "—" : i.CustomerName,
-            AmountText = FormatMoney(symbol, i.GrandTotal), StatusLabel = i.StatusLabel, DateText = i.InvoiceDate.ToString("dd MMM yyyy"), Status = i.Status
-        }).ToList();
-
+        var recent = invoices.OrderByDescending(i => i.InvoiceDate).ThenByDescending(i => i.InvoiceNumber).Take(6).Select(i => new DashboardTransactionItem { Id = i.LocalId, InvoiceNumber = i.InvoiceNumber, CustomerName = string.IsNullOrWhiteSpace(i.CustomerName) ? "—" : i.CustomerName, AmountText = FormatMoney(symbol, i.GrandTotal), StatusLabel = i.StatusLabel, DateText = i.InvoiceDate.ToString("dd MMM yyyy"), Status = i.Status }).ToList();
         var lowStockItems = lowStock.Select(p => new DashboardLowStockItem { Id = p.LocalId, ProductName = p.Name, SKU = p.SKU, Stock = p.Stock, MinimumStock = p.MinimumStock }).ToList();
         var alerts = new List<DashboardAlertItem>();
         if (lowStockItems.Count > 0) alerts.Add(new DashboardAlertItem { Title = "Low stock", Detail = lowStockItems.Count == 1 ? $"{lowStockItems[0].ProductName} is at or below minimum stock." : $"{lowStockItems.Count} products need stock attention.", Kind = DashboardAlertKind.LowStock, Destination = MainContentNavigator.Inventory });
@@ -79,13 +61,8 @@ public sealed class DashboardService : IDashboardService
 
         return new DashboardSnapshot
         {
-            WelcomeMessage = welcome, CompanyName = string.IsNullOrWhiteSpace(company?.Name) ? (user?.CompanyName ?? "No company") : company!.Name,
-            UserName = userName, UserRole = user?.Role ?? string.Empty, UserInitials = Initials(user), CurrentDate = today.ToString("dddd, dd MMMM yyyy"), CurrencySymbol = symbol,
-            TodaySales = SalesOn(today), TodayCollection = todayPayments.Sum(p => p.Amount), TodayOutstanding = pending.Sum(i => i.DueAmount), TotalCustomers = customers.Count,
-            TotalProducts = products.Count, LowStockCount = lowStockItems.Count, TotalInvoices = invoices.Count, PendingPaymentCount = pending.Count, PendingPaymentAmount = pending.Sum(i => i.DueAmount),
-            TodayInvoiceCount = sales.Count(i => i.InvoiceDate.Date == today), TodayPaymentCount = todayPayments.Count, WeekSales = SalesBetween(weekStart, today.AddDays(1)),
-            MonthSales = SalesBetween(monthStart, today.AddDays(1)), YesterdaySales = SalesOn(yesterday), PreviousWeekSales = SalesBetween(prevWeekStart, weekStart), PreviousMonthSales = SalesBetween(prevMonthStart, monthStart),
-            RecentTransactions = recent, LowStockItems = lowStockItems, Alerts = alerts
+            WelcomeMessage = welcome, CompanyName = string.IsNullOrWhiteSpace(company?.Name) ? (user?.CompanyName ?? "No company") : company!.Name, UserName = userName, UserRole = user?.Role ?? string.Empty, UserInitials = Initials(user), CurrentDate = today.ToString("dddd, dd MMMM yyyy"), CurrencySymbol = symbol,
+            TodaySales = SalesOn(today), TodayCollection = todayPayments.Sum(p => p.Amount), TodayOutstanding = pending.Sum(i => i.DueAmount), TotalCustomers = customers.Count, TotalProducts = products.Count, LowStockCount = lowStockItems.Count, TotalInvoices = invoices.Count, PendingPaymentCount = pending.Count, PendingPaymentAmount = pending.Sum(i => i.DueAmount), TodayInvoiceCount = sales.Count(i => i.InvoiceDate.Date == today), TodayPaymentCount = todayPayments.Count, WeekSales = SalesBetween(weekStart, today.AddDays(1)), MonthSales = SalesBetween(monthStart, today.AddDays(1)), YesterdaySales = SalesOn(yesterday), PreviousWeekSales = SalesBetween(prevWeekStart, weekStart), PreviousMonthSales = SalesBetween(prevMonthStart, monthStart), RecentTransactions = recent, LowStockItems = lowStockItems, Alerts = alerts
         };
     }
 
