@@ -6,7 +6,7 @@ namespace AveroNova.App.UI.Pages.Company;
 public partial class CompanyPage : ContentPage
 {
     private readonly CompanyPageViewModel _vm;
-    private readonly Dictionary<Grid, List<View>> _adaptiveOrder = new();
+    private readonly Dictionary<Grid, List<IView>> _adaptiveOrder = new();
     private int _appliedViewColumns;
     private int _appliedFormColumns;
 
