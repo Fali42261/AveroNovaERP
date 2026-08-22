@@ -46,14 +46,8 @@ public partial class DashboardPage : ContentPage
 
     private static async Task NavigateToAsync(string route)
     {
-        try
-        {
-            await Shell.Current.GoToAsync(route);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Dashboard navigation failed for {route}: {ex}");
-        }
+        try { await Shell.Current.GoToAsync(route); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Dashboard navigation failed for {route}: {ex}"); }
     }
 
     private async Task LoadDataAsync()
@@ -87,8 +81,10 @@ public partial class DashboardPage : ContentPage
             LblLowStockCount.Text = $"{snapshot.LowStockCount} items";
 
             InvoiceList.Children.Clear();
-            foreach (var transaction in snapshot.RecentTransactions) InvoiceList.Children.Add(BuildInvoiceRow(transaction));
-            if (snapshot.RecentTransactions.Count == 0) InvoiceList.Children.Add(new Label { Text = "No recent invoices.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
+            foreach (var transaction in snapshot.RecentTransactions)
+                InvoiceList.Children.Add(BuildInvoiceRow(transaction));
+            if (snapshot.RecentTransactions.Count == 0)
+                InvoiceList.Children.Add(new Label { Text = "No recent invoices.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
 
             LowStockList.Children.Clear();
             LowStockList.Children.Add(new Label { Text = snapshot.LowStockCount == 0 ? "No low stock items." : $"{snapshot.LowStockCount} product(s) need stock attention. Open Inventory for details.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
@@ -110,6 +106,13 @@ public partial class DashboardPage : ContentPage
     }
 
     private static string FormatMoney(string symbol, decimal amount) => $"{symbol}{amount:N0}";
+
+    private static async Task OpenInvoiceAsync(Guid invoiceId)
+    {
+        if (invoiceId == Guid.Empty) return;
+        try { await Shell.Current.GoToAsync($"{AppRoutes.InvoiceView}?id={invoiceId}"); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Invoice navigation failed: {ex}"); }
+    }
 
     private void BuildCompanySection(CompanyModel? company, UserModel? user, SubscriptionModel? subscription)
     {
@@ -166,7 +169,7 @@ public partial class DashboardPage : ContentPage
     {
         var statusColor = item.Status switch { InvoiceStatus.Paid => "#059669", InvoiceStatus.Overdue => "#DC2626", InvoiceStatus.Sent => "#2563EB", InvoiceStatus.Draft => "#6B7280", InvoiceStatus.Cancelled => "#9CA3AF", _ => "#D97706" };
         var statusBg = item.Status switch { InvoiceStatus.Paid => "#ECFDF5", InvoiceStatus.Overdue => "#FEF2F2", InvoiceStatus.Sent => "#EFF6FF", _ => "#F9FAFB" };
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), Padding = new Thickness(18, 12), ColumnSpacing = 12 };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), Padding = new Thickness(18, 12), ColumnSpacing = 12, BackgroundColor = Colors.Transparent };
         var left = new VerticalStackLayout { Spacing = 3 };
         left.Children.Add(new Label { Text = item.InvoiceNumber, FontSize = 13, FontAttributes = FontAttributes.Bold });
         left.Children.Add(new Label { Text = item.CustomerName, FontSize = 12, TextColor = Color.FromArgb("#64748B") });
@@ -177,6 +180,9 @@ public partial class DashboardPage : ContentPage
         badge.Content = new Label { Text = item.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) };
         right.Children.Add(badge);
         grid.Add(left, 0, 0); grid.Add(right, 1, 0);
+        var tap = new TapGestureRecognizer { NumberOfTapsRequired = 1 };
+        tap.Tapped += async (_, _) => await OpenInvoiceAsync(item.Id);
+        grid.GestureRecognizers.Add(tap);
         return grid;
     }
 }
