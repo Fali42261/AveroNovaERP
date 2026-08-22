@@ -54,13 +54,8 @@ public static class MauiProgram
             .ConfigureMauiHandlers(handlers =>
             {
                 AveroNova.App.UI.Helpers.NativeInputChrome.Register();
-                // GlobalPointerCursor.Register() disabled: ViewHandler mapping + VisualTreeHelper
-                // recursion blocked the UI thread on the authentication landing page.
-                // ResponsivePage.Attach() disabled: walking/mutating the visual tree on SizeChanged
-                // re-entered layout and froze the same page.
             });
 
-        // ── Database (existing AppDbContext schema; local SQLite file) ────────
         builder.Services.AddDbContextFactory<AppDbContext>(options =>
         {
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "AveroNovaLocal.db");
@@ -72,55 +67,31 @@ public static class MauiProgram
         builder.Services.AddSingleton<AveroNova.Application.Interfaces.IAccessControlService, AccessControlService>();
         builder.Services.AddSingleton<CurrentAccessService>();
         builder.Services.AddSingleton<TrialReminderPresenter>();
-
-        // ── Singletons ────────────────────────────────────────────────────────
         builder.Services.AddSingleton<AppShell>();
 
-        // ── Auth pages ────────────────────────────────────────────────────────
         builder.Services.AddTransient<SplashPage>();
         builder.Services.AddTransient<WelcomePage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddTransient<ForgotPasswordPage>();
         builder.Services.AddTransient<ResetPasswordPage>();
-
-        // ── Auth view models ──────────────────────────────────────────────────
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddSingleton<RegisterViewModel>();
-
-        // ── Auth views ────────────────────────────────────────────────────────
         builder.Services.AddTransient<LoginFormView>();
-
-        // ── Company setup ─────────────────────────────────────────────────────
-        // ── Company setup ─────────────────────────────────────────────────────
         builder.Services.AddTransient<CompanySetupPage>();
         builder.Services.AddTransient<CompanySetupViewModel>();
-
-
-        // ── Main ERP shell ────────────────────────────────────────────────────
         builder.Services.AddTransient<MainPage>();
-        builder.Services.AddTransient<MainLayoutView>();       // single registration
-
-        // ── Dashboard ─────────────────────────────────────────────────────────
-        // builder.Services.AddTransient<DashboardPage>();
+        builder.Services.AddTransient<MainLayoutView>();
         builder.Services.AddTransient<DashboardViewModel>();
         builder.Services.AddTransient<DashboardView>();
-
-        // ── Profile ───────────────────────────────────────────────────────────
         builder.Services.AddTransient<ProfileViewModel>();
         builder.Services.AddTransient<ProfileView>();
 
-
-
-        // ── Main Layout Page Factories ────────────────────────────────────────
-
         builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<Func<DashboardPage>>(sp => () => sp.GetRequiredService<DashboardPage>());
-
         builder.Services.AddTransient<CompanyPageViewModel>();
         builder.Services.AddTransient<CompanyPage>();
         builder.Services.AddTransient<Func<CompanyPage>>(sp => () => sp.GetRequiredService<CompanyPage>());
-
         builder.Services.AddTransient<CustomersListPage>();
         builder.Services.AddTransient<Func<CustomersListPage>>(sp => () => sp.GetRequiredService<CustomersListPage>());
         builder.Services.AddTransient<CustomerFormPage>();
@@ -130,7 +101,6 @@ public static class MauiProgram
         builder.Services.AddTransient<CustomersViewModel>();
         builder.Services.AddTransient<CustomerFormViewModel>();
         builder.Services.AddTransient<CustomerViewViewModel>();
-
         builder.Services.AddTransient<ProductsListPage>();
         builder.Services.AddTransient<Func<ProductsListPage>>(sp => () => sp.GetRequiredService<ProductsListPage>());
         builder.Services.AddTransient<ProductFormPage>();
@@ -138,70 +108,48 @@ public static class MauiProgram
         builder.Services.AddTransient<ProductsViewModel>();
         builder.Services.AddTransient<ProductFormViewModel>();
         builder.Services.AddTransient<ProductViewViewModel>();
-
         builder.Services.AddTransient<InventoryPage>();
         builder.Services.AddTransient<Func<InventoryPage>>(sp => () => sp.GetRequiredService<InventoryPage>());
-
         builder.Services.AddTransient<BillingListPage>();
         builder.Services.AddTransient<Func<BillingListPage>>(sp => () => sp.GetRequiredService<BillingListPage>());
-
         builder.Services.AddTransient<PurchasesListPage>();
         builder.Services.AddTransient<Func<PurchasesListPage>>(sp => () => sp.GetRequiredService<PurchasesListPage>());
-
         builder.Services.AddTransient<PaymentsListPage>();
         builder.Services.AddTransient<Func<PaymentsListPage>>(sp => () => sp.GetRequiredService<PaymentsListPage>());
-
         builder.Services.AddTransient<SalesReturnsListPage>();
         builder.Services.AddTransient<Func<SalesReturnsListPage>>(sp => () => sp.GetRequiredService<SalesReturnsListPage>());
-
         builder.Services.AddTransient<PurchaseReturnsListPage>();
         builder.Services.AddTransient<Func<PurchaseReturnsListPage>>(sp => () => sp.GetRequiredService<PurchaseReturnsListPage>());
-
         builder.Services.AddTransient<ExpensesListPage>();
         builder.Services.AddTransient<Func<ExpensesListPage>>(sp => () => sp.GetRequiredService<ExpensesListPage>());
-
         builder.Services.AddTransient<ReportsPage>();
         builder.Services.AddTransient<Func<ReportsPage>>(sp => () => sp.GetRequiredService<ReportsPage>());
-
         builder.Services.AddTransient<UsersViewModel>();
         builder.Services.AddTransient<UsersListPage>();
         builder.Services.AddTransient<Func<UsersListPage>>(sp => () => sp.GetRequiredService<UsersListPage>());
         builder.Services.AddTransient<UserFormPage>();
         builder.Services.AddTransient<UserViewPage>();
-
         builder.Services.AddTransient<RolesListPage>();
         builder.Services.AddTransient<Func<RolesListPage>>(sp => () => sp.GetRequiredService<RolesListPage>());
-
         builder.Services.AddTransient<PermissionsPage>();
         builder.Services.AddTransient<Func<PermissionsPage>>(sp => () => sp.GetRequiredService<PermissionsPage>());
-
         builder.Services.AddTransient<SubscriptionPage>();
         builder.Services.AddTransient<Func<SubscriptionPage>>(sp => () => sp.GetRequiredService<SubscriptionPage>());
-
         builder.Services.AddTransient<SyncCenterPage>();
         builder.Services.AddTransient<Func<SyncCenterPage>>(sp => () => sp.GetRequiredService<SyncCenterPage>());
-
         builder.Services.AddTransient<UsersRolesPage>();
         builder.Services.AddTransient<Func<UsersRolesPage>>(sp => () => sp.GetRequiredService<UsersRolesPage>());
-
         builder.Services.AddTransient<UserProfilePage>();
         builder.Services.AddTransient<Func<UserProfilePage>>(sp => () => sp.GetRequiredService<UserProfilePage>());
-
         builder.Services.AddTransient<SettingsPage>();
         builder.Services.AddTransient<Func<SettingsPage>>(sp => () => sp.GetRequiredService<SettingsPage>());
-
         builder.Services.AddTransient<HelpAboutPage>();
         builder.Services.AddTransient<Func<HelpAboutPage>>(sp => () => sp.GetRequiredService<HelpAboutPage>());
-
-
-        // ── Services / Repositories ───────────────────────────────────────────
-
-        // ── Mock Services ─────────────────────────────────────────────────────
 
         builder.Services.AddSingleton<IToastService, ToastService>();
         builder.Services.AddSingleton<IAuthenticationService, LocalAuthenticationService>();
         builder.Services.AddTransient<IDashboardService, DashboardService>();
-        builder.Services.AddTransient<IBillingService, MockBillingService>();
+        builder.Services.AddTransient<IBillingService, LocalBillingService>();
         builder.Services.AddSingleton<ICompanyRepository, CompanyRepository>();
         builder.Services.AddSingleton<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
         builder.Services.AddSingleton<IConnectivityService, DeviceConnectivityService>();
@@ -224,18 +172,8 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-
         var app = builder.Build();
         AveroNova.App.UI.Helpers.StartupLog.Write("CreateMauiApp built");
-
-        // Apply pending EF Core migrations on startup
-        //using var scope = app.Services.CreateScope();
-        //var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        //db.Database.Migrate();
-
-        //System.Diagnostics.Debug.WriteLine(
-        //    $"[AveroNova] DB path: {DatabasePath.GetDatabasePath(FileSystem.AppDataDirectory)}");
-
         return app;
     }
 }
