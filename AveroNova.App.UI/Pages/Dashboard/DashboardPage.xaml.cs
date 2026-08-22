@@ -67,7 +67,7 @@ public partial class DashboardPage : ContentPage
             if (subscription?.IsExpired == true)
                 return;
 
-            var symbol = string.IsNullOrWhiteSpace(snapshot.CurrencySymbol) ? "$" : snapshot.CurrencySymbol;
+            var symbol = ResolveCurrencySymbol(snapshot.CurrencySymbol, company?.CurrencySymbol);
 
             LblTotalSales.Text = FormatMoney(symbol, snapshot.MonthSales);
             LblTotalPurchases.Text = FormatMoney(symbol, snapshot.TodayCollection);
@@ -124,6 +124,17 @@ public partial class DashboardPage : ContentPage
             System.Diagnostics.Debug.WriteLine($"Dashboard load failed: {ex}");
         }
     }
+
+    private static string ResolveCurrencySymbol(string? snapshotSymbol, string? companySymbol)
+    {
+        if (!string.IsNullOrWhiteSpace(companySymbol))
+            return companySymbol.Trim();
+        if (!string.IsNullOrWhiteSpace(snapshotSymbol))
+            return snapshotSymbol.Trim();
+        return "₹";
+    }
+
+    private static string FormatMoney(string symbol, decimal amount) => $"{symbol}{amount:N0}";
 
     private void BuildCompanySection(CompanyModel? company, UserModel? user, SubscriptionModel? subscription)
     {
@@ -201,8 +212,6 @@ public partial class DashboardPage : ContentPage
         => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style
             ? style
             : null;
-
-    private static string FormatMoney(string symbol, decimal amount) => $"{symbol}{amount:N0}";
 
     private static View BuildInvoiceRow(DashboardTransactionItem item)
     {
