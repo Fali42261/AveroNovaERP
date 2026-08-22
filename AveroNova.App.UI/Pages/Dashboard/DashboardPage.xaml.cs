@@ -8,31 +8,19 @@ namespace AveroNova.App.UI.Pages.Dashboard;
 
 public partial class DashboardPage : ContentPage
 {
-    private readonly IBillingService _billing;
-    private readonly IProductService _product;
-    private readonly ICustomerService _customer;
-    private readonly IPaymentService _payment;
-    private readonly IPurchaseService _purchase;
+    private readonly IDashboardService _dashboard;
     private readonly ICompanyService _company;
     private readonly IAuthenticationService _auth;
     private readonly ISubscriptionService _subscription;
 
     public DashboardPage(
-        IBillingService billing,
-        IProductService product,
-        ICustomerService customer,
-        IPaymentService payment,
-        IPurchaseService purchase,
+        IDashboardService dashboard,
         ICompanyService company,
         IAuthenticationService auth,
         ISubscriptionService subscription)
     {
         InitializeComponent();
-        _billing = billing;
-        _product = product;
-        _customer = customer;
-        _payment = payment;
-        _purchase = purchase;
+        _dashboard = dashboard;
         _company = company;
         _auth = auth;
         _subscription = subscription;
@@ -48,82 +36,93 @@ public partial class DashboardPage : ContentPage
 
     private async void OnRefreshing(object sender, EventArgs e)
     {
-        await LoadDataAsync();
-        Refresher.IsRefreshing = false;
+        try
+        {
+            await LoadDataAsync();
+        }
+        finally
+        {
+            Refresher.IsRefreshing = false;
+        }
     }
 
     private async Task LoadDataAsync()
     {
-        LblDate.Text = DateTime.Today.ToString("dddd, dd MMMM yyyy");
-        var user = _auth.CurrentUser;
-        var hour = DateTime.Now.Hour;
-        var greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-        LblWelcome.Text = user == null
-            ? greeting
-            : $"{greeting}, {user.Name}";
-
-        var company = _company.CurrentCompany;
-        if (company == null && user?.CompanyId is Guid linkedCompanyId && linkedCompanyId != Guid.Empty)
-            company = await _company.GetByIdAsync(linkedCompanyId);
-
-        var cid = company?.LocalId ?? user?.CompanyId ?? Guid.Empty;
-        var subscription = cid == Guid.Empty
-            ? null
-            : await _subscription.GetCurrentAsync(cid);
-
-        BuildCompanySection(company, user, subscription);
-
-        if (subscription?.IsExpired == true)
-            return;
-
-        var invoices = cid == Guid.Empty ? [] : await _billing.GetAllAsync(cid);
-        var products = cid == Guid.Empty ? [] : await _product.GetAllAsync(cid);
-        var customers = cid == Guid.Empty ? [] : await _customer.GetAllAsync(cid);
-        var payments = cid == Guid.Empty ? [] : await _payment.GetAllAsync(cid);
-        var purchases = cid == Guid.Empty ? [] : await _purchase.GetAllAsync(cid);
-
-        LblTotalSales.Text = "$" + invoices.Where(i => i.Status == InvoiceStatus.Paid).Sum(i => i.GrandTotal).ToString("N0");
-        LblTotalPurchases.Text = "$" + purchases.Sum(p => p.GrandTotal).ToString("N0");
-        LblOutstanding.Text = "$" + invoices.Where(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled).Sum(i => i.DueAmount).ToString("N0");
-        LblCustomers.Text = customers.Count.ToString();
-        LblProducts.Text = products.Count.ToString();
-        LblPayments.Text = "$" + payments.Sum(p => p.Amount).ToString("N0");
-
-        LblSalesChange.Text = invoices.Count == 0 ? "No data" : $"{invoices.Count} invoices";
-        LblPurchasesMeta.Text = purchases.Count == 0 ? "No data" : $"{purchases.Count} orders";
-        var outstandingCount = invoices.Count(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled);
-        LblOutstandingMeta.Text = outstandingCount == 0 ? "No data" : $"{outstandingCount} invoices";
-        LblCustomersMeta.Text = customers.Count == 0 ? "No data" : $"{customers.Count} total";
-        var lowStock = products.Count(p => p.IsLowStock);
-        LblProductsMeta.Text = lowStock == 0 ? "No data" : $"{lowStock} low stock";
-        LblPaymentsMeta.Text = payments.Count == 0 ? "No data" : $"{payments.Count} received";
-        LblLowStockCount.Text = $"{lowStock} items";
-
-        InvoiceList.Children.Clear();
-        bool first = true;
-        foreach (var inv in invoices.OrderByDescending(i => i.InvoiceDate).Take(4))
+        try
         {
-            if (!first)
-                InvoiceList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
-            InvoiceList.Children.Add(BuildInvoiceRow(inv));
-            first = false;
+            var snapshot = await _dashboard.GetSnapshotAsync();
+
+            LblDate.Text = snapshot.CurrentDate;
+            LblWelcome.Text = snapshot.WelcomeMessage;
+
+            var company = _company.CurrentCompany;
+            var user = _auth.CurrentUser;
+            var companyId = company?.LocalId ?? user?.CompanyId ?? Guid.Empty;
+            var subscription = companyId == Guid.Empty
+                ? null
+                : await _subscription.GetCurrentAsync(companyId);
+
+            BuildCompanySection(company, user, subscription);
+
+            if (subscription?.IsExpired == true)
+                return;
+
+            var symbol = string.IsNullOrWhiteSpace(snapshot.CurrencySymbol) ? "$" : snapshot.CurrencySymbol;
+
+            LblTotalSales.Text = FormatMoney(symbol, snapshot.MonthSales);
+            LblTotalPurchases.Text = FormatMoney(symbol, snapshot.TodayCollection);
+            LblOutstanding.Text = FormatMoney(symbol, snapshot.TodayOutstanding);
+            LblCustomers.Text = snapshot.TotalCustomers.ToString();
+            LblProducts.Text = snapshot.TotalProducts.ToString();
+            LblPayments.Text = FormatMoney(symbol, snapshot.TodayCollection);
+
+            LblSalesChange.Text = snapshot.TodayInvoiceCount == 0 ? "No data" : $"{snapshot.TodayInvoiceCount} today";
+            LblPurchasesMeta.Text = snapshot.TodayPaymentCount == 0 ? "No data" : $"{snapshot.TodayPaymentCount} today";
+            LblOutstandingMeta.Text = snapshot.PendingPaymentCount == 0 ? "No data" : $"{snapshot.PendingPaymentCount} invoices";
+            LblCustomersMeta.Text = snapshot.TotalCustomers == 0 ? "No data" : $"{snapshot.TotalCustomers} total";
+            LblProductsMeta.Text = snapshot.LowStockCount == 0 ? "No data" : $"{snapshot.LowStockCount} low stock";
+            LblPaymentsMeta.Text = snapshot.TodayPaymentCount == 0 ? "No data" : $"{snapshot.TodayPaymentCount} received";
+            LblLowStockCount.Text = $"{snapshot.LowStockCount} items";
+
+            InvoiceList.Children.Clear();
+            foreach (var transaction in snapshot.RecentTransactions)
+                InvoiceList.Children.Add(BuildInvoiceRow(transaction));
+
+            if (snapshot.RecentTransactions.Count == 0)
+            {
+                InvoiceList.Children.Add(new Label
+                {
+                    Text = "No recent invoices.",
+                    FontSize = 13,
+                    TextColor = Color.FromArgb("#64748B"),
+                    Padding = new Thickness(18, 14)
+                });
+            }
+
+            LowStockList.Children.Clear();
+            LowStockList.Children.Add(new Label
+            {
+                Text = snapshot.LowStockCount == 0
+                    ? "No low stock items."
+                    : $"{snapshot.LowStockCount} product(s) need stock attention. Open Inventory for details.",
+                FontSize = 13,
+                TextColor = Color.FromArgb("#64748B"),
+                Padding = new Thickness(18, 14)
+            });
         }
-
-        if (invoices.Count == 0)
-            InvoiceList.Children.Add(new Label { Text = "  No data", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
-
-        LowStockList.Children.Clear();
-        first = true;
-        foreach (var p in products.Where(p => p.IsLowStock).Take(4))
+        catch (Exception ex)
         {
-            if (!first)
-                LowStockList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
-            LowStockList.Children.Add(BuildLowStockRow(p));
-            first = false;
+            InvoiceList.Children.Clear();
+            LowStockList.Children.Clear();
+            InvoiceList.Children.Add(new Label
+            {
+                Text = "Unable to load dashboard data.",
+                FontSize = 13,
+                TextColor = Color.FromArgb("#DC2626"),
+                Padding = new Thickness(18, 14)
+            });
+            System.Diagnostics.Debug.WriteLine($"Dashboard load failed: {ex}");
         }
-
-        if (!products.Any(p => p.IsLowStock))
-            LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
     }
 
     private void BuildCompanySection(CompanyModel? company, UserModel? user, SubscriptionModel? subscription)
@@ -140,13 +139,10 @@ public partial class DashboardPage : ContentPage
     {
         if (subscription == null)
             return "No data";
-
         if (subscription.IsExpired && subscription.IsTrial)
             return SubscriptionMessages.FreeTrialExpired;
-
         if (subscription.IsTrial)
             return $"{subscription.PlanName} — 15-day free trial (ends {subscription.ExpiryDate:dd MMM yyyy})";
-
         return $"{subscription.PlanName} — {subscription.StatusLabel}";
     }
 
@@ -154,21 +150,11 @@ public partial class DashboardPage : ContentPage
     {
         var card = new Border { Style = ResolveStyle("AppCard"), Padding = 18 };
         var stack = new VerticalStackLayout { Spacing = 10 };
-        stack.Children.Add(new Label
-        {
-            Text = "Company Details",
-            FontSize = 15,
-            FontAttributes = FontAttributes.Bold
-        });
+        stack.Children.Add(new Label { Text = "Company Details", FontSize = 15, FontAttributes = FontAttributes.Bold });
 
         if (company == null)
         {
-            stack.Children.Add(new Label
-            {
-                Text = "No company data",
-                FontSize = 13,
-                TextColor = Color.FromArgb("#64748B")
-            });
+            stack.Children.Add(new Label { Text = "No company data", FontSize = 13, TextColor = Color.FromArgb("#64748B") });
             card.Content = stack;
             return card;
         }
@@ -199,45 +185,28 @@ public partial class DashboardPage : ContentPage
                 new ColumnDefinition(GridLength.Star)),
             ColumnSpacing = 8
         };
-        row.Add(new Label
-        {
-            Text = label,
-            FontSize = 12,
-            TextColor = Color.FromArgb("#64748B"),
-            VerticalOptions = LayoutOptions.Start
-        }, 0, 0);
-        row.Add(new Label
-        {
-            Text = value,
-            FontSize = 13,
-            FontAttributes = FontAttributes.Bold,
-            LineBreakMode = LineBreakMode.WordWrap
-        }, 1, 0);
+        row.Add(new Label { Text = label, FontSize = 12, TextColor = Color.FromArgb("#64748B"), VerticalOptions = LayoutOptions.Start }, 0, 0);
+        row.Add(new Label { Text = value, FontSize = 13, FontAttributes = FontAttributes.Bold, LineBreakMode = LineBreakMode.WordWrap }, 1, 0);
         stack.Children.Add(row);
     }
 
     private static string FormatAddress(CompanyModel company)
     {
-        var parts = new[]
-        {
-            company.Address,
-            company.City,
-            company.State,
-            company.PinCode,
-            company.Country
-        }.Where(p => !string.IsNullOrWhiteSpace(p));
+        var parts = new[] { company.Address, company.City, company.State, company.PinCode, company.Country }
+            .Where(p => !string.IsNullOrWhiteSpace(p));
         return string.Join(", ", parts);
     }
 
     private static Style? ResolveStyle(string key)
-        => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
-            && value is Style style
+        => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style
             ? style
             : null;
 
-    private static View BuildInvoiceRow(InvoiceModel inv)
+    private static string FormatMoney(string symbol, decimal amount) => $"{symbol}{amount:N0}";
+
+    private static View BuildInvoiceRow(DashboardTransactionItem item)
     {
-        var statusColor = inv.Status switch
+        var statusColor = item.Status switch
         {
             InvoiceStatus.Paid => "#059669",
             InvoiceStatus.Overdue => "#DC2626",
@@ -246,7 +215,7 @@ public partial class DashboardPage : ContentPage
             InvoiceStatus.Cancelled => "#9CA3AF",
             _ => "#D97706"
         };
-        var statusBg = inv.Status switch
+        var statusBg = item.Status switch
         {
             InvoiceStatus.Paid => "#ECFDF5",
             InvoiceStatus.Overdue => "#FEF2F2",
@@ -254,14 +223,20 @@ public partial class DashboardPage : ContentPage
             _ => "#F9FAFB"
         };
 
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), Padding = new Thickness(18, 12), ColumnSpacing = 12 };
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)),
+            Padding = new Thickness(18, 12),
+            ColumnSpacing = 12
+        };
 
         var left = new VerticalStackLayout { Spacing = 3 };
-        left.Children.Add(new Label { Text = inv.InvoiceNumber, FontSize = 13, FontAttributes = FontAttributes.Bold });
-        left.Children.Add(new Label { Text = inv.CustomerName, FontSize = 12, TextColor = Color.FromArgb("#64748B") });
+        left.Children.Add(new Label { Text = item.InvoiceNumber, FontSize = 13, FontAttributes = FontAttributes.Bold });
+        left.Children.Add(new Label { Text = item.CustomerName, FontSize = 12, TextColor = Color.FromArgb("#64748B") });
+        left.Children.Add(new Label { Text = item.DateText, FontSize = 11, TextColor = Color.FromArgb("#94A3B8") });
 
         var right = new VerticalStackLayout { Spacing = 3, HorizontalOptions = LayoutOptions.End };
-        right.Children.Add(new Label { Text = "$" + inv.GrandTotal.ToString("N2"), FontSize = 13, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.End });
+        right.Children.Add(new Label { Text = item.AmountText, FontSize = 13, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.End });
 
         var badge = new Border
         {
@@ -270,25 +245,8 @@ public partial class DashboardPage : ContentPage
             StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) },
             Padding = new Thickness(8, 2)
         };
-        badge.Content = new Label { Text = inv.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) };
+        badge.Content = new Label { Text = item.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) };
         right.Children.Add(badge);
-
-        grid.Add(left, 0, 0);
-        grid.Add(right, 1, 0);
-        return grid;
-    }
-
-    private static View BuildLowStockRow(ProductModel p)
-    {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), Padding = new Thickness(18, 12), ColumnSpacing = 12 };
-
-        var left = new VerticalStackLayout { Spacing = 3 };
-        left.Children.Add(new Label { Text = p.Name, FontSize = 13, FontAttributes = FontAttributes.Bold });
-        left.Children.Add(new Label { Text = $"SKU: {p.SKU}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
-
-        var right = new VerticalStackLayout { Spacing = 3, HorizontalOptions = LayoutOptions.End };
-        right.Children.Add(new Label { Text = $"{p.Stock} left", FontSize = 13, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#DC2626"), HorizontalOptions = LayoutOptions.End });
-        right.Children.Add(new Label { Text = $"Min: {p.MinimumStock}", FontSize = 11, TextColor = Color.FromArgb("#9CA3AF"), HorizontalOptions = LayoutOptions.End });
 
         grid.Add(left, 0, 0);
         grid.Add(right, 1, 0);
