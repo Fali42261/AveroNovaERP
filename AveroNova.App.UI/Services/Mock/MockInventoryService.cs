@@ -1,72 +1,86 @@
+using AveroNova.Application.Interfaces.Repositories;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.Domain.Entities;
 
 namespace AveroNova.App.UI.Services.Mock;
 
-public class MockInventoryService : IInventoryService
+// Kept under the existing registration name for compatibility, but now uses
+// the real local Product repository instead of the in-memory MockDataStore.
+public sealed class MockInventoryService : IInventoryService
 {
-    private static readonly List<InventoryItemModel> _inventory = MockDataStore.Products
-        .Select(p => new InventoryItemModel
-        {
-            ProductId      = p.LocalId,
-            ProductName    = p.Name,
-            SKU            = p.SKU,
-            Category       = p.Category,
-            CurrentStock   = p.Stock,
-            AvailableStock = p.Stock,
-            ReservedStock  = 0,
-            MinimumStock   = p.MinimumStock,
-            CompanyId      = p.CompanyId,
-            SyncStatus     = p.SyncStatus
-        }).ToList();
+    private readonly IProductRepository _products;
 
-    private static readonly List<StockMovementModel> _movements = new()
+    public MockInventoryService(IProductRepository products)
     {
-        new() { ProductName = "Office Desk Pro", SKU = "DESK-001", Type = StockMovementType.In,
-                Quantity = 10, StockBefore = 15, StockAfter = 25, Reference = "PO-001",
-                Notes = "Received from supplier", CreatedBy = "Admin" },
-        new() { ProductName = "Ergonomic Chair", SKU = "CHAIR-002", Type = StockMovementType.Out,
-                Quantity = 2, StockBefore = 5, StockAfter = 3, Reference = "INV-2026-001",
-                Notes = "Sold", CreatedBy = "Admin" },
-        new() { ProductName = "Wireless Mouse", SKU = "MOUSE-004", Type = StockMovementType.Adjustment,
-                Quantity = -3, StockBefore = 5, StockAfter = 2, Reference = "ADJ-001",
-                Notes = "Physical count adjustment", CreatedBy = "Admin" },
+        _products = products;
+    }
+
+    public async Task<List<InventoryItemModel>> GetInventoryAsync(Guid companyId)
+    {
+        var (items, _) = await _products.QueryAsync(companyId, null, null, 0, 0);
+        return items.Select(Map).ToList();
+    }
+
+    public async Task<InventoryItemModel?> GetByProductIdAsync(Guid productId)
+    {
+        if (productId == Guid.Empty)
+            return null;
+
+        var product = await FindProductAsync(productId);
+        return product == null ? null : Map(product);
+    }
+
+    public async Task<List<StockMovementModel>> GetMovementsAsync(Guid companyId, Guid? productId = null)
+    {
+        // Movement persistence will be introduced with the stock-ledger entity.
+        // Returning an empty local result is preferable to showing fake/mock data.
+        await Task.CompletedTask;
+        return [];
+    }
+
+    public async Task<(bool Ok, string? Error)> AdjustStockAsync(StockAdjustmentModel adjustment)
+    {
+        if (adjustment.CompanyId == Guid.Empty || adjustment.ProductId == Guid.Empty)
+            return (false, "Company and product are required.");
+        if (adjustment.NewStock < 0)
+            return (false, "Stock cannot be negative.");
+
+        var product = await _products.GetByIdAsync(adjustment.CompanyId, adjustment.ProductId);
+        if (product == null)
+            return (false, "Inventory item not found.");
+
+        var before = product.Stock;
+        product.Stock = adjustment.NewStock;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        await _products.UpdateAsync(product);
+        return (true, null);
+    }
+
+    private async Task<Product?> FindProductAsync(Guid productId)
+    {
+        var companyId = LocalSessionStore.CompanyId ?? Guid.Empty;
+        if (companyId == Guid.Empty)
+            return null;
+        return await _products.GetByIdAsync(companyId, productId);
+    }
+
+    private static InventoryItemModel Map(Product product) => new()
+    {
+        LocalId = product.Id,
+        ProductId = product.Id,
+        ProductName = product.Name,
+        SKU = product.SKU,
+        Category = product.Category,
+        CurrentStock = product.Stock,
+        AvailableStock = product.Stock,
+        ReservedStock = 0,
+        MinimumStock = product.MinimumStock,
+        CompanyId = product.CompanyId,
+        CreatedAt = product.CreatedAt,
+        UpdatedAt = product.UpdatedAt ?? product.CreatedAt,
+        IsDeleted = product.IsDeleted,
+        SyncStatus = SyncStatus.PendingSync
     };
-
-    public Task<List<InventoryItemModel>> GetInventoryAsync(Guid companyId)
-        => Task.FromResult(_inventory.Where(i => i.CompanyId == companyId).ToList());
-
-    public Task<InventoryItemModel?> GetByProductIdAsync(Guid productId)
-        => Task.FromResult(_inventory.FirstOrDefault(i => i.ProductId == productId));
-
-    public Task<List<StockMovementModel>> GetMovementsAsync(Guid companyId, Guid? productId = null)
-    {
-        var result = productId.HasValue
-            ? _movements.Where(m => m.ProductId == productId.Value).ToList()
-            : _movements.ToList();
-        return Task.FromResult(result);
-    }
-
-    public Task<(bool Ok, string? Error)> AdjustStockAsync(StockAdjustmentModel adjustment)
-    {
-        var item = _inventory.FirstOrDefault(i => i.ProductId == adjustment.ProductId);
-        if (item == null) return Task.FromResult((false, "Inventory item not found."));
-        var before = item.CurrentStock;
-        item.CurrentStock   = adjustment.NewStock;
-        item.AvailableStock = adjustment.NewStock;
-        _movements.Insert(0, new StockMovementModel
-        {
-            ProductId   = adjustment.ProductId,
-            ProductName = adjustment.ProductName,
-            Type        = StockMovementType.Adjustment,
-            Quantity    = adjustment.Difference,
-            StockBefore = before,
-            StockAfter  = adjustment.NewStock,
-            Notes       = adjustment.Reason,
-            CreatedBy   = adjustment.AdjustedBy,
-            CompanyId   = adjustment.CompanyId,
-            SyncStatus  = SyncStatus.PendingSync
-        });
-        return Task.FromResult<(bool, string?)>((true, null));
-    }
 }
