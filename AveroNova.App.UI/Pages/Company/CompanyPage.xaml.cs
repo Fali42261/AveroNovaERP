@@ -53,7 +53,6 @@ public partial class CompanyPage : ContentPage
         _appliedViewColumns = viewColumns;
         _appliedFormColumns = formColumns;
         ArrangeHeader(formColumns);
-        ArrangeAdaptiveGrid(LoadingGrid, viewColumns);
         ArrangeAdaptiveGrid(ViewFieldsGrid, viewColumns);
         ArrangeAdaptiveGrid(EditFieldsGrid, formColumns);
         ArrangeAdaptiveGrid(EditAddressGrid, formColumns);
@@ -98,44 +97,34 @@ public partial class CompanyPage : ContentPage
 
     private void ArrangeAdaptiveGrid(Grid grid, int columns)
     {
+        if (grid == null)
+            return;
+
         if (!_adaptiveOrder.TryGetValue(grid, out var children))
         {
-            children = grid.Children
-                .OfType<View>()
-                .OrderBy(Grid.GetRow)
-                .ThenBy(Grid.GetColumn)
-                .ToList();
+            children = grid.Children.ToList();
             _adaptiveOrder[grid] = children;
         }
 
-        if (children.Count == 0)
-            return;
-
-        var columnDefs = new ColumnDefinitionCollection();
-        for (var i = 0; i < columns; i++)
-            columnDefs.Add(new ColumnDefinition(GridLength.Star));
-        grid.ColumnDefinitions = columnDefs;
-
-        var rowsNeeded = Math.Max(1, (int)Math.Ceiling(children.Count / (double)columns));
-        var rowDefs = new RowDefinitionCollection();
-        for (var i = 0; i < rowsNeeded; i++)
-            rowDefs.Add(new RowDefinition(GridLength.Auto));
-        grid.RowDefinitions = rowDefs;
-
-        grid.ColumnSpacing = columns == 1 ? 0 : 12;
-        grid.RowSpacing = 12;
-        grid.HorizontalOptions = LayoutOptions.Fill;
-
-        for (var i = 0; i < children.Count; i++)
+        foreach (var child in children)
         {
-            var child = children[i];
-            Grid.SetColumn(child, i % columns);
-            Grid.SetRow(child, i / columns);
-            Grid.SetColumnSpan(child, 1);
-            Grid.SetRowSpan(child, 1);
-            child.HorizontalOptions = LayoutOptions.Fill;
-            child.VerticalOptions = LayoutOptions.Fill;
-            child.MinimumWidthRequest = 0;
+            Grid.SetColumn(child, 0);
+            Grid.SetRow(child, 0);
+        }
+
+        grid.ColumnDefinitions.Clear();
+        grid.RowDefinitions.Clear();
+        for (var column = 0; column < columns; column++)
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
+        var rowCount = (int)Math.Ceiling(children.Count / (double)columns);
+        for (var row = 0; row < rowCount; row++)
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+        for (var index = 0; index < children.Count; index++)
+        {
+            Grid.SetColumn(children[index], index % columns);
+            Grid.SetRow(children[index], index / columns);
         }
     }
 }
