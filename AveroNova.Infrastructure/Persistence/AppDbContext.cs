@@ -24,6 +24,7 @@ namespace AveroNova.Infrastructure.Persistence
         public DbSet<StockMovement> StockMovements { get; set; }
         public DbSet<Purchase> Purchases { get; set; }
         public DbSet<PurchaseItem> PurchaseItems { get; set; }
+        public DbSet<Payment> Payments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +66,13 @@ namespace AveroNova.Infrastructure.Persistence
             {
                 entity.HasKey(x => x.Id);
                 entity.HasIndex(x => new { x.PurchaseId, x.ProductId });
+            });
+
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.CompanyId, x.PaymentNumber });
+                entity.HasIndex(x => new { x.CompanyId, x.PaymentDate });
             });
         }
     }
