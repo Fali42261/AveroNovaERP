@@ -16,9 +16,12 @@ public partial class StockAdjustPage : ContentPage
     public StockAdjustPage(IInventoryService inv, IProductService product, ICompanyService company)
     { InitializeComponent(); _inv = inv; _product = product; _company = company; }
 
-    protected override async void OnAppearing()
+    public Task ReloadAsync() => LoadAsync();
+
+    protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
+
+    private async Task LoadAsync()
     {
-        base.OnAppearing();
         _products = await _product.GetAllAsync(_company.CurrentCompany?.LocalId ?? Guid.Empty);
         ProductPicker.ItemsSource = _products.Select(p => p.Name).ToList();
         if (!string.IsNullOrEmpty(ProductIdParam) && Guid.TryParse(ProductIdParam, out var id))
@@ -26,8 +29,11 @@ public partial class StockAdjustPage : ContentPage
             var idx = _products.FindIndex(p => p.LocalId == id);
             if (idx >= 0) { ProductPicker.SelectedIndex = idx; UpdateCurrentStock(idx); }
         }
-        ProductPicker.SelectedIndexChanged += (_, _) => UpdateCurrentStock(ProductPicker.SelectedIndex);
+        ProductPicker.SelectedIndexChanged -= OnProductChanged;
+        ProductPicker.SelectedIndexChanged += OnProductChanged;
     }
+
+    private void OnProductChanged(object? sender, EventArgs e) => UpdateCurrentStock(ProductPicker.SelectedIndex);
 
     private void UpdateCurrentStock(int idx)
     {
