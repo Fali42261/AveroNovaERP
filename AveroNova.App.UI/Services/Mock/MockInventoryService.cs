@@ -1,6 +1,7 @@
 using AveroNova.Application.Interfaces.Repositories;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.Services.Local;
 using AveroNova.Domain.Entities;
 
 namespace AveroNova.App.UI.Services.Mock;
@@ -50,7 +51,6 @@ public sealed class MockInventoryService : IInventoryService
         if (product == null)
             return (false, "Inventory item not found.");
 
-        var before = product.Stock;
         product.Stock = adjustment.NewStock;
         product.UpdatedAt = DateTime.UtcNow;
 
