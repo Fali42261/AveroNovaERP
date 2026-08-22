@@ -32,7 +32,7 @@ public partial class DashboardPage : ContentPage
     private void OnViewInventoryClicked(object sender, EventArgs e) => MainContentNavigator.Request(MainContentNavigator.Inventory);
     private static async Task NavigateToAsync(string route) { try { await Shell.Current.GoToAsync(route); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Dashboard navigation failed for {route}: {ex}"); } }
 
-    private async Task OpenInvoiceAsync(Guid invoiceId)
+    private static async Task OpenInvoiceAsync(Guid invoiceId)
     {
         if (invoiceId == Guid.Empty) return;
         try { await Shell.Current.GoToAsync($"{AppRoutes.InvoiceView}?id={invoiceId}"); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Invoice navigation failed: {ex}"); }
