@@ -6,10 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AveroNova.App.UI.Services.Local;
 
-/// <summary>
-/// Offline-first billing service. All invoice reads/writes use the local SQLite database.
-/// Server synchronization is intentionally handled separately through SyncStatus/PendingSync.
-/// </summary>
 public sealed class LocalBillingService : IBillingService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
@@ -30,8 +26,7 @@ public sealed class LocalBillingService : IBillingService
     {
         if (id == Guid.Empty) return null;
         await using var db = await _factory.CreateDbContextAsync();
-        var row = await db.Invoices.AsNoTracking().Include(x => x.Items)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        var row = await db.Invoices.AsNoTracking().Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         return row == null ? null : Map(row);
     }
 
@@ -48,10 +43,38 @@ public sealed class LocalBillingService : IBillingService
         try
         {
             var now = DateTime.UtcNow;
+            var productIds = invoice.Items.Select(x => x.ProductId).Distinct().ToList();
+            var products = await db.Products.Where(p => p.CompanyId == invoice.CompanyId && !p.IsDeleted && productIds.Contains(p.Id)).ToListAsync();
+            if (products.Count != productIds.Count) return (false, "One or more products were not found.");
+
+            var required = invoice.Items.GroupBy(x => x.ProductId).ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+            foreach (var product in products)
+            {
+                var qty = required[product.Id];
+                if (product.Stock < qty) return (false, $"Insufficient stock for {product.Name}. Available: {product.Stock}.");
+            }
+
             invoice.LocalId = invoice.LocalId == Guid.Empty ? Guid.NewGuid() : invoice.LocalId;
             invoice.CreatedAt = now; invoice.UpdatedAt = now; invoice.SyncStatus = SyncStatus.PendingSync;
             var entity = ToEntity(invoice, now);
             db.Invoices.Add(entity);
+
+            foreach (var product in products)
+            {
+                var before = product.Stock;
+                var qty = required[product.Id];
+                product.Stock -= qty;
+                product.UpdatedAt = now;
+                db.StockMovements.Add(new StockMovement
+                {
+                    Id = Guid.NewGuid(), CompanyId = invoice.CompanyId, ProductId = product.Id,
+                    MovementType = (int)StockMovementType.Out, Quantity = qty,
+                    StockBefore = before, StockAfter = product.Stock, Reference = invoice.InvoiceNumber,
+                    Notes = "Sale", CreatedBy = "Offline Sale", SyncStatus = (int)SyncStatus.PendingSync,
+                    CreatedAt = now, UpdatedAt = now, IsDeleted = false
+                });
+            }
+
             await db.SaveChangesAsync();
             await tx.CommitAsync();
             invoice.LocalId = entity.Id;
