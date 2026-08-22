@@ -14,7 +14,7 @@ namespace AveroNova.App.UI.ViewModels;
 public partial class CustomersViewModel : ObservableObject
 {
     public const string StatusFilterAll = "All";
-    public const int PageSize = 10;
+    public const int PageSize = 20;
     private const string RangeDash = "\u2013";
 
     private readonly ICustomerService _customers;
@@ -53,7 +53,7 @@ public partial class CustomersViewModel : ObservableObject
     [ObservableProperty] private int totalCount;
     [ObservableProperty] private string countLabel = "0 customers";
     [ObservableProperty] private string showingLabel = string.Empty;
-    [ObservableProperty] private string rangeLabel = "1" + RangeDash + "10";
+    [ObservableProperty] private string rangeLabel = "1" + RangeDash + "20";
 
     public bool ShowLoading => IsLoading;
     public bool ShowError => HasLoadError && !IsLoading;
@@ -75,7 +75,7 @@ public partial class CustomersViewModel : ObservableObject
     public string EmptySubtitle => HasActiveFilter
         ? string.Empty
         : "Customers you add for this company will appear here.";
-    public bool ShowPagination => !HasLoadError && TotalCount > 0;
+    public bool ShowPagination => !HasLoadError && TotalCount > PageSize;
     public bool CanGoPrevious => !IsLoading && !IsDeleting && _skip > 0;
     public bool CanGoNext => !IsLoading && !IsDeleting && _skip + PageSize < TotalCount;
 
