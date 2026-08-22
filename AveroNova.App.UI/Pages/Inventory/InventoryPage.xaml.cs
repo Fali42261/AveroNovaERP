@@ -77,8 +77,7 @@ public partial class InventoryPage : ContentPage
 
     private Task ShowActionPageAsync(ContentPage page)
     {
-        if (page.Content == null)
-            return Task.CompletedTask;
+        if (page.Content == null) return Task.CompletedTask;
         ActionContent.Content = page.Content;
         ActionOverlay.IsVisible = true;
         return Task.CompletedTask;
@@ -91,8 +90,8 @@ public partial class InventoryPage : ContentPage
         _ = LoadAsync();
     }
 
-    private Task OnAdjustClicked(object s, EventArgs e) => OpenStockAdjustAsync();
-    private Task OnHistoryClicked(object s, EventArgs e) => OpenStockHistoryAsync();
+    private async void OnAdjustClicked(object s, EventArgs e) => await OpenStockAdjustAsync();
+    private async void OnHistoryClicked(object s, EventArgs e) => await OpenStockHistoryAsync();
 
     private static Style? TryStyle(string key)
         => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
