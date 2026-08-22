@@ -8,20 +8,20 @@
     xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
     x:DataType="vm:CustomerViewViewModel">
     <Grid RowDefinitions="Auto,*">
-        <Border Padding="20,12" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+        <Border Padding="20,12" StrokeThickness="1">
             <Grid x:Name="HeaderBar" ColumnDefinitions="*,Auto" ColumnSpacing="12" RowSpacing="8" SizeChanged="OnHeaderSizeChanged">
                 <HorizontalStackLayout x:Name="HeaderTitle" Spacing="8" VerticalOptions="Center" HorizontalOptions="Start">
                     <Button Text="{StaticResource IconBack}" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" HeightRequest="40" MinimumWidthRequest="40" Command="{Binding BackCommand}" SemanticProperties.Description="Back to customers" />
                     <VerticalStackLayout Spacing="1" VerticalOptions="Center">
-                        <Label Text="Customer Profile" FontSize="18" FontAttributes="Bold" LineBreakMode="TailTruncation" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                        <Label Text="{Binding DisplayName}" FontSize="12" LineBreakMode="TailTruncation" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                        <Label Text="Customer Profile" FontSize="18" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                        <Label Text="{Binding DisplayName}" FontSize="12" LineBreakMode="TailTruncation" />
                     </VerticalStackLayout>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout x:Name="HeaderActions" Grid.Column="1" Spacing="8" VerticalOptions="Center" HorizontalOptions="End">
                     <Button Text="Edit Customer" Style="{StaticResource SmallButton}" HeightRequest="40" MinimumWidthRequest="120" Padding="16,0" Command="{Binding EditCommand}" IsVisible="{Binding ShowEditButton}" IsEnabled="{Binding IsDeleting, Converter={StaticResource InverseBoolConverter}}" />
                     <Grid HeightRequest="40" IsVisible="{Binding ShowDeleteButton}">
-                        <Button Text="{Binding DeleteButtonText}" Style="{StaticResource SmallButton}" BackgroundColor="{StaticResource ErrorColor}" HeightRequest="40" MinimumWidthRequest="100" Padding="14,0" Command="{Binding DeleteCommand}" IsEnabled="{Binding CanPressDelete}" />
-                        <ActivityIndicator IsVisible="{Binding IsDeleting}" IsRunning="{Binding IsDeleting}" Color="{StaticResource White}" WidthRequest="14" HeightRequest="14" HorizontalOptions="End" VerticalOptions="Center" Margin="0,0,8,0" InputTransparent="True" />
+                        <Button Text="{Binding DeleteButtonText}" Style="{StaticResource SmallButton}" HeightRequest="40" MinimumWidthRequest="100" Padding="14,0" Command="{Binding DeleteCommand}" IsEnabled="{Binding CanPressDelete}" />
+                        <ActivityIndicator IsVisible="{Binding IsDeleting}" IsRunning="{Binding IsDeleting}" WidthRequest="14" HeightRequest="14" HorizontalOptions="End" VerticalOptions="Center" Margin="0,0,8,0" InputTransparent="True" />
                     </Grid>
                 </HorizontalStackLayout>
             </Grid>
@@ -39,14 +39,14 @@
                                     <Label Text="{Binding DisplayInitials}" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                    <Label Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                                    <Label Text="{Binding DisplayStatus}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                    <Label Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Text="{Binding DisplayStatus}" FontSize="13" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Border>
                     </VerticalStackLayout>
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="Contact & Account Information" FontSize="16" FontAttributes="Bold" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Contact &amp; Account Information" FontSize="16" FontAttributes="Bold" Style="{StaticResource SectionTitle}" />
                         <Border Style="{StaticResource ReviewCard}">
                             <VerticalStackLayout Spacing="12">
                                 <forms:ReviewFieldRow LabelText="Customer Name" ValueText="{Binding DisplayName}" IsInline="{Binding IsInlineLayout}" />
