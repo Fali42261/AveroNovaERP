@@ -15,6 +15,8 @@ public class Invoice : BaseEntity
     public string Notes { get; set; } = string.Empty;
     public int Status { get; set; }
     public int SyncStatus { get; set; }
+
+    public Company Company { get; set; } = null!;
     public List<InvoiceItem> Items { get; set; } = [];
 }
 
