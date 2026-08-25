@@ -6,7 +6,7 @@ namespace AveroNova.App.UI.Pages.Company;
 public partial class CompanyPage : ContentPage
 {
     private readonly CompanyPageViewModel _vm;
-    private readonly Dictionary<Grid, List<IView>> _adaptiveOrder = new();
+    private readonly Dictionary<Microsoft.Maui.Controls.Grid, List<IView>> _adaptiveOrder = new();
     private int _appliedViewColumns;
     private int _appliedFormColumns;
 
@@ -29,13 +29,11 @@ public partial class CompanyPage : ContentPage
         await _vm.LoadAsync();
     }
 
-    private void OnRootSizeChanged(object? sender, EventArgs e)
-        => ApplyResponsiveLayout();
+    private void OnRootSizeChanged(object? sender, EventArgs e) => ApplyResponsiveLayout();
 
     private void ApplyResponsiveLayout()
     {
-        if (Root.Width <= 0)
-            return;
+        if (Root.Width <= 0) return;
 
         var size = ResponsiveBreakpoints.FromWidth(Root.Width);
         var viewColumns = size switch
@@ -45,9 +43,7 @@ public partial class CompanyPage : ContentPage
             _ => 3
         };
         var formColumns = ResponsiveBreakpoints.FormColumnCount(Root.Width, maxColumns: 3);
-        if (viewColumns == _appliedViewColumns
-            && formColumns == _appliedFormColumns
-            && _adaptiveOrder.Count > 0)
+        if (viewColumns == _appliedViewColumns && formColumns == _appliedFormColumns && _adaptiveOrder.Count > 0)
             return;
 
         _appliedViewColumns = viewColumns;
@@ -62,10 +58,7 @@ public partial class CompanyPage : ContentPage
     {
         if (columns == 1)
         {
-            HeaderBar.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition(GridLength.Star)
-            };
+            HeaderBar.ColumnDefinitions = new ColumnDefinitionCollection { new ColumnDefinition(GridLength.Star) };
             HeaderBar.RowDefinitions = new RowDefinitionCollection
             {
                 new RowDefinition(GridLength.Auto),
@@ -84,10 +77,7 @@ public partial class CompanyPage : ContentPage
             new ColumnDefinition(GridLength.Star),
             new ColumnDefinition(GridLength.Auto)
         };
-        HeaderBar.RowDefinitions = new RowDefinitionCollection
-        {
-            new RowDefinition(GridLength.Auto)
-        };
+        HeaderBar.RowDefinitions = new RowDefinitionCollection { new RowDefinition(GridLength.Auto) };
         Microsoft.Maui.Controls.Grid.SetColumn(HeaderTitle, 0);
         Microsoft.Maui.Controls.Grid.SetRow(HeaderTitle, 0);
         Microsoft.Maui.Controls.Grid.SetColumn(HeaderActions, 1);
@@ -95,10 +85,9 @@ public partial class CompanyPage : ContentPage
         HeaderActions.HorizontalOptions = LayoutOptions.End;
     }
 
-    private void ArrangeAdaptiveGrid(Grid grid, int columns)
+    private void ArrangeAdaptiveGrid(Microsoft.Maui.Controls.Grid grid, int columns)
     {
-        if (grid == null)
-            return;
+        if (grid == null) return;
 
         if (!_adaptiveOrder.TryGetValue(grid, out var children))
         {
