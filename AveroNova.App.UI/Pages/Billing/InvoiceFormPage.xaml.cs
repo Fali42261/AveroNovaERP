@@ -1,6 +1,5 @@
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Interfaces;
-using AveroNova.App.UI.ViewModels;
 
 namespace AveroNova.App.UI.Pages.Billing;
 
@@ -9,13 +8,13 @@ public partial class InvoiceFormPage : ContentPage
     private readonly IBillingService _billing;
     private readonly ICustomerService _customers;
     private readonly IProductService _products;
-    private readonly CompanyPageViewModel _company;
+    private readonly ICompanyService _company;
     private readonly List<CustomerModel> _customerList = [];
     private readonly List<ProductModel> _productList = [];
     private readonly List<InvoiceLineItem> _lineItems = [];
     private InvoiceModel? _editing;
 
-    public InvoiceFormPage(IBillingService billing, ICustomerService customers, IProductService products, CompanyPageViewModel company)
+    public InvoiceFormPage(IBillingService billing, ICustomerService customers, IProductService products, ICompanyService company)
     {
         InitializeComponent();
         _billing = billing;
@@ -32,16 +31,14 @@ public partial class InvoiceFormPage : ContentPage
         await LoadAsync();
     }
 
-    public async Task LoadForEditAsync(Guid id)
-    {
-        await LoadAsync(id);
-    }
+    public Task LoadForEditAsync(Guid id) => LoadAsync(id);
 
     private async Task LoadAsync(Guid? id = null)
     {
         try
         {
-            var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
+            var company = await _company.GetCurrentAsync();
+            var companyId = company?.LocalId ?? Guid.Empty;
             if (companyId == Guid.Empty)
             {
                 ShowError("Company is required.");
@@ -68,8 +65,7 @@ public partial class InvoiceFormPage : ContentPage
                 LblInvoiceNumber.Text = _editing.InvoiceNumber;
                 DateInvoice.Date = _editing.InvoiceDate;
                 DateDue.Date = _editing.DueDate;
-                var customerIndex = _customerList.FindIndex(x => x.LocalId == _editing.CustomerId);
-                CustomerPicker.SelectedIndex = customerIndex;
+                CustomerPicker.SelectedIndex = _customerList.FindIndex(x => x.LocalId == _editing.CustomerId);
                 EntryDiscount.Text = _editing.DiscountPct.ToString("0.##");
                 EntryTax.Text = _editing.TaxPct.ToString("0.##");
                 EditorNotes.Text = _editing.Notes;
@@ -122,13 +118,12 @@ public partial class InvoiceFormPage : ContentPage
         LineItemsContainer.Children.Clear();
         foreach (var item in _lineItems)
         {
-            var label = new Label
+            LineItemsContainer.Children.Add(new Label
             {
                 Text = $"{item.ProductName}  × {item.Quantity}  —  {item.GrandTotal:C}",
                 FontSize = 13,
                 VerticalOptions = LayoutOptions.Center
-            };
-            LineItemsContainer.Children.Add(label);
+            });
         }
     }
 
@@ -157,8 +152,13 @@ public partial class InvoiceFormPage : ContentPage
         if (_lineItems.Count == 0) { ShowError("Add at least one product."); return; }
         if (_lineItems.Any(x => x.ProductId == Guid.Empty || x.Quantity <= 0 || x.UnitPrice < 0)) { ShowError("Check product, quantity and price for every line."); return; }
 
+        var company = await _company.GetCurrentAsync();
+        var companyId = company?.LocalId ?? Guid.Empty;
+        if (companyId == Guid.Empty) { ShowError("Company is required."); return; }
+
         var customer = _customerList[CustomerPicker.SelectedIndex];
-        var invoice = _editing ?? new InvoiceModel { CompanyId = _company.CurrentCompany?.LocalId ?? Guid.Empty };
+        var invoice = _editing ?? new InvoiceModel { CompanyId = companyId };
+        invoice.CompanyId = companyId;
         invoice.InvoiceNumber = LblInvoiceNumber.Text?.Trim() ?? string.Empty;
         invoice.CustomerId = customer.LocalId;
         invoice.CustomerName = customer.Name;
@@ -170,9 +170,14 @@ public partial class InvoiceFormPage : ContentPage
         invoice.Notes = EditorNotes.Text?.Trim() ?? string.Empty;
         invoice.Status = status;
 
-        var (ok, error) = _editing == null ? await _billing.CreateAsync(invoice) : await _billing.UpdateAsync(invoice);
-        if (ok) await Shell.Current.GoToAsync("..");
-        else ShowError(error ?? "Unable to save sale.");
+        (bool ok, string? error) result = _editing == null
+            ? await _billing.CreateAsync(invoice)
+            : await _billing.UpdateAsync(invoice);
+
+        if (result.ok)
+            await Shell.Current.GoToAsync("..");
+        else
+            ShowError(result.error ?? "Unable to save sale.");
     }
 
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
