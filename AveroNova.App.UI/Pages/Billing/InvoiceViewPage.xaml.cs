@@ -25,14 +25,16 @@ public partial class InvoiceViewPage : ContentPage
         }
     }
 
+    private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
+
     private void BuildContent(InvoiceModel inv)
     {
         Content.Children.Clear();
         var actions = new HorizontalStackLayout { Spacing = 8 };
         AddAction(actions, "Edit", async () => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceEdit}?id={inv.LocalId}"));
-        AddAction(actions, "Print", async () => await DisplayAlert("Print", "Print functionality will be connected to the invoice print service next.", "OK"));
-        AddAction(actions, "Share", async () => await DisplayAlert("Share", "Share functionality will be connected to the invoice sharing service next.", "OK"));
-        AddAction(actions, "Record Payment", async () => await DisplayAlert("Payment", "Payment recording will be implemented in the Payment module.", "OK"), "SmallButton");
+        AddAction(actions, "Print", async () => await DisplayAlertAsync("Print", "Print functionality will be connected to the invoice print service next.", "OK"));
+        AddAction(actions, "Share", async () => await DisplayAlertAsync("Share", "Share functionality will be connected to the invoice sharing service next.", "OK"));
+        AddAction(actions, "Record Payment", async () => await DisplayAlertAsync("Payment", "Payment recording will be implemented in the Payment module.", "OK"), "SmallButton");
         if (inv.Status != InvoiceStatus.Cancelled)
             AddAction(actions, "Cancel Invoice", async () => await CancelInvoice(), "DangerButton");
         Content.Children.Add(actions);
@@ -52,8 +54,9 @@ public partial class InvoiceViewPage : ContentPage
         var badge = new Border { BackgroundColor = Color.FromArgb(statusBg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(10, 4) };
         badge.Content = new Label { Text = inv.StatusLabel, FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) };
         hGrid.Add(badge, 1, 0);
-        hGrid.Add(new Label { Text = inv.CustomerName, FontSize = 15, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0, 6, 0, 0) }, 0, 1);
-        Grid.SetColumnSpan(hGrid.Children[^1], 2);
+        var customerLabel = new Label { Text = inv.CustomerName, FontSize = 15, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0, 6, 0, 0) };
+        hGrid.Add(customerLabel, 0, 1);
+        Microsoft.Maui.Controls.Grid.SetColumnSpan(customerLabel, 2);
         headerCard.Content = hGrid;
         Content.Children.Add(headerCard);
 
@@ -97,7 +100,7 @@ public partial class InvoiceViewPage : ContentPage
 
     private static void AddAction(HorizontalStackLayout host, string text, Func<Task> action, string style = "SmallSecondaryButton")
     {
-        var button = new Button { Text = text, Style = (Style)Application.Current!.Resources[style] };
+        var button = new Button { Text = text, Style = (Style)Microsoft.Maui.Controls.Application.Current!.Resources[style] };
         button.Clicked += async (_, _) => await action();
         host.Children.Add(button);
     }
@@ -123,7 +126,7 @@ public partial class InvoiceViewPage : ContentPage
         if (_invoice == null) return;
         if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Are you sure you want to cancel this sale?", "Cancel Sale", "Keep")) return;
         var result = await _svc.CancelAsync(_invoice.LocalId);
-        if (!result.Ok) { await DisplayAlert("Unable to cancel", result.Error ?? "Unable to cancel sale.", "OK"); return; }
+        if (!result.Ok) { await DisplayAlertAsync("Unable to cancel", result.Error ?? "Unable to cancel sale.", "OK"); return; }
         await Shell.Current.GoToAsync("..");
     }
 }
