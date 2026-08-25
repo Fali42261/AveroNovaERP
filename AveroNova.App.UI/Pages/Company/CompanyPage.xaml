@@ -9,7 +9,7 @@
     x:DataType="vm:CompanyPageViewModel"
     Title=""
     Shell.NavBarIsVisible="False">
-    <Grid x:Name="Root" SizeChanged="OnRootSizeChanged" RowDefinitions="Auto,*" HorizontalOptions="Fill" VerticalOptions="Fill">
+    <Grid x:Name="Root" RowDefinitions="Auto,*" HorizontalOptions="Fill" VerticalOptions="Fill">
         <Grid x:Name="HeaderBar" Grid.Row="0" Padding="20,16,20,8" ColumnDefinitions="*,Auto" ColumnSpacing="12" RowSpacing="8" HorizontalOptions="Fill">
             <VerticalStackLayout x:Name="HeaderTitle" Spacing="2" VerticalOptions="Center" HorizontalOptions="Fill">
                 <Label Text="Company Profile" FontSize="18" FontAttributes="Bold" LineBreakMode="TailTruncation" />
