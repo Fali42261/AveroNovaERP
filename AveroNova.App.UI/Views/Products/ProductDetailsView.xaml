@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView
-    x:Class="AveroNova.App.UI.Views.Products.ProductDetailsView"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State"
-    xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
-    x:DataType="vm:ProductViewViewModel">
-
+<ContentView x:Class="AveroNova.App.UI.Views.Products.ProductDetailsView"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State"
+             xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
+             x:DataType="vm:ProductViewViewModel">
     <ContentView.Resources>
         <Style x:Key="ProductOverviewCardTitle" TargetType="Label" BasedOn="{StaticResource CardTitle}">
             <Setter Property="FontSize" Value="13" />
@@ -14,10 +12,13 @@
             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
         </Style>
         <Style x:Key="ProductOverviewFieldLabel" TargetType="Label" BasedOn="{StaticResource SecondaryText}">
+            <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalOptions" Value="Center" />
-            <Setter Property="LineBreakMode" Value="NoWrap" />
+            <Setter Property="LineBreakMode" Value="TailTruncation" />
+            <Setter Property="MaxLines" Value="1" />
         </Style>
         <Style x:Key="ProductOverviewFieldValue" TargetType="Label" BasedOn="{StaticResource BodyText}">
+            <Setter Property="FontSize" Value="13" />
             <Setter Property="FontAttributes" Value="Bold" />
             <Setter Property="MaxLines" Value="1" />
             <Setter Property="LineBreakMode" Value="TailTruncation" />
@@ -27,98 +28,41 @@
     </ContentView.Resources>
 
     <Grid x:Name="Root" RowDefinitions="Auto,*" SizeChanged="OnRootSizeChanged">
-
-        <Border
-            Padding="20,14"
-            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-            Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
-            StrokeThickness="1">
+        <Border Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                <Button
-                    Text="{StaticResource IconBack}"
-                    Style="{StaticResource GhostButton}"
-                    Padding="0"
-                    WidthRequest="40"
-                    Command="{Binding BackCommand}" />
-                <Label
-                    Grid.Column="1"
-                    Text="Product Overview"
-                    FontSize="18"
-                    FontAttributes="Bold"
-                    VerticalOptions="Center"
-                    LineBreakMode="TailTruncation"
-                    MaxLines="1"
-                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                <Button
-                    Grid.Column="2"
-                    Text="Edit Product"
-                    Style="{StaticResource SmallButton}"
-                    Command="{Binding EditCommand}"
-                    IsVisible="{Binding ShowEditButton}" />
+                <Button Text="{StaticResource IconBack}" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Command="{Binding BackCommand}" />
+                <Label Grid.Column="1" Text="Product Overview" FontSize="18" FontAttributes="Bold" VerticalOptions="Center" LineBreakMode="TailTruncation" MaxLines="1" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                <Button Grid.Column="2" Text="Edit Product" Style="{StaticResource SmallButton}" Command="{Binding EditCommand}" IsVisible="{Binding ShowEditButton}" />
             </Grid>
         </Border>
 
         <Grid Grid.Row="1">
-            <state:LoadingView
-                IsVisible="{Binding ShowLoading}"
-                Message="Loading product..." />
-
-            <state:ErrorView
-                x:Name="ErrorState"
-                IsVisible="{Binding ShowError}"
-                Title="Unable to load product"
-                Message="Please try again." />
-
-            <state:EmptyView
-                x:Name="NotFoundState"
-                IsVisible="{Binding ShowNotFound}"
-                Title="Product not found."
-                Subtitle="This product is not available for the current company."
-                ActionLabel="Back to Products" />
-
+            <state:LoadingView IsVisible="{Binding ShowLoading}" Message="Loading product..." />
+            <state:ErrorView x:Name="ErrorState" IsVisible="{Binding ShowError}" Title="Unable to load product" Message="Please try again." />
+            <state:EmptyView x:Name="NotFoundState" IsVisible="{Binding ShowNotFound}" Title="Product not found." Subtitle="This product is not available for the current company." ActionLabel="Back to Products" />
             <ScrollView IsVisible="{Binding ShowContent}">
-                <VerticalStackLayout Padding="20,16" Spacing="16">
-                    <Grid
-                        x:Name="CardsGrid"
-                        ColumnDefinitions="*,*,*"
-                        ColumnSpacing="16"
-                        RowSpacing="16"
-                        HorizontalOptions="Fill">
-
-                        <Border
-                            x:Name="ProductCard"
-                            Style="{StaticResource AppCard}"
-                            VerticalOptions="Fill"
-                            HorizontalOptions="Fill"
-                            MinimumWidthRequest="0">
+                <VerticalStackLayout Padding="20,16,20,24" Spacing="16">
+                    <Grid x:Name="CardsGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto" ColumnSpacing="16" RowSpacing="16" HorizontalOptions="Fill">
+                        <Border x:Name="ProductCard" Style="{StaticResource AppCard}" HorizontalOptions="Fill" VerticalOptions="Start">
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="PRODUCT" Style="{StaticResource ProductOverviewCardTitle}" />
                                 <BoxView Style="{StaticResource Divider}" />
-                                <Grid ColumnDefinitions="130,Auto,*" ColumnSpacing="8" RowSpacing="10">
+                                <Grid ColumnDefinitions="Auto,12,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="10">
                                     <Label Text="Name" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
-                                    <Label
-                                        Grid.Column="2"
-                                        Text="{Binding DisplayName}"
-                                        Style="{StaticResource ProductOverviewFieldValue}"
-                                        ToolTipProperties.Text="{Binding NameTooltip}" />
-
+                                    <Label Grid.Column="2" Text="{Binding DisplayName}" Style="{StaticResource ProductOverviewFieldValue}" ToolTipProperties.Text="{Binding NameTooltip}" />
                                     <Label Grid.Row="1" Text="SKU" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="1" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="1" Grid.Column="2" Text="{Binding DisplaySku}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="2" Text="Barcode" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="2" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="2" Grid.Column="2" Text="{Binding DisplayBarcode}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="3" Text="Category" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="3" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="3" Grid.Column="2" Text="{Binding DisplayCategory}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="4" Text="Brand" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="4" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="4" Grid.Column="2" Text="{Binding DisplayBrand}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="5" Text="Unit" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="5" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="5" Grid.Column="2" Text="{Binding DisplayUnit}" Style="{StaticResource ProductOverviewFieldValue}" />
@@ -126,29 +70,20 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <Border
-                            x:Name="PricingCard"
-                            Grid.Column="1"
-                            Style="{StaticResource AppCard}"
-                            VerticalOptions="Fill"
-                            HorizontalOptions="Fill"
-                            MinimumWidthRequest="0">
+                        <Border x:Name="PricingCard" Grid.Column="1" Style="{StaticResource AppCard}" HorizontalOptions="Fill" VerticalOptions="Start">
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="PRICING" Style="{StaticResource ProductOverviewCardTitle}" />
                                 <BoxView Style="{StaticResource Divider}" />
-                                <Grid ColumnDefinitions="130,Auto,*" ColumnSpacing="8" RowSpacing="10">
+                                <Grid ColumnDefinitions="Auto,12,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="10">
                                     <Label Text="Purchase Price" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Column="2" Text="{Binding DisplayPurchasePrice}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="1" Text="Sale Price" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="1" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="1" Grid.Column="2" Text="{Binding DisplaySalePrice}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="2" Text="GST" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="2" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="2" Grid.Column="2" Text="{Binding DisplayTax}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="3" Text="Discount" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="3" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="3" Grid.Column="2" Text="{Binding DisplayDiscount}" Style="{StaticResource ProductOverviewFieldValue}" />
@@ -156,33 +91,23 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <Border
-                            x:Name="InventoryCard"
-                            Grid.Column="2"
-                            Style="{StaticResource AppCard}"
-                            VerticalOptions="Fill"
-                            HorizontalOptions="Fill"
-                            MinimumWidthRequest="0">
+                        <Border x:Name="InventoryCard" Grid.Column="2" Style="{StaticResource AppCard}" HorizontalOptions="Fill" VerticalOptions="Start">
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="INVENTORY" Style="{StaticResource ProductOverviewCardTitle}" />
                                 <BoxView Style="{StaticResource Divider}" />
-                                <Grid ColumnDefinitions="130,Auto,*" ColumnSpacing="8" RowSpacing="10">
+                                <Grid ColumnDefinitions="Auto,12,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="10">
                                     <Label Text="Current Stock" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Column="2" Text="{Binding DisplayStock}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="1" Text="Opening Stock" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="1" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="1" Grid.Column="2" Text="{Binding DisplayOpeningStock}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="2" Text="Minimum" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="2" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="2" Grid.Column="2" Text="{Binding DisplayMinimumStock}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="3" Text="Reorder Level" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="3" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="3" Grid.Column="2" Text="{Binding DisplayReorderLevel}" Style="{StaticResource ProductOverviewFieldValue}" />
-
                                     <Label Grid.Row="4" Text="Status" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="4" Grid.Column="1" Text=":" Style="{StaticResource ProductOverviewFieldLabel}" />
                                     <Label Grid.Row="4" Grid.Column="2" Text="{Binding DisplayStatus}" Style="{StaticResource ProductOverviewFieldValue}" />
