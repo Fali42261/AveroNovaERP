@@ -162,8 +162,8 @@ public partial class InvoiceFormPage : ContentPage
         invoice.InvoiceNumber = LblInvoiceNumber.Text?.Trim() ?? string.Empty;
         invoice.CustomerId = customer.LocalId;
         invoice.CustomerName = customer.Name;
-        invoice.InvoiceDate = DateInvoice.Date;
-        invoice.DueDate = DateDue.Date;
+        invoice.InvoiceDate = DateInvoice.Date ?? DateTime.Today;
+        invoice.DueDate = DateDue.Date ?? DateTime.Today.AddDays(30);
         invoice.Items = [.. _lineItems];
         invoice.DiscountPct = decimal.TryParse(EntryDiscount.Text, out var discountPct) ? discountPct : 0;
         invoice.TaxPct = decimal.TryParse(EntryTax.Text, out var taxPct) ? taxPct : 0;
