@@ -3,8 +3,6 @@ using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Layouts;
 
 namespace AveroNova.App.UI.Pages.Billing;
 
@@ -30,30 +28,22 @@ public partial class InvoiceViewPage : ContentPage
     private void BuildContent(InvoiceModel inv)
     {
         Content.Children.Clear();
-
-        // Action buttons
-        var actions = new FlexLayout { Wrap = FlexWrap.Wrap, Direction = FlexDirection.Row, JustifyContent = FlexJustify.Start };
-        void AddAction(string label, Action onClick, string style = "SmallSecondaryButton")
-        {
-            var b = new Button { Text = label, Style = (Style)Resources[style], Margin = new Thickness(0, 0, 8, 8) };
-            b.Clicked += (_, _) => onClick();
-            actions.Children.Add(b);
-        }
-        AddAction("Edit",           async () => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceEdit}?id={inv.LocalId}"));
-        AddAction("Print",          async () => await DisplayAlert("Print", "Print functionality coming soon.", "OK"));
-        AddAction("Share",          async () => await DisplayAlert("Share", "Share functionality coming soon.", "OK"));
-        AddAction("Record Payment", async () => await DisplayAlert("Payment", "Record payment functionality coming soon.", "OK"), "SmallButton");
+        var actions = new HorizontalStackLayout { Spacing = 8 };
+        AddAction(actions, "Edit", async () => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceEdit}?id={inv.LocalId}"));
+        AddAction(actions, "Print", async () => await DisplayAlert("Print", "Print functionality will be connected to the invoice print service next.", "OK"));
+        AddAction(actions, "Share", async () => await DisplayAlert("Share", "Share functionality will be connected to the invoice sharing service next.", "OK"));
+        AddAction(actions, "Record Payment", async () => await DisplayAlert("Payment", "Payment recording will be implemented in the Payment module.", "OK"), "SmallButton");
         if (inv.Status != InvoiceStatus.Cancelled)
-            AddAction("Cancel Invoice", async () => await CancelInvoice(), "DangerButton");
+            AddAction(actions, "Cancel Invoice", async () => await CancelInvoice(), "DangerButton");
         Content.Children.Add(actions);
 
-        // Status card
         var (statusBg, statusColor) = inv.Status switch
         {
-            InvoiceStatus.Paid    => ("#ECFDF5", "#059669"),
+            InvoiceStatus.Paid => ("#ECFDF5", "#059669"),
             InvoiceStatus.Overdue => ("#FEF2F2", "#DC2626"),
-            InvoiceStatus.Sent    => ("#EFF6FF", "#2563EB"),
-            _                     => ("#F9FAFB", "#6B7280")
+            InvoiceStatus.Sent => ("#EFF6FF", "#2563EB"),
+            InvoiceStatus.PartialPaid => ("#FFFBEB", "#D97706"),
+            _ => ("#F9FAFB", "#6B7280")
         };
 
         var headerCard = new Border { Style = (Style)Resources["AppCard"] };
@@ -63,69 +53,77 @@ public partial class InvoiceViewPage : ContentPage
         badge.Content = new Label { Text = inv.StatusLabel, FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) };
         hGrid.Add(badge, 1, 0);
         hGrid.Add(new Label { Text = inv.CustomerName, FontSize = 15, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0, 6, 0, 0) }, 0, 1);
-        Grid.SetColumnSpan(hGrid.Children[2] as View ?? new Label(), 2);
+        Grid.SetColumnSpan(hGrid.Children[^1], 2);
         headerCard.Content = hGrid;
+        Content.Children.Add(headerCard);
 
-        // Amounts
         var amtCard = new Border { Style = (Style)Resources["AppCard"] };
         var amtGrid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)), ColumnSpacing = 12 };
-        void AmtBox(int col, string label, string value, string color)
-        {
-            var v = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.Center };
-            v.Children.Add(new Label { Text = value, FontSize = 18, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(color), HorizontalOptions = LayoutOptions.Center });
-            v.Children.Add(new Label { Text = label, FontSize = 11, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center });
-            amtGrid.Add(v, col, 0);
-        }
-        AmtBox(0, "Grand Total", $"${inv.GrandTotal:N2}", "#0F172A");
-        AmtBox(1, "Paid",        $"${inv.PaidAmount:N2}", "#059669");
-        AmtBox(2, "Due",         $"${inv.DueAmount:N2}",  inv.DueAmount > 0 ? "#DC2626" : "#059669");
+        AddAmount(amtGrid, 0, "Grand Total", $"${inv.GrandTotal:N2}", "#0F172A");
+        AddAmount(amtGrid, 1, "Paid", $"${inv.PaidAmount:N2}", "#059669");
+        AddAmount(amtGrid, 2, "Due", $"${inv.DueAmount:N2}", inv.DueAmount > 0 ? "#DC2626" : "#059669");
         amtCard.Content = amtGrid;
-
-        // Details
-        var detailCard = new Border { Style = (Style)Resources["AppCard"] };
-        var dv = new VerticalStackLayout { Spacing = 12 };
-        dv.Children.Add(new Label { Text = "Invoice Details", FontSize = 14, FontAttributes = FontAttributes.Bold });
-        dv.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
-        void DRow(string l, string v) { var g = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(new GridLength(130)), new ColumnDefinition(GridLength.Star)) }; g.Add(new Label { Text = l, FontSize = 13, TextColor = Color.FromArgb("#64748B") }, 0, 0); g.Add(new Label { Text = v, FontSize = 13, FontAttributes = FontAttributes.Bold }, 1, 0); dv.Children.Add(g); }
-        DRow("Invoice Date",  inv.InvoiceDate.ToString("dd MMM yyyy"));
-        DRow("Due Date",      inv.DueDate.ToString("dd MMM yyyy"));
-        DRow("Payment",       inv.PaymentMethod.ToString());
-        if (!string.IsNullOrEmpty(inv.Notes)) DRow("Notes", inv.Notes);
-        detailCard.Content = dv;
-
-        // Line items
-        if (inv.Items.Count > 0)
-        {
-            var lineCard = new Border { Style = (Style)Resources["AppCard"] };
-            var lv = new VerticalStackLayout { Spacing = 10 };
-            lv.Children.Add(new Label { Text = "Line Items", FontSize = 14, FontAttributes = FontAttributes.Bold });
-            lv.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
-            foreach (var item in inv.Items)
-            {
-                var ig = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)) };
-                var il = new VerticalStackLayout { Spacing = 2 };
-                il.Children.Add(new Label { Text = item.ProductName, FontSize = 13, FontAttributes = FontAttributes.Bold });
-                il.Children.Add(new Label { Text = $"{item.Quantity} × ${item.UnitPrice:N2}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
-                ig.Add(il, 0, 0);
-                ig.Add(new Label { Text = $"${item.GrandTotal:N2}", FontSize = 14, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center }, 1, 0);
-                lv.Children.Add(ig);
-            }
-            lineCard.Content = lv;
-            Content.Children.Add(lineCard);
-        }
-
-        Content.Children.Add(headerCard);
         Content.Children.Add(amtCard);
+
+        var detailCard = new Border { Style = (Style)Resources["AppCard"] };
+        var details = new VerticalStackLayout { Spacing = 12 };
+        details.Children.Add(new Label { Text = "Sale Details", FontSize = 14, FontAttributes = FontAttributes.Bold });
+        details.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
+        AddDetail(details, "Invoice Date", inv.InvoiceDate.ToString("dd MMM yyyy"));
+        AddDetail(details, "Due Date", inv.DueDate.ToString("dd MMM yyyy"));
+        AddDetail(details, "Payment", inv.PaymentMethod.ToString());
+        AddDetail(details, "Customer", inv.CustomerName);
+        if (!string.IsNullOrWhiteSpace(inv.Notes)) AddDetail(details, "Notes", inv.Notes);
+        detailCard.Content = details;
         Content.Children.Add(detailCard);
+
+        var lineCard = new Border { Style = (Style)Resources["AppCard"] };
+        var lines = new VerticalStackLayout { Spacing = 10 };
+        lines.Children.Add(new Label { Text = "Sale Items", FontSize = 14, FontAttributes = FontAttributes.Bold });
+        lines.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
+        foreach (var item in inv.Items)
+        {
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)) };
+            var info = new VerticalStackLayout { Spacing = 2 };
+            info.Children.Add(new Label { Text = item.ProductName, FontSize = 13, FontAttributes = FontAttributes.Bold });
+            info.Children.Add(new Label { Text = $"{item.Quantity} × ${item.UnitPrice:N2}  •  SKU: {item.SKU}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
+            row.Add(info, 0, 0);
+            row.Add(new Label { Text = $"${item.GrandTotal:N2}", FontSize = 14, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center }, 1, 0);
+            lines.Children.Add(row);
+        }
+        lineCard.Content = lines;
+        Content.Children.Add(lineCard);
+    }
+
+    private static void AddAction(HorizontalStackLayout host, string text, Func<Task> action, string style = "SmallSecondaryButton")
+    {
+        var button = new Button { Text = text, Style = (Style)Application.Current!.Resources[style] };
+        button.Clicked += async (_, _) => await action();
+        host.Children.Add(button);
+    }
+
+    private static void AddAmount(Grid grid, int column, string label, string value, string color)
+    {
+        var box = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.Center };
+        box.Children.Add(new Label { Text = value, FontSize = 18, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(color), HorizontalOptions = LayoutOptions.Center });
+        box.Children.Add(new Label { Text = label, FontSize = 11, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center });
+        grid.Add(box, column, 0);
+    }
+
+    private static void AddDetail(VerticalStackLayout host, string label, string value)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(new GridLength(130)), new ColumnDefinition(GridLength.Star)) };
+        row.Add(new Label { Text = label, FontSize = 13, TextColor = Color.FromArgb("#64748B") }, 0, 0);
+        row.Add(new Label { Text = value, FontSize = 13, FontAttributes = FontAttributes.Bold }, 1, 0);
+        host.Children.Add(row);
     }
 
     private async Task CancelInvoice()
     {
         if (_invoice == null) return;
-        if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Are you sure you want to cancel this invoice?", "Cancel Invoice", "Keep")) return;
-        await _svc.CancelAsync(_invoice.LocalId);
+        if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Are you sure you want to cancel this sale?", "Cancel Sale", "Keep")) return;
+        var result = await _svc.CancelAsync(_invoice.LocalId);
+        if (!result.Ok) { await DisplayAlert("Unable to cancel", result.Error ?? "Unable to cancel sale.", "OK"); return; }
         await Shell.Current.GoToAsync("..");
     }
-
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
 }
