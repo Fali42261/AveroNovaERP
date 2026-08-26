@@ -7,15 +7,14 @@
     xmlns:forms="clr-namespace:AveroNova.App.UI.Controls.Forms"
     xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
     x:DataType="vm:CompanyPageViewModel"
-    Title=""
-    Shell.NavBarIsVisible="False">
+    Title="" Shell.NavBarIsVisible="False">
     <Grid x:Name="Root" RowDefinitions="Auto,*" HorizontalOptions="Fill" VerticalOptions="Fill">
-        <Grid x:Name="HeaderBar" Grid.Row="0" Padding="20,16,20,8" ColumnDefinitions="*,Auto" ColumnSpacing="12" RowSpacing="8" HorizontalOptions="Fill">
-            <VerticalStackLayout x:Name="HeaderTitle" Spacing="2" VerticalOptions="Center" HorizontalOptions="Fill">
-                <Label Text="Company Profile" FontSize="18" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+        <Grid x:Name="HeaderBar" Padding="20,16,20,8" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <VerticalStackLayout x:Name="HeaderTitle" Spacing="2" VerticalOptions="Center">
+                <Label Text="Company Profile" FontSize="18" FontAttributes="Bold" />
                 <Label Text="{Binding DisplayCompanyName}" Style="{StaticResource SecondaryText}" LineBreakMode="TailTruncation" />
             </VerticalStackLayout>
-            <HorizontalStackLayout x:Name="HeaderActions" Grid.Column="1" Spacing="8" VerticalOptions="Center" HorizontalOptions="End">
+            <HorizontalStackLayout x:Name="HeaderActions" Grid.Column="1" Spacing="8" VerticalOptions="Center">
                 <Button Text="Edit Company" Style="{StaticResource SmallButton}" HeightRequest="40" MinimumWidthRequest="120" Padding="16,0" Command="{Binding BeginEditCommand}" IsVisible="{Binding ShowEditButton}" />
                 <Button Text="Cancel" Style="{StaticResource SmallSecondaryButton}" HeightRequest="40" MinimumWidthRequest="88" Padding="14,0" Command="{Binding CancelEditCommand}" IsVisible="{Binding ShowEditFooter}" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}" />
                 <Grid HeightRequest="40" MinimumWidthRequest="120" IsVisible="{Binding ShowEditFooter}">
@@ -24,78 +23,46 @@
                 </Grid>
             </HorizontalStackLayout>
         </Grid>
-
-        <Grid Grid.Row="1" HorizontalOptions="Fill">
-            <ScrollView x:Name="LoadingGrid" IsVisible="{Binding ShowLoading}" HorizontalOptions="Fill">
-                <VerticalStackLayout Padding="20,16,20,24"><state:LoadingView Message="Loading company details..." /></VerticalStackLayout>
-            </ScrollView>
+        <Grid Grid.Row="1">
+            <ScrollView x:Name="LoadingGrid" IsVisible="{Binding ShowLoading}"><VerticalStackLayout Padding="20,16,20,24"><state:LoadingView Message="Loading company details..." /></VerticalStackLayout></ScrollView>
             <state:ErrorView x:Name="ErrorState" IsVisible="{Binding ShowError}" Title="Unable to load company details." Message="Unable to load company details." />
-            <ScrollView IsVisible="{Binding ShowContent}" HorizontalOptions="Fill">
-                <VerticalStackLayout Padding="20,16,20,24" Spacing="20" HorizontalOptions="Fill">
-
-                    <!-- VIEW MODE: same card style as Edit Company -->
-                    <VerticalStackLayout Spacing="10" IsVisible="{Binding ShowViewMode}">
-                        <Label Text="Company Details" FontSize="16" FontAttributes="Bold" Style="{StaticResource SectionTitle}" />
-                        <Grid x:Name="ViewFieldsGrid"
-                              ColumnDefinitions="*,*,*"
-                              RowDefinitions="Auto,Auto,Auto,Auto"
-                              ColumnSpacing="16"
-                              RowSpacing="16"
-                              HorizontalOptions="Fill">
-                            <forms:CompactFieldCard Grid.Row="0" Grid.Column="0" LabelText="Company Name" ValueText="{Binding DisplayCompanyName}" />
-                            <forms:CompactFieldCard Grid.Row="0" Grid.Column="1" LabelText="Owner Name" ValueText="{Binding DisplayOwnerName}" />
-                            <forms:CompactFieldCard Grid.Row="0" Grid.Column="2" LabelText="Email" ValueText="{Binding DisplayEmail}" />
-                            <forms:CompactFieldCard Grid.Row="1" Grid.Column="0" LabelText="Mobile" ValueText="{Binding DisplayMobileNumber}" />
-                            <forms:CompactFieldCard Grid.Row="1" Grid.Column="1" LabelText="GST Number" ValueText="{Binding DisplayGstNumber}" />
-                            <forms:CompactFieldCard Grid.Row="1" Grid.Column="2" LabelText="PAN Number" ValueText="{Binding DisplayPanNumber}" />
-                            <forms:CompactFieldCard Grid.Row="2" Grid.Column="0" LabelText="Address" ValueText="{Binding DisplayAddress}" />
-                            <forms:CompactFieldCard Grid.Row="2" Grid.Column="1" LabelText="City" ValueText="{Binding DisplayCity}" />
-                            <forms:CompactFieldCard Grid.Row="2" Grid.Column="2" LabelText="State" ValueText="{Binding DisplayState}" />
-                            <forms:CompactFieldCard Grid.Row="3" Grid.Column="0" LabelText="Country" ValueText="{Binding DisplayCountry}" />
-                            <forms:CompactFieldCard Grid.Row="3" Grid.Column="1" LabelText="PIN / ZIP" ValueText="{Binding DisplayPinCode}" />
+            <ScrollView IsVisible="{Binding ShowContent}">
+                <VerticalStackLayout Padding="20,16,20,24" Spacing="20">
+                    <VerticalStackLayout Spacing="12" IsVisible="{Binding ShowViewMode}">
+                        <Label Text="Company Details" Style="{StaticResource SectionTitle}" />
+                        <Grid x:Name="ViewFieldsGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
+                            <forms:ReadOnlyFieldCard LabelText="Company Name" ValueText="{Binding DisplayCompanyName}" />
+                            <forms:ReadOnlyFieldCard Grid.Column="1" LabelText="Owner Name" ValueText="{Binding DisplayOwnerName}" />
+                            <forms:ReadOnlyFieldCard Grid.Column="2" LabelText="GST Number" ValueText="{Binding DisplayGstNumber}" />
+                            <forms:ReadOnlyFieldCard Grid.Row="1" LabelText="PAN Number" ValueText="{Binding DisplayPanNumber}" />
+                            <forms:ReadOnlyFieldCard Grid.Row="1" Grid.Column="1" LabelText="Email" ValueText="{Binding DisplayEmail}" />
+                            <forms:ReadOnlyFieldCard Grid.Row="1" Grid.Column="2" LabelText="Mobile Number" ValueText="{Binding DisplayMobileNumber}" />
+                        </Grid>
+                        <Label Text="Address" Style="{StaticResource SectionTitle}" Margin="0,6,0,0" />
+                        <Grid x:Name="ViewAddressGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
+                            <forms:ReadOnlyFieldCard LabelText="Address" ValueText="{Binding DisplayAddress}" IsMultiline="True" />
+                            <forms:ReadOnlyFieldCard Grid.Column="1" LabelText="City" ValueText="{Binding DisplayCity}" />
+                            <forms:ReadOnlyFieldCard Grid.Column="2" LabelText="State" ValueText="{Binding DisplayState}" />
+                            <forms:ReadOnlyFieldCard Grid.Row="1" LabelText="Country" ValueText="{Binding DisplayCountry}" />
+                            <forms:ReadOnlyFieldCard Grid.Row="1" Grid.Column="1" LabelText="PIN / ZIP" ValueText="{Binding DisplayPinCode}" />
                         </Grid>
                     </VerticalStackLayout>
-
-                    <!-- SUBSCRIPTION -->
                     <VerticalStackLayout Spacing="10" IsVisible="{Binding ShowViewMode}">
-                        <Label Text="Subscription Details" FontSize="16" FontAttributes="Bold" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Subscription Details" Style="{StaticResource SectionTitle}" />
                         <Border Style="{StaticResource AppCard}" Padding="16">
-                            <Grid ColumnDefinitions="*,*,*,*"
-                                  RowDefinitions="Auto,Auto"
-                                  ColumnSpacing="16"
-                                  RowSpacing="16">
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
-                                    <Label Text="Plan" Style="{StaticResource InputLabel}" />
-                                    <Label Text="{Binding PlanName}" FontAttributes="Bold" FontSize="14" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
-                                    <Label Text="Price" Style="{StaticResource InputLabel}" />
-                                    <Label Text="{Binding DisplayPrice}" FontAttributes="Bold" FontSize="14" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="2" Spacing="4">
-                                    <Label Text="Validity" Style="{StaticResource InputLabel}" />
-                                    <Label Text="{Binding DisplayValidity}" FontAttributes="Bold" FontSize="14" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="3" Spacing="4">
-                                    <Label Text="Status" Style="{StaticResource InputLabel}" />
-                                    <Label Text="{Binding SubscriptionStatus}" FontAttributes="Bold" FontSize="14" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
-                                    <Label Text="Start Date" Style="{StaticResource InputLabel}" />
-                                    <Label Text="{Binding DisplayStartDate}" FontSize="14" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
-                                    <Label Text="Expiry Date" Style="{StaticResource InputLabel}" />
-                                    <Label Text="{Binding DisplayExpiryDate}" FontSize="14" />
-                                </VerticalStackLayout>
+                            <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
+                                <VerticalStackLayout><Label Text="Plan" Style="{StaticResource InputLabel}"/><Label Text="{Binding PlanName}" FontAttributes="Bold" FontSize="14"/></VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1"><Label Text="Price" Style="{StaticResource InputLabel}"/><Label Text="{Binding DisplayPrice}" FontAttributes="Bold" FontSize="14"/></VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2"><Label Text="Validity" Style="{StaticResource InputLabel}"/><Label Text="{Binding DisplayValidity}" FontAttributes="Bold" FontSize="14"/></VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="3"><Label Text="Status" Style="{StaticResource InputLabel}"/><Label Text="{Binding SubscriptionStatus}" FontAttributes="Bold" FontSize="14"/></VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="1"><Label Text="Start Date" Style="{StaticResource InputLabel}"/><Label Text="{Binding DisplayStartDate}" FontSize="14"/></VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1"><Label Text="Expiry Date" Style="{StaticResource InputLabel}"/><Label Text="{Binding DisplayExpiryDate}" FontSize="14"/></VerticalStackLayout>
                             </Grid>
                         </Border>
                     </VerticalStackLayout>
-
-                    <!-- EDIT MODE -->
-                    <VerticalStackLayout Spacing="16" IsVisible="{Binding ShowEditMode}" HorizontalOptions="Fill">
-                        <Label Text="Edit Company" FontSize="16" FontAttributes="Bold" Style="{StaticResource SectionTitle}" />
-                        <Grid x:Name="EditFieldsGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16" HorizontalOptions="Fill">
+                    <VerticalStackLayout Spacing="16" IsVisible="{Binding ShowEditMode}">
+                        <Label Text="Edit Company" Style="{StaticResource SectionTitle}" />
+                        <Grid x:Name="EditFieldsGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
                             <Border Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="Company Name *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}" BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource SurfaceColorDark}}"><Entry Text="{Binding EditCompanyName, Mode=OneWay}" IsReadOnly="True" IsEnabled="False" MaxLength="200"/></Border></VerticalStackLayout></Border>
                             <Border Grid.Column="1" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="Owner Name *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry Text="{Binding EditOwnerName}" Placeholder="Enter owner name" MaxLength="150" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/></Border><Label Text="{Binding OwnerNameError}" Style="{StaticResource ErrorText}" IsVisible="{Binding HasOwnerNameError}"/></VerticalStackLayout></Border>
                             <Border Grid.Column="2" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="GST Number" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry Text="{Binding EditGstNumber}" Placeholder="Enter GST number" MaxLength="20" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/></Border></VerticalStackLayout></Border>
@@ -104,7 +71,7 @@
                             <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="Mobile Number *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry Text="{Binding EditMobileNumber}" Placeholder="Enter mobile number" Keyboard="Telephone" MaxLength="15" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/></Border><Label Text="{Binding MobileNumberError}" Style="{StaticResource ErrorText}" IsVisible="{Binding HasMobileNumberError}"/></VerticalStackLayout></Border>
                         </Grid>
                         <Label Text="Address" Style="{StaticResource SectionTitle}" />
-                        <Grid x:Name="EditAddressGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16" HorizontalOptions="Fill">
+                        <Grid x:Name="EditAddressGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
                             <Border Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="Address" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}" HeightRequest="88" Padding="14,10"><Editor Text="{Binding EditAddress}" Placeholder="Enter company address" AutoSize="TextChanges" MaxLength="500" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/></Border></VerticalStackLayout></Border>
                             <Border Grid.Column="1" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="City" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry Text="{Binding EditCity}" Placeholder="Enter city" MaxLength="100" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/></Border></VerticalStackLayout></Border>
                             <Border Grid.Column="2" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="State" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry Text="{Binding EditState}" Placeholder="Enter state" MaxLength="100" IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/></Border></VerticalStackLayout></Border>
