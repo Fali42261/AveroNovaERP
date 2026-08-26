@@ -4,62 +4,56 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
     <Grid RowDefinitions="Auto,*,Auto">
-        <Border Grid.Row="0" Padding="20,14"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <Grid ColumnDefinitions="Auto,*">
-                <Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/>
-                <Label Grid.Column="1" x:Name="LblTitle" Text="New Purchase Order" FontSize="18" FontAttributes="Bold" VerticalOptions="Center"
-                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-            </Grid>
+        <Border Grid.Row="0" Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <Grid ColumnDefinitions="Auto,*"><Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/><Label Grid.Column="1" x:Name="LblTitle" Text="New Purchase" FontSize="18" FontAttributes="Bold" VerticalOptions="Center"/></Grid>
         </Border>
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="20,16" Spacing="16">
                 <Border Style="{StaticResource AppCard}">
-                    <VerticalStackLayout Spacing="14">
-                        <Label Text="Purchase Details" FontSize="14" FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                        <BoxView Style="{StaticResource Divider}"/>
-                        <Label Text="Supplier Name *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntrySupplier" Placeholder="Supplier name"/></Border>
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Purchase Details" Style="{StaticResource SectionTitle}"/><BoxView Style="{StaticResource Divider}"/>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="Purchase Date" Style="{StaticResource InputLabel}"/>
-                                <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DatePurchase" Format="dd MMM yyyy"/></Border>
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                <Label Text="Due Date" Style="{StaticResource InputLabel}"/>
-                                <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateDue" Format="dd MMM yyyy"/></Border>
-                            </VerticalStackLayout>
+                            <VerticalStackLayout Spacing="4"><Label Text="Supplier Name *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntrySupplier" Placeholder="Supplier name"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Reference" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRef" Placeholder="PO / supplier reference"/></Border></VerticalStackLayout>
                         </Grid>
-                        <Label Text="Reference" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRef" Placeholder="PO reference number"/></Border>
-                        <Label Text="Payment Method" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}">
-                            <Picker x:Name="PaymentPicker" Title="Select...">
-                                <Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Cheque</x:String></Picker.Items>
-                            </Picker>
-                        </Border>
-                        <Label Text="Notes" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}" HeightRequest="80">
-                            <Editor x:Name="EditorNotes" Placeholder="Additional notes..." AutoSize="TextChanges"/>
-                        </Border>
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="4"><Label Text="Purchase Date" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DatePurchase" Format="dd MMM yyyy"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Due Date" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateDue" Format="dd MMM yyyy"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="2" Spacing="4"><Label Text="Status" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="StatusPicker" Title="Select status"><Picker.Items><x:String>Draft</x:String><x:String>Ordered</x:String><x:String>Received</x:String><x:String>Cancelled</x:String></Picker.Items></Picker></Border></VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="4"><Label Text="Payment Method" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PaymentPicker" Title="Select method"><Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Debit Card</x:String><x:String>Cheque</x:String><x:String>Online</x:String></Picker.Items></Picker></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Paid Amount" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPaid" Text="0" Keyboard="Numeric" TextChanged="OnTotalsChanged"/></Border></VerticalStackLayout>
+                        </Grid>
                     </VerticalStackLayout>
                 </Border>
-                <Border x:Name="ErrorBanner" IsVisible="False"
-                        BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}"
-                        StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10">
-                    <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/>
+
+                <Border Style="{StaticResource AppCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Purchase Items" Style="{StaticResource SectionTitle}"/><BoxView Style="{StaticResource Divider}"/>
+                        <Grid ColumnDefinitions="2*,*,*,*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="4"><Label Text="Product *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="ProductPicker" Title="Select product" SelectedIndexChanged="OnProductChanged"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Qty *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryQuantity" Text="1" Keyboard="Numeric"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="2" Spacing="4"><Label Text="Unit Price *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryUnitPrice" Keyboard="Numeric"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="3" Spacing="4"><Label Text="Tax %" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryItemTax" Text="0" Keyboard="Numeric"/></Border></VerticalStackLayout>
+                            <Button Grid.Column="4" Text="Add" Style="{StaticResource SmallButton}" HeightRequest="40" Padding="16,0" VerticalOptions="End" Clicked="OnAddLineItem"/>
+                        </Grid>
+                        <Label x:Name="LblSelectedProduct" IsVisible="False" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
+                        <Label x:Name="LblNoItems" Text="No products added yet." FontSize="12" HorizontalOptions="Center" Margin="0,12" TextColor="{StaticResource TextSecondary}"/>
+                        <VerticalStackLayout x:Name="LineItemsContainer" Spacing="6"/>
+                    </VerticalStackLayout>
                 </Border>
+
+                <Grid ColumnDefinitions="2*,*" ColumnSpacing="16">
+                    <Border Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="6"><Label Text="Notes" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}" HeightRequest="90"><Editor x:Name="EditorNotes" Placeholder="Additional notes..." AutoSize="TextChanges"/></Border></VerticalStackLayout></Border>
+                    <Border Grid.Column="1" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="Subtotal"/><Label Grid.Column="1" x:Name="LblSubtotal" Text="₹0.00"/></Grid><Grid ColumnDefinitions="*,Auto"><Label Text="Tax"/><Label Grid.Column="1" x:Name="LblTax" Text="₹0.00"/></Grid><BoxView Style="{StaticResource Divider}"/><Grid ColumnDefinitions="*,Auto"><Label Text="Grand Total" FontAttributes="Bold"/><Label Grid.Column="1" x:Name="LblGrandTotal" Text="₹0.00" FontAttributes="Bold"/></Grid><Grid ColumnDefinitions="*,Auto"><Label Text="Due" FontAttributes="Bold"/><Label Grid.Column="1" x:Name="LblDue" Text="₹0.00" FontAttributes="Bold"/></Grid></VerticalStackLayout></Border>
+                </Grid>
+
+                <Border x:Name="ErrorBanner" IsVisible="False" BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10"><Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/></Border>
             </VerticalStackLayout>
         </ScrollView>
-        <Border Grid.Row="2" Padding="20,12"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                <Button Text="Cancel" Style="{StaticResource SecondaryButton}" Clicked="OnBackClicked"/>
-                <Button Grid.Column="1" Text="Save Purchase" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
-            </Grid>
+        <Border Grid.Row="2" Padding="20,12" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <HorizontalStackLayout HorizontalOptions="End" Spacing="10"><Button Text="Cancel" Style="{StaticResource SmallSecondaryButton}" HeightRequest="40" Padding="16,0" Clicked="OnBackClicked"/><Button Text="Save Purchase" Style="{StaticResource SmallButton}" HeightRequest="40" Padding="18,0" Clicked="OnSaveClicked"/></HorizontalStackLayout>
         </Border>
     </Grid>
 </ContentPage>
