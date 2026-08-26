@@ -15,6 +15,7 @@ public static class NativeInputChrome
         EditorHandler.Mapper.AppendToMapping("AveroNovaInputFocus", (handler, view) => AttachFocus(view as VisualElement));
         SearchBarHandler.Mapper.AppendToMapping("AveroNovaInputFocus", (handler, view) => AttachFocus(view as VisualElement));
         PickerHandler.Mapper.AppendToMapping("AveroNovaInputFocus", (handler, view) => AttachFocus(view as VisualElement));
+        GlobalPointerCursor.Register();
     }
 
     private static void AttachFocus(VisualElement? element)
