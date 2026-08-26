@@ -12,6 +12,7 @@ public partial class ReportsPage : ContentPage
     public ReportsPage(IDbContextFactory<AppDbContext> dbFactory, ICompanyService company)
     {
         InitializeComponent(); _dbFactory = dbFactory; _company = company;
+        Loaded += async (_, _) => await LoadAsync();
     }
 
     public Task ReloadAsync() => LoadAsync();
