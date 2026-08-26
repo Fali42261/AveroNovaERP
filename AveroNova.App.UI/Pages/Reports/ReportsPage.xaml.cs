@@ -11,8 +11,7 @@ public partial class ReportsPage : ContentPage
 
     public ReportsPage(IDbContextFactory<AppDbContext> dbFactory, ICompanyService company)
     {
-        InitializeComponent(); _dbFactory = dbFactory; _company = company;
-        Root.Loaded += async (_, _) => await LoadAsync();
+        InitializeComponent(); _dbFactory = dbFactory; _company = company; Root.Loaded += async (_, _) => await LoadAsync();
     }
 
     public Task ReloadAsync() => LoadAsync();
@@ -24,26 +23,25 @@ public partial class ReportsPage : ContentPage
     {
         try
         {
-            var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
-            if (companyId == Guid.Empty) { ResetValues(); return; }
+            var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty; if (companyId == Guid.Empty) { ResetValues(); return; }
             await using var db = await _dbFactory.CreateDbContextAsync();
             var invoices = await db.Invoices.AsNoTracking().Include(x => x.Items).Where(x => x.CompanyId == companyId && !x.IsDeleted && x.Status != (int)AveroNova.App.UI.Models.InvoiceStatus.Cancelled).ToListAsync();
             var purchases = await db.Purchases.AsNoTracking().Include(x => x.Items).Where(x => x.CompanyId == companyId && !x.IsDeleted && x.Status != (int)AveroNova.App.UI.Models.PurchaseStatus.Cancelled).ToListAsync();
-            var revenue = invoices.Sum(RevenueFor);
-            var purchaseTotal = purchases.Sum(x => x.Items.Where(i => !i.IsDeleted).Sum(i => i.UnitPrice * i.Quantity * (1m + i.TaxPct / 100m)));
-            var outstanding = invoices.Sum(x => Math.Max(0m, RevenueFor(x) - x.PaidAmount));
+            var revenue = invoices.Sum(InvoiceTotal); var purchaseTotal = purchases.Sum(PurchaseTotal); var outstanding = invoices.Sum(x => Math.Max(0m, InvoiceTotal(x) - x.PaidAmount));
             RevenueValue.Text = FormatMoney(revenue); PurchaseValue.Text = FormatMoney(purchaseTotal); ProfitValue.Text = FormatMoney(revenue - purchaseTotal); OutstandingValue.Text = FormatMoney(outstanding);
-            ReportsList.Children.Clear();
-            AddReportCard("Sales Report", $"{invoices.Count} invoice(s) · {FormatMoney(revenue)} revenue");
-            AddReportCard("Purchase Report", $"{purchases.Count} purchase order(s) · {FormatMoney(purchaseTotal)} purchases");
-            AddReportCard("Receivables Report", $"{FormatMoney(outstanding)} currently outstanding");
-            AddReportCard("Inventory / Stock Movement", "Inventory → Stock History shows sale, purchase and adjustment movements.");
+            ReportsList.Children.Clear(); AddReportCard("Sales Report", $"{invoices.Count} invoice(s) · {FormatMoney(revenue)} revenue"); AddReportCard("Purchase Report", $"{purchases.Count} purchase order(s) · {FormatMoney(purchaseTotal)} purchases");
+            AddReportCard("Receivables Report", $"{FormatMoney(outstanding)} currently outstanding"); AddReportCard("Inventory / Stock Movement", "Inventory → Stock History shows sale, purchase and adjustment movements.");
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AveroNova] Reports load failed: {ex}"); ResetValues(); }
     }
 
-    private static decimal RevenueFor(AveroNova.Domain.Entities.Invoice invoice)
-        => invoice.Items.Where(i => !i.IsDeleted).Sum(i => i.UnitPrice * i.Quantity * (1m - i.DiscountPct / 100m) * (1m + i.TaxPct / 100m));
+    private static decimal InvoiceTotal(AveroNova.Domain.Entities.Invoice invoice)
+    {
+        var active = invoice.Items.Where(i => !i.IsDeleted).ToList(); var subtotal = active.Sum(i => i.UnitPrice * i.Quantity * (1m - i.DiscountPct / 100m));
+        var lineTax = active.Sum(i => i.UnitPrice * i.Quantity * (1m - i.DiscountPct / 100m) * i.TaxPct / 100m);
+        return subtotal + lineTax + subtotal * invoice.TaxPct / 100m - subtotal * invoice.DiscountPct / 100m;
+    }
+    private static decimal PurchaseTotal(AveroNova.Domain.Entities.Purchase purchase) => purchase.Items.Where(i => !i.IsDeleted).Sum(i => i.UnitPrice * i.Quantity * (1m + i.TaxPct / 100m));
 
     private void AddReportCard(string title, string description)
     {
@@ -55,6 +53,5 @@ public partial class ReportsPage : ContentPage
         RevenueValue.Text = "₹0.00"; PurchaseValue.Text = "₹0.00"; ProfitValue.Text = "₹0.00"; OutstandingValue.Text = "₹0.00"; ReportsList.Children.Clear();
         AddReportCard("Sales Report", "No local sales data available."); AddReportCard("Purchase Report", "No local purchase data available."); AddReportCard("Receivables Report", "No outstanding customer balance.");
     }
-
     private static string FormatMoney(decimal amount) => $"₹{amount:N2}";
 }
