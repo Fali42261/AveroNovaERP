@@ -8,9 +8,10 @@ public partial class PurchasesListPage : ContentPage
 {
     private readonly IPurchaseService _svc;
     private readonly ICompanyService _company;
+    private readonly IProductService _products;
 
-    public PurchasesListPage(IPurchaseService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public PurchasesListPage(IPurchaseService svc, ICompanyService company, IProductService products)
+    { InitializeComponent(); _svc = svc; _company = company; _products = products; }
 
     public Task ReloadAsync() => LoadAsync();
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
@@ -49,31 +50,22 @@ public partial class PurchasesListPage : ContentPage
 
     private async Task OpenFormAsync(Guid? id = null)
     {
-        var page = new PurchaseFormPage(_svc, _company) { CloseRequested = CloseActionOverlay };
-        await page.LoadAsync(id);
-        ShowActionPage(page);
+        var page = new PurchaseFormPage(_svc, _company, _products) { CloseRequested = CloseActionOverlay };
+        await page.LoadAsync(id); ShowActionPage(page);
     }
 
     private async Task OpenViewAsync(Guid id)
     {
         var page = new PurchaseViewPage(_svc) { CloseRequested = CloseActionOverlay, EditRequested = editId => OpenFormAsync(editId) };
-        await page.LoadAsync(id);
-        ShowActionPage(page);
+        await page.LoadAsync(id); ShowActionPage(page);
     }
 
     private void ShowActionPage(ContentPage page)
     {
-        var content = page.Content; if (content == null) return; page.Content = null;
-        ActionContent.Content = content; ActionOverlay.IsVisible = true;
+        var content = page.Content; if (content == null) return; page.Content = null; ActionContent.Content = content; ActionOverlay.IsVisible = true;
     }
 
-    private void CloseActionOverlay()
-    {
-        ActionContent.Content = null; ActionOverlay.IsVisible = false; _ = LoadAsync();
-    }
-
+    private void CloseActionOverlay() { ActionContent.Content = null; ActionOverlay.IsVisible = false; _ = LoadAsync(); }
     private async void OnNewClicked(object s, EventArgs e) => await OpenFormAsync();
-
-    private static Style? TryStyle(string key)
-        => Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
+    private static Style? TryStyle(string key) => Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
 }
