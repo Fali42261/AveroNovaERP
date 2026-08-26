@@ -5,43 +5,38 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
-
-    <!--
-    OFFLINE: Invoice creation is possible without internet.
-             Invoices stored locally and marked PendingSync.
-    ONLINE:  Invoices synchronized with server API.
-    TODO: Implement during backend phase.
-    -->
-
-    <Grid RowDefinitions="Auto,Auto,*">
-        <Border Grid.Row="0" Padding="20,14"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <Grid ColumnDefinitions="*,Auto">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="Invoices" FontSize="20" FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                    <Label x:Name="LblCount" Text="0 invoices" FontSize="12"
-                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
-                </VerticalStackLayout>
-                <Button Grid.Column="1" Text="+ New Invoice" Style="{StaticResource PrimaryButton}"
-                        HeightRequest="40" FontSize="13" Clicked="OnNewClicked"/>
-            </Grid>
-        </Border>
-
-        <!-- Filter tabs -->
-        <Border Grid.Row="1" Padding="16,8"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                <HorizontalStackLayout Spacing="8" x:Name="FilterTabs"/>
-            </ScrollView>
-        </Border>
-
-        <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing">
-            <ScrollView>
-                <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="InvoiceList"/>
-            </ScrollView>
-        </RefreshView>
+    <Grid x:Name="Root">
+        <Grid x:Name="ListPanel" RowDefinitions="Auto,Auto,*">
+            <Border Grid.Row="0" Padding="20,14"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                    Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Invoices" FontSize="20" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                        <Label x:Name="LblCount" Text="0 invoices" FontSize="12"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="+ New Invoice" Style="{StaticResource PrimaryButton}"
+                            HeightRequest="40" Padding="16,0" FontSize="13" Clicked="OnNewClicked"/>
+                </Grid>
+            </Border>
+            <Border Grid.Row="1" Padding="16,8"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                    Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="8" x:Name="FilterTabs"/>
+                </ScrollView>
+            </Border>
+            <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing">
+                <ScrollView>
+                    <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="InvoiceList"/>
+                </ScrollView>
+            </RefreshView>
+        </Grid>
+        <Grid x:Name="ActionOverlay" IsVisible="False" ZIndex="50"
+              BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+            <ContentView x:Name="ActionContent" HorizontalOptions="Fill" VerticalOptions="Fill"/>
+        </Grid>
     </Grid>
 </ContentPage>
