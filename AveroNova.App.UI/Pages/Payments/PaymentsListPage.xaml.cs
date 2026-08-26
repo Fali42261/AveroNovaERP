@@ -20,8 +20,7 @@ public partial class PaymentsListPage : ContentPage
 
     private async Task LoadAsync()
     {
-        var items = await _svc.GetAllAsync(_company.CurrentCompany?.LocalId ?? Guid.Empty);
-        LblCount.Text = $"{items.Count} payment{(items.Count == 1 ? "" : "s")}"; List.Children.Clear();
+        var items = await _svc.GetAllAsync(_company.CurrentCompany?.LocalId ?? Guid.Empty); LblCount.Text = $"{items.Count} payment{(items.Count == 1 ? "" : "s")}"; List.Children.Clear();
         foreach (var p in items.OrderByDescending(i => i.PaymentDate)) List.Children.Add(BuildRow(p));
         if (items.Count == 0) List.Children.Add(new Label { Text = "No payments found.", FontSize = 14, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center, Margin = new Thickness(0, 40) });
     }
@@ -39,13 +38,12 @@ public partial class PaymentsListPage : ContentPage
 
     private async Task OpenFormAsync(Guid? id = null)
     {
-        var page = new PaymentFormPage(_svc, _company, _billing, _purchases) { CloseRequested = CloseActionOverlay };
-        await page.LoadAsync(id); ShowActionPage(page);
+        var page = new PaymentFormPage(_svc, _company, _billing, _purchases) { CloseRequested = CloseActionOverlay }; await page.LoadAsync(id); ShowActionPage(page);
     }
 
     private async Task OpenViewAsync(Guid id)
     {
-        var page = new PaymentViewPage(_svc) { CloseRequested = CloseActionOverlay }; await page.LoadAsync(id); ShowActionPage(page);
+        var page = new PaymentViewPage(_svc) { CloseRequested = CloseActionOverlay, EditRequested = editId => OpenFormAsync(editId) }; await page.LoadAsync(id); ShowActionPage(page);
     }
 
     private void ShowActionPage(ContentPage page) { var content = page.Content; if (content == null) return; page.Content = null; ActionContent.Content = content; ActionOverlay.IsVisible = true; }
