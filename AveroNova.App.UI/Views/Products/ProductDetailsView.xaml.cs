@@ -5,8 +5,6 @@ namespace AveroNova.App.UI.Views.Products;
 
 public partial class ProductDetailsView : ContentView
 {
-    private int _appliedColumns;
-
     public ProductDetailsView()
     {
         InitializeComponent();
@@ -27,45 +25,33 @@ public partial class ProductDetailsView : ContentView
             vm.BackCommand.Execute(null);
     }
 
-    private void OnRootSizeChanged(object? sender, EventArgs e)
-        => ApplyResponsiveLayout();
+    private void OnRootSizeChanged(object? sender, EventArgs e) => ApplyResponsiveLayout();
 
     private void ApplyResponsiveLayout()
     {
-        if (Root.Width <= 0)
-            return;
-
+        if (Root.Width <= 0) return;
         var size = ResponsiveBreakpoints.FromWidth(Root.Width);
-        var columns = size switch
-        {
-            ScreenSize.Compact => 1,
-            ScreenSize.Medium => 2,
-            _ => 3
-        };
-        if (columns == _appliedColumns)
-            return;
+        var columns = size == ScreenSize.Compact ? 1 : size == ScreenSize.Medium ? 2 : 3;
+        ApplyGrid(ProductFieldsGrid, columns);
+        ApplyGrid(PricingFieldsGrid, columns);
+        ApplyGrid(InventoryFieldsGrid, columns);
+        if (BindingContext is ProductViewViewModel vm) vm.CardColumns = columns;
+    }
 
-        _appliedColumns = columns;
-        if (BindingContext is ProductViewViewModel vm)
-            vm.CardColumns = columns;
-
-        var columnDefs = new ColumnDefinitionCollection();
-        for (var i = 0; i < columns; i++)
-            columnDefs.Add(new ColumnDefinition(GridLength.Star));
-        CardsGrid.ColumnDefinitions = columnDefs;
-
-        var cards = new View[] { ProductCard, PricingCard, InventoryCard };
-        var rowsNeeded = Math.Max(1, (int)Math.Ceiling(cards.Length / (double)columns));
+    private static void ApplyGrid(Grid grid, int columns)
+    {
+        var children = grid.Children.ToArray();
+        var defs = new ColumnDefinitionCollection();
+        for (var i = 0; i < columns; i++) defs.Add(new ColumnDefinition(GridLength.Star));
+        grid.ColumnDefinitions = defs;
         var rowDefs = new RowDefinitionCollection();
-        for (var i = 0; i < rowsNeeded; i++)
-            rowDefs.Add(new RowDefinition(GridLength.Auto));
-        CardsGrid.RowDefinitions = rowDefs;
-        CardsGrid.ColumnSpacing = columns == 1 ? 0 : 16;
-
-        for (var i = 0; i < cards.Length; i++)
+        var rows = Math.Max(1, (int)Math.Ceiling(children.Length / (double)columns));
+        for (var i = 0; i < rows; i++) rowDefs.Add(new RowDefinition(GridLength.Auto));
+        grid.RowDefinitions = rowDefs;
+        for (var i = 0; i < children.Length; i++)
         {
-            Grid.SetColumn(cards[i], i % columns);
-            Grid.SetRow(cards[i], i / columns);
+            Grid.SetColumn((BindableObject)children[i], i % columns);
+            Grid.SetRow((BindableObject)children[i], i / columns);
         }
     }
 }
