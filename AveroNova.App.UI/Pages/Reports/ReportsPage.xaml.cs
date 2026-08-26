@@ -12,7 +12,7 @@ public partial class ReportsPage : ContentPage
     public ReportsPage(IDbContextFactory<AppDbContext> dbFactory, ICompanyService company)
     {
         InitializeComponent(); _dbFactory = dbFactory; _company = company;
-        Loaded += async (_, _) => await LoadAsync();
+        Root.Loaded += async (_, _) => await LoadAsync();
     }
 
     public Task ReloadAsync() => LoadAsync();
@@ -27,9 +27,9 @@ public partial class ReportsPage : ContentPage
             var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
             if (companyId == Guid.Empty) { ResetValues(); return; }
             await using var db = await _dbFactory.CreateDbContextAsync();
-            var invoices = await db.Invoices.AsNoTracking().Include(x => x.Items).Where(x => x.CompanyId == companyId && !x.IsDeleted).ToListAsync();
-            var purchases = await db.Purchases.AsNoTracking().Include(x => x.Items).Where(x => x.CompanyId == companyId && !x.IsDeleted).ToListAsync();
-            var revenue = invoices.Sum(x => x.Items.Where(i => !i.IsDeleted).Sum(i => i.UnitPrice * i.Quantity * (1m - i.DiscountPct / 100m) * (1m + i.TaxPct / 100m)));
+            var invoices = await db.Invoices.AsNoTracking().Include(x => x.Items).Where(x => x.CompanyId == companyId && !x.IsDeleted && x.Status != (int)AveroNova.App.UI.Models.InvoiceStatus.Cancelled).ToListAsync();
+            var purchases = await db.Purchases.AsNoTracking().Include(x => x.Items).Where(x => x.CompanyId == companyId && !x.IsDeleted && x.Status != (int)AveroNova.App.UI.Models.PurchaseStatus.Cancelled).ToListAsync();
+            var revenue = invoices.Sum(RevenueFor);
             var purchaseTotal = purchases.Sum(x => x.Items.Where(i => !i.IsDeleted).Sum(i => i.UnitPrice * i.Quantity * (1m + i.TaxPct / 100m)));
             var outstanding = invoices.Sum(x => Math.Max(0m, RevenueFor(x) - x.PaidAmount));
             RevenueValue.Text = FormatMoney(revenue); PurchaseValue.Text = FormatMoney(purchaseTotal); ProfitValue.Text = FormatMoney(revenue - purchaseTotal); OutstandingValue.Text = FormatMoney(outstanding);
@@ -37,7 +37,7 @@ public partial class ReportsPage : ContentPage
             AddReportCard("Sales Report", $"{invoices.Count} invoice(s) · {FormatMoney(revenue)} revenue");
             AddReportCard("Purchase Report", $"{purchases.Count} purchase order(s) · {FormatMoney(purchaseTotal)} purchases");
             AddReportCard("Receivables Report", $"{FormatMoney(outstanding)} currently outstanding");
-            AddReportCard("Inventory / Stock Movement", "Use Inventory → Stock History for item-level movement.");
+            AddReportCard("Inventory / Stock Movement", "Inventory → Stock History shows sale, purchase and adjustment movements.");
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AveroNova] Reports load failed: {ex}"); ResetValues(); }
     }
@@ -47,11 +47,7 @@ public partial class ReportsPage : ContentPage
 
     private void AddReportCard(string title, string description)
     {
-        ReportsList.Children.Add(new Border
-        {
-            Style = (Style)Resources["AppCard"], Padding = new Thickness(16),
-            Content = new VerticalStackLayout { Spacing = 4, Children = { new Label { Text = title, FontSize = 14, FontAttributes = FontAttributes.Bold }, new Label { Text = description, FontSize = 12, TextColor = Color.FromArgb("#64748B") } } }
-        });
+        ReportsList.Children.Add(new Border { Style = (Style)Resources["AppCard"], Padding = new Thickness(16), Content = new VerticalStackLayout { Spacing = 4, Children = { new Label { Text = title, FontSize = 14, FontAttributes = FontAttributes.Bold }, new Label { Text = description, FontSize = 12, TextColor = Color.FromArgb("#64748B") } } } });
     }
 
     private void ResetValues()
