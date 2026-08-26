@@ -12,12 +12,12 @@
                     Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Invoices" FontSize="20" FontAttributes="Bold"
+                        <Label Text="Sales" FontSize="20" FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                        <Label x:Name="LblCount" Text="0 invoices" FontSize="12"
+                        <Label x:Name="LblCount" Text="0 sales" FontSize="12"
                                TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
                     </VerticalStackLayout>
-                    <Button Grid.Column="1" Text="+ New Invoice" Style="{StaticResource PrimaryButton}"
+                    <Button Grid.Column="1" Text="+ New Sale" Style="{StaticResource PrimaryButton}"
                             HeightRequest="40" Padding="16,0" FontSize="13" Clicked="OnNewClicked"/>
                 </Grid>
             </Border>
