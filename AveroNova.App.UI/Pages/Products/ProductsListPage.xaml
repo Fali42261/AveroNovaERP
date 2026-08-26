@@ -1,56 +1,40 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage x:Class="AveroNova.App.UI.Pages.Products.ProductsListPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:products="clr-namespace:AveroNova.App.UI.Views.Products" xmlns:state="clr-namespace:AveroNova.App.UI.Controls.State" xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels" x:DataType="vm:ProductsViewModel" Shell.NavBarIsVisible="False" BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
     <Grid x:Name="Root">
-        <Grid x:Name="ListPanel" RowDefinitions="Auto,Auto,*,Auto">
+        <Grid x:Name="ListPanel" RowDefinitions="Auto,*,Auto">
             <Border Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-                <Grid x:Name="PageHeader" ColumnDefinitions="180,*" ColumnSpacing="20" RowSpacing="8">
-                    <VerticalStackLayout x:Name="HeaderTitle" Spacing="2" VerticalOptions="Center" HorizontalOptions="Fill">
-                        <Label Text="Products" FontSize="20" FontAttributes="Bold" LineBreakMode="TailTruncation" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                        <Label Text="Product management" FontSize="12" LineBreakMode="TailTruncation" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-                    </VerticalStackLayout>
-                    <Grid Grid.Column="1" ColumnDefinitions="*,150,Auto" ColumnSpacing="10" VerticalOptions="Center" HorizontalOptions="Fill">
-                        <Border x:Name="SearchHost" Grid.Column="0" Style="{StaticResource InputContainer}" WidthRequest="420" MinimumWidthRequest="220" MaximumWidthRequest="480" HeightRequest="42" Padding="12,0" VerticalOptions="Center" HorizontalOptions="Start">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" HeightRequest="42" VerticalOptions="Center" IsClippedToBounds="True">
-                                <Label Text="{StaticResource IconSearch}" Style="{StaticResource AuthFieldIcon}" FontSize="14" WidthRequest="18" VerticalOptions="Center" VerticalTextAlignment="Center" />
-                                <Entry Grid.Column="1" Placeholder="Search Product" Text="{Binding SearchText, Mode=TwoWay}" BackgroundColor="Transparent" FontSize="13" HeightRequest="42" MinimumHeightRequest="40" VerticalOptions="Fill" VerticalTextAlignment="Center" IsEnabled="{Binding IsDeleting, Converter={StaticResource InverseBoolConverter}}" SemanticProperties.Description="Search products by name, SKU, or barcode" />
-                            </Grid>
-                        </Border>
-                        <Border x:Name="StatusHost" Grid.Column="1" Style="{StaticResource InputContainer}" WidthRequest="150" HeightRequest="42" Padding="12,0" VerticalOptions="Center">
-                            <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnStatusFieldTapped" /></Border.GestureRecognizers>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" HeightRequest="42" VerticalOptions="Center" InputTransparent="True" IsClippedToBounds="True">
-                                <Label Text="{Binding SelectedStatusFilter}" FontSize="13" MaxLines="1" LineBreakMode="TailTruncation" VerticalOptions="Center" VerticalTextAlignment="Center" HorizontalOptions="Fill" InputTransparent="True" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" SemanticProperties.Description="Product status filter" />
-                                <Label Grid.Column="1" Text="{StaticResource IconExpand}" FontSize="10" WidthRequest="14" HorizontalOptions="End" HorizontalTextAlignment="Center" VerticalOptions="Center" VerticalTextAlignment="Center" InputTransparent="True" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-                            </Grid>
-                        </Border>
-                        <Button Grid.Column="2" Text="+ Add Product" Style="{StaticResource PrimaryButton}" HeightRequest="42" MinimumHeightRequest="42" MaximumHeightRequest="44" Padding="16,0" FontSize="13" HorizontalOptions="End" VerticalOptions="Center" Command="{Binding AddCommand}" IsEnabled="{Binding CanPressAdd}" IsVisible="{Binding ShowAddButton}" />
-                    </Grid>
+                <Grid x:Name="PageHeader" ColumnDefinitions="*,150,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                    <Border x:Name="SearchHost" Style="{StaticResource InputContainer}" MaximumWidthRequest="520" HeightRequest="42" Padding="12,0" VerticalOptions="Center" HorizontalOptions="Fill">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" HeightRequest="42" VerticalOptions="Center" IsClippedToBounds="True">
+                            <Label Text="{StaticResource IconSearch}" Style="{StaticResource AuthFieldIcon}" FontSize="14" WidthRequest="18" VerticalOptions="Center" VerticalTextAlignment="Center" />
+                            <Entry Grid.Column="1" Placeholder="Search Product" Text="{Binding SearchText, Mode=TwoWay}" BackgroundColor="Transparent" FontSize="13" HeightRequest="42" VerticalOptions="Fill" VerticalTextAlignment="Center" IsEnabled="{Binding IsDeleting, Converter={StaticResource InverseBoolConverter}}" />
+                        </Grid>
+                    </Border>
+                    <Border x:Name="StatusHost" Grid.Column="1" Style="{StaticResource InputContainer}" WidthRequest="150" HeightRequest="42" Padding="12,0" VerticalOptions="Center">
+                        <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnStatusFieldTapped" /></Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" HeightRequest="42" VerticalOptions="Center" InputTransparent="True" IsClippedToBounds="True">
+                            <Label Text="{Binding SelectedStatusFilter}" FontSize="13" MaxLines="1" LineBreakMode="TailTruncation" VerticalOptions="Center" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="{StaticResource IconExpand}" FontSize="10" WidthRequest="14" HorizontalTextAlignment="Center" VerticalOptions="Center" VerticalTextAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <Button Grid.Column="2" Text="+ Add Product" Style="{StaticResource PrimaryButton}" HeightRequest="42" Padding="16,0" FontSize="13" Command="{Binding AddCommand}" IsEnabled="{Binding CanPressAdd}" IsVisible="{Binding ShowAddButton}" />
                 </Grid>
             </Border>
-            <Grid Grid.Row="1" />
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="1">
                 <state:LoadingView IsVisible="{Binding ShowLoading}" Message="Loading products..." />
                 <state:ErrorView x:Name="ErrorState" IsVisible="{Binding ShowError}" Title="Unable to load products." Message="Please try again." />
                 <state:EmptyView x:Name="EmptyState" IsVisible="{Binding ShowEmpty}" Title="{Binding EmptyTitle}" Subtitle="{Binding EmptySubtitle}" ActionLabel="{Binding EmptyActionLabel}" />
                 <RefreshView IsVisible="{Binding ShowList}" Refreshing="OnRefreshing"><ScrollView><VerticalStackLayout x:Name="ListHost" Padding="16,12" Spacing="10" /></ScrollView></RefreshView>
             </Grid>
-            <Border Grid.Row="3" Padding="16,12" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1" IsVisible="{Binding ShowPagination}">
-                <VerticalStackLayout Spacing="8" HorizontalOptions="Fill">
-                    <Label Text="{Binding ShowingLabel}" FontSize="12" HorizontalOptions="Center" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-                    <HorizontalStackLayout Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
-                        <Button Text="Previous" Style="{StaticResource LightSecondaryButton}" HeightRequest="42" MinimumHeightRequest="40" Padding="16,0" FontSize="13" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanGoPrevious}" />
-                        <Border HeightRequest="42" MinimumHeightRequest="40" MinimumWidthRequest="72" Padding="16,0" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1" StrokeShape="RoundRectangle 10" BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource CardBackgroundDark}}" VerticalOptions="Center"><Label Text="{Binding RangeLabel}" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" /></Border>
-                        <Button Text="Next" Style="{StaticResource LightSecondaryButton}" HeightRequest="42" MinimumHeightRequest="40" Padding="16,0" FontSize="13" Command="{Binding NextCommand}" IsEnabled="{Binding CanGoNext}" />
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
+            <Border Grid.Row="2" Padding="16,12" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1" IsVisible="{Binding ShowPagination}">
+                <VerticalStackLayout Spacing="8"><Label Text="{Binding ShowingLabel}" FontSize="12" HorizontalOptions="Center"/><HorizontalStackLayout Spacing="8" HorizontalOptions="Center"><Button Text="Previous" Style="{StaticResource LightSecondaryButton}" HeightRequest="42" Padding="16,0" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanGoPrevious}"/><Border HeightRequest="42" MinimumWidthRequest="72" Padding="16,0" Stroke="{StaticResource BorderColor}" StrokeThickness="1" StrokeShape="RoundRectangle 10"><Label Text="{Binding RangeLabel}" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/></Border><Button Text="Next" Style="{StaticResource LightSecondaryButton}" HeightRequest="42" Padding="16,0" Command="{Binding NextCommand}" IsEnabled="{Binding CanGoNext}"/></HorizontalStackLayout></VerticalStackLayout>
             </Border>
         </Grid>
         <products:ProductFormView x:Name="FormView" IsVisible="False" />
         <products:ProductDetailsView x:Name="DetailsView" IsVisible="False" />
         <Grid x:Name="StatusDropdownLayer" IsVisible="False" ZIndex="20">
-            <BoxView Color="#01000000" HorizontalOptions="Fill" VerticalOptions="Fill"><BoxView.GestureRecognizers><TapGestureRecognizer Tapped="OnStatusDropdownDismissed" /></BoxView.GestureRecognizers></BoxView>
-            <Border x:Name="StatusDropdown" HorizontalOptions="Start" VerticalOptions="Start" Padding="6" StrokeThickness="1" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeShape="RoundRectangle 10" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}">
-                <Border.Shadow><Shadow Brush="#111827" Opacity="0.16" Radius="12" Offset="0,4" /></Border.Shadow><VerticalStackLayout x:Name="StatusDropdownItems" Spacing="2" />
-            </Border>
+            <BoxView Color="#01000000"><BoxView.GestureRecognizers><TapGestureRecognizer Tapped="OnStatusDropdownDismissed" /></BoxView.GestureRecognizers></BoxView>
+            <Border x:Name="StatusDropdown" HorizontalOptions="Start" VerticalOptions="Start" Padding="6" StrokeThickness="1" Stroke="{StaticResource BorderColor}" StrokeShape="RoundRectangle 10" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"><VerticalStackLayout x:Name="StatusDropdownItems" Spacing="2" /></Border>
         </Grid>
     </Grid>
 </ContentPage>
