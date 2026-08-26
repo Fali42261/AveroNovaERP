@@ -4,14 +4,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
-    <Grid RowDefinitions="Auto,*">
+    <Grid x:Name="Root" RowDefinitions="Auto,*">
         <Border Grid.Row="0" Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
             <Grid ColumnDefinitions="*,Auto">
                 <VerticalStackLayout Spacing="2">
                     <Label Text="Reports" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
                     <Label Text="Financial &amp; Operational Reports" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                 </VerticalStackLayout>
-                <Button Grid.Column="1" Text="Refresh" Style="{StaticResource LightSecondaryButton}" Clicked="OnRefreshClicked" />
+                <Button Grid.Column="1" Text="Refresh" Style="{StaticResource LightSecondaryButton}" HeightRequest="40" Padding="16,0" Clicked="OnRefreshClicked" />
             </Grid>
         </Border>
         <RefreshView Grid.Row="1" x:Name="Refresher" Refreshing="OnRefreshing">
