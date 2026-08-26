@@ -19,10 +19,7 @@ public partial class PaymentFormPage : ContentPage
     public PaymentFormPage(IPaymentService svc, ICompanyService company, IBillingService billing, IPurchaseService purchases)
     { InitializeComponent(); _svc = svc; _company = company; _billing = billing; _purchases = purchases; }
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing(); Guid? id = !string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var parsed) ? parsed : null; await LoadAsync(id);
-    }
+    protected override async void OnAppearing() { base.OnAppearing(); Guid? id = !string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var parsed) ? parsed : null; await LoadAsync(id); }
 
     public async Task LoadAsync(Guid? id = null)
     {
@@ -30,23 +27,22 @@ public partial class PaymentFormPage : ContentPage
         var cid = _company.CurrentCompany?.LocalId ?? Guid.Empty; _invoices.Clear(); _purchaseDocs.Clear();
         if (cid != Guid.Empty)
         {
-            _invoices.AddRange((await _billing.GetAllAsync(cid)).Where(x => x.Status != InvoiceStatus.Cancelled && (x.DueAmount > 0 || x.LocalId == _editing?.InvoiceId)));
+            _invoices.AddRange((await _billing.GetAllAsync(cid)).Where(x => x.Status != InvoiceStatus.Cancelled && x.Status != InvoiceStatus.Draft && (x.DueAmount > 0 || x.LocalId == _editing?.InvoiceId)));
             _purchaseDocs.AddRange((await _purchases.GetAllAsync(cid)).Where(x => x.Status != PurchaseStatus.Cancelled && (x.DueAmount > 0 || x.LocalId == _editing?.InvoiceId)));
         }
         TypePicker.SelectedIndex = _editing?.IsSupplier == true ? 1 : 0; MethodPicker.SelectedIndex = _editing == null ? 0 : MethodIndex(_editing.Method);
-        DatePayment.Date = _editing?.PaymentDate ?? DateTime.Today; EntryRef.Text = _editing?.Reference ?? string.Empty; EditorNotes.Text = _editing?.Notes ?? string.Empty;
-        PopulateDocuments();
+        DatePayment.Date = _editing?.PaymentDate ?? DateTime.Today; EntryRef.Text = _editing?.Reference ?? string.Empty; EditorNotes.Text = _editing?.Notes ?? string.Empty; PopulateDocuments();
         if (_editing != null && _editing.InvoiceId.HasValue)
         {
             var index = _editing.IsSupplier ? _purchaseDocs.FindIndex(x => x.LocalId == _editing.InvoiceId.Value) : _invoices.FindIndex(x => x.LocalId == _editing.InvoiceId.Value);
-            DocumentPicker.SelectedIndex = index;
-            EntryAmount.Text = _editing.Amount.ToString("0.00");
-            UpdateSelectedDocument(addEditingAmount: true);
+            DocumentPicker.SelectedIndex = index; EntryAmount.Text = _editing.Amount.ToString("0.00"); UpdateSelectedDocument(true);
         }
-        else
-        {
-            DocumentPicker.SelectedIndex = -1; EntryParty.Text = string.Empty; EntryAmount.Text = string.Empty; LblOutstanding.Text = "₹0.00";
-        }
+        else { DocumentPicker.SelectedIndex = -1; EntryParty.Text = string.Empty; EntryAmount.Text = string.Empty; LblOutstanding.Text = "₹0.00"; }
+    }
+
+    public async Task LoadForInvoiceAsync(Guid invoiceId)
+    {
+        await LoadAsync(); TypePicker.SelectedIndex = 0; PopulateDocuments(); DocumentPicker.SelectedIndex = _invoices.FindIndex(x => x.LocalId == invoiceId); UpdateSelectedDocument(false);
     }
 
     private void OnTypeChanged(object? sender, EventArgs e)
@@ -63,7 +59,6 @@ public partial class PaymentFormPage : ContentPage
     }
 
     private void OnDocumentChanged(object? sender, EventArgs e) => UpdateSelectedDocument(false);
-
     private void UpdateSelectedDocument(bool addEditingAmount)
     {
         var index = DocumentPicker.SelectedIndex;
@@ -81,10 +76,8 @@ public partial class PaymentFormPage : ContentPage
 
     private async void OnSaveClicked(object s, EventArgs e)
     {
-        ErrorBanner.IsVisible = false;
-        if (TypePicker.SelectedIndex < 0 || DocumentPicker.SelectedIndex < 0) { ShowError("Select an invoice or purchase."); return; }
-        if (!decimal.TryParse(EntryAmount.Text, out var amt) || amt <= 0) { ShowError("Enter a valid amount."); return; }
-        if (MethodPicker.SelectedIndex < 0) { ShowError("Select a payment method."); return; }
+        ErrorBanner.IsVisible = false; if (TypePicker.SelectedIndex < 0 || DocumentPicker.SelectedIndex < 0) { ShowError("Select an invoice or purchase."); return; }
+        if (!decimal.TryParse(EntryAmount.Text, out var amt) || amt <= 0) { ShowError("Enter a valid amount."); return; } if (MethodPicker.SelectedIndex < 0) { ShowError("Select a payment method."); return; }
         var cid = _company.CurrentCompany?.LocalId ?? Guid.Empty; if (cid == Guid.Empty) { ShowError("Company is required."); return; }
         var isSupplier = TypePicker.SelectedIndex == 1; Guid docId; Guid partyId; string partyName; string docNumber; decimal outstanding;
         if (isSupplier)
