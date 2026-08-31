@@ -1,30 +1,189 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="AveroNova.App.UI.Pages.Dashboard.DashboardPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" Shell.NavBarIsVisible="False" BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.Dashboard.DashboardPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+
     <RefreshView x:Name="Refresher" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="20,16,20,32" Spacing="20">
+            <VerticalStackLayout x:Name="DashboardRoot" Padding="20,16,20,32" Spacing="20">
+
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Spacing="3">
-                        <Label x:Name="LblWelcome" Text="Welcome" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                        <Label x:Name="LblDate" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                        <Label x:Name="LblWelcome" Text="Welcome" FontSize="20" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                        <Label x:Name="LblDate" FontSize="12"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                     </VerticalStackLayout>
-                    <Border Grid.Column="1" BackgroundColor="{StaticResource Primary50}" Stroke="{StaticResource Primary200}" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,6" VerticalOptions="Center"><Label Text="FY 2026" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource InfoText}"/></Border>
+                    <Border Grid.Column="1" BackgroundColor="{StaticResource Primary50}" Stroke="{StaticResource Primary200}"
+                            StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,6" VerticalOptions="Center">
+                        <Label Text="LIVE BUSINESS" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource InfoText}" />
+                    </Border>
                 </Grid>
+
                 <VerticalStackLayout x:Name="CompanyDetailsHost" Spacing="16" />
-                <Label Text="Key Performance Indicators" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+
+                <Label Text="Key Performance Indicators" FontSize="15" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+
                 <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Stretch" AlignContent="Start">
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="TOTAL SALES" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/><Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Primary50}" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Label Text="&#x1F4B3;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/></Border></Grid><Label x:Name="LblTotalSales" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><HorizontalStackLayout Spacing="6"><Border Style="{StaticResource BadgeSuccess}" Padding="6,2"><Label x:Name="LblSalesChange" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/></Border><Label Text="vs last month" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/></HorizontalStackLayout></VerticalStackLayout></Border>
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="TOTAL PURCHASES" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/><Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Purple50}" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Label Text="&#x1F6D2;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/></Border></Grid><Label x:Name="LblTotalPurchases" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><HorizontalStackLayout Spacing="6"><Border Style="{StaticResource BadgePurple}" Padding="6,2"><Label x:Name="LblPurchasesMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource Purple600}"/></Border><Label Text="this month" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/></HorizontalStackLayout></VerticalStackLayout></Border>
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="OUTSTANDING" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/><Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Warning50}" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Label Text="&#x231B;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/></Border></Grid><Label x:Name="LblOutstanding" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><HorizontalStackLayout Spacing="6"><Border Style="{StaticResource BadgeWarning}" Padding="6,2"><Label x:Name="LblOutstandingMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource WarningText}"/></Border><Label Text="overdue" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/></HorizontalStackLayout></VerticalStackLayout></Border>
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="CUSTOMERS" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/><Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Success50}" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Label Text="&#x1F91D;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/></Border></Grid><Label x:Name="LblCustomers" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><HorizontalStackLayout Spacing="6"><Border Style="{StaticResource BadgeSuccess}" Padding="6,2"><Label x:Name="LblCustomersMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/></Border></HorizontalStackLayout></VerticalStackLayout></Border>
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="PRODUCTS" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/><Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Warning50}" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Label Text="&#x1F4E6;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/></Border></Grid><Label x:Name="LblProducts" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><HorizontalStackLayout Spacing="6"><Border Style="{StaticResource BadgeError}" Padding="6,2"><Label x:Name="LblProductsMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource ErrorText}"/></Border></HorizontalStackLayout></VerticalStackLayout></Border>
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="PAYMENTS" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/><Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Success50}" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Label Text="&#x1F4B0;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/></Border></Grid><Label x:Name="LblPayments" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><HorizontalStackLayout Spacing="6"><Border Style="{StaticResource BadgeSuccess}" Padding="6,2"><Label x:Name="LblPaymentsMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}"/></Border></HorizontalStackLayout></VerticalStackLayout></Border>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="TOTAL SALES" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Primary50}" StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                                    <Label Text="&#x1F4B3;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                            <Label x:Name="LblTotalSales" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <HorizontalStackLayout Spacing="6">
+                                <Border Style="{StaticResource BadgeSuccess}" Padding="6,2"><Label x:Name="LblSalesChange" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}" /></Border>
+                                <Label Text="this month" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="TOTAL PURCHASES" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Purple50}" StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                                    <Label Text="&#x1F6D2;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                            <Label x:Name="LblTotalPurchases" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <HorizontalStackLayout Spacing="6">
+                                <Border Style="{StaticResource BadgePurple}" Padding="6,2"><Label x:Name="LblPurchasesMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource Purple600}" /></Border>
+                                <Label Text="this month" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="RECEIVABLE" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Warning50}" StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                                    <Label Text="&#x231B;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                            <Label x:Name="LblOutstanding" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <HorizontalStackLayout Spacing="6">
+                                <Border Style="{StaticResource BadgeWarning}" Padding="6,2"><Label x:Name="LblOutstandingMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource WarningText}" /></Border>
+                                <Label Text="open invoices" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="CUSTOMERS" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Success50}" StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                                    <Label Text="&#x1F91D;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                            <Label x:Name="LblCustomers" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Border Style="{StaticResource BadgeSuccess}" Padding="6,2" HorizontalOptions="Start"><Label x:Name="LblCustomersMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}" /></Border>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="PRODUCTS" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Warning50}" StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                                    <Label Text="&#x1F4E6;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                            <Label x:Name="LblProducts" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Border Style="{StaticResource BadgeError}" Padding="6,2" HorizontalOptions="Start"><Label x:Name="LblProductsMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource ErrorText}" /></Border>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200" Margin="0,0,12,12" Padding="18,16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="TODAY COLLECTION" FontSize="10" FontAttributes="Bold" CharacterSpacing="0.5" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Border Grid.Column="1" WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource Success50}" StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                                    <Label Text="&#x1F4B0;" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                            <Label x:Name="LblPayments" Text="0" FontSize="28" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Border Style="{StaticResource BadgeSuccess}" Padding="6,2" HorizontalOptions="Start"><Label x:Name="LblPaymentsMeta" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource SuccessText}" /></Border>
+                        </VerticalStackLayout>
+                    </Border>
                 </FlexLayout>
-                <Border Style="{StaticResource AppCard}" Padding="18"><VerticalStackLayout Spacing="14"><Label Text="Quick Actions" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/><FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start"><Button Text="+ New Invoice" Style="{StaticResource PrimaryButton}" Clicked="OnNewInvoiceClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13"/><Button Text="+ New Customer" Style="{StaticResource SecondaryButton}" Clicked="OnNewCustomerClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13"/><Button Text="+ New Purchase" Style="{StaticResource SecondaryButton}" Clicked="OnNewPurchaseClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13"/><Button Text="Stock Adjust" Style="{StaticResource GhostButton}" Clicked="OnStockAdjustClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13"/></FlexLayout></VerticalStackLayout></Border>
-                <Grid ColumnDefinitions="*,Auto"><Label Text="Recent Invoices" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" VerticalOptions="Center"/><Button Grid.Column="1" Text="View All ›" Style="{StaticResource LinkButton}" Clicked="OnViewAllInvoicesClicked" FontSize="12" Padding="0"/></Grid>
-                <Border Style="{StaticResource AppCard}" Padding="0"><VerticalStackLayout x:Name="InvoiceList" Spacing="0"/></Border>
-                <Grid ColumnDefinitions="*,Auto"><Label Text="Low Stock Alerts" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" VerticalOptions="Center"/><HorizontalStackLayout Grid.Column="1" Spacing="8"><Label x:Name="LblLowStockCount" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" VerticalOptions="Center"/><Button Text="View Inventory ›" Style="{StaticResource LinkButton}" Clicked="OnViewInventoryClicked" FontSize="12" Padding="0"/></HorizontalStackLayout></Grid>
-                <Border Style="{StaticResource AppCard}" Padding="0"><VerticalStackLayout x:Name="LowStockList" Spacing="0"/></Border>
+
+                <Border Style="{StaticResource AppCard}" Padding="18">
+                    <VerticalStackLayout Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Sales &amp; Purchases — Last 7 Days" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                                <Label x:Name="LblChartSummary" Text="Live values from local invoices and purchases" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                            </VerticalStackLayout>
+                            <HorizontalStackLayout Grid.Column="1" Spacing="12" VerticalOptions="Center">
+                                <HorizontalStackLayout Spacing="5"><BoxView WidthRequest="9" HeightRequest="9" CornerRadius="2" Color="#2563EB" VerticalOptions="Center" /><Label Text="Sales" FontSize="10" VerticalOptions="Center" /></HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="5"><BoxView WidthRequest="9" HeightRequest="9" CornerRadius="2" Color="#7C3AED" VerticalOptions="Center" /><Label Text="Purchases" FontSize="10" VerticalOptions="Center" /></HorizontalStackLayout>
+                            </HorizontalStackLayout>
+                        </Grid>
+                        <Grid x:Name="SalesChartHost" HeightRequest="190" ColumnSpacing="8" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="Performance Summary" FontSize="15" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+
+                <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Stretch">
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="210" MinimumWidthRequest="190" Margin="0,0,12,12" Padding="16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="5"><Label Text="THIS WEEK SALES" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" /><Label x:Name="LblWeekSales" FontSize="20" FontAttributes="Bold" /><Label x:Name="LblWeekSalesTrend" FontSize="11" /></VerticalStackLayout>
+                    </Border>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="210" MinimumWidthRequest="190" Margin="0,0,12,12" Padding="16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="5"><Label Text="THIS MONTH SALES" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" /><Label x:Name="LblMonthSales" FontSize="20" FontAttributes="Bold" /><Label x:Name="LblMonthSalesTrend" FontSize="11" /></VerticalStackLayout>
+                    </Border>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="210" MinimumWidthRequest="190" Margin="0,0,12,12" Padding="16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="5"><Label Text="PAYABLE" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" /><Label x:Name="LblPayable" FontSize="20" FontAttributes="Bold" /><Label Text="Supplier balance" FontSize="11" TextColor="{StaticResource TextSecondary}" /></VerticalStackLayout>
+                    </Border>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="210" MinimumWidthRequest="190" Margin="0,0,12,12" Padding="16" Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="5"><Label Text="WEEK PURCHASES" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" /><Label x:Name="LblWeekPurchases" FontSize="20" FontAttributes="Bold" /><Label Text="Posted purchases" FontSize="11" TextColor="{StaticResource TextSecondary}" /></VerticalStackLayout>
+                    </Border>
+                </FlexLayout>
+
+                <Border Style="{StaticResource AppCard}" Padding="18">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Quick Actions" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start">
+                            <Button Text="+ New Invoice" Style="{StaticResource PrimaryButton}" Clicked="OnNewInvoiceClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13" />
+                            <Button Text="+ New Customer" Style="{StaticResource SecondaryButton}" Clicked="OnNewCustomerClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13" />
+                            <Button Text="+ New Purchase" Style="{StaticResource SecondaryButton}" Clicked="OnNewPurchaseClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13" />
+                            <Button Text="Stock Adjust" Style="{StaticResource GhostButton}" Clicked="OnStockAdjustClicked" Margin="0,0,10,8" HeightRequest="40" FontSize="13" />
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Business Alerts" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" VerticalOptions="Center" />
+                    <Label x:Name="LblBusinessAlertCount" Grid.Column="1" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" VerticalOptions="Center" />
+                </Grid>
+                <VerticalStackLayout x:Name="BusinessAlertsHost" Spacing="8" />
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Recent Invoices" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" VerticalOptions="Center" />
+                    <Button Grid.Column="1" Text="View All ›" Style="{StaticResource LinkButton}" Clicked="OnViewAllInvoicesClicked" FontSize="12" Padding="0" />
+                </Grid>
+                <Border Style="{StaticResource AppCard}" Padding="0"><VerticalStackLayout x:Name="InvoiceList" Spacing="0" /></Border>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Low Stock Alerts" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" VerticalOptions="Center" />
+                    <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                        <Label x:Name="LblLowStockCount" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" VerticalOptions="Center" />
+                        <Button Text="View Inventory ›" Style="{StaticResource LinkButton}" Clicked="OnViewInventoryClicked" FontSize="12" Padding="0" />
+                    </HorizontalStackLayout>
+                </Grid>
+                <Border Style="{StaticResource AppCard}" Padding="0"><VerticalStackLayout x:Name="LowStockList" Spacing="0" /></Border>
+
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>
