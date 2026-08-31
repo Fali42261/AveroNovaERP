@@ -7,15 +7,29 @@ namespace AveroNova.App.UI.Services.Local;
 public sealed class DashboardService : IDashboardService
 {
     private readonly IBillingService _billing;
+    private readonly IPurchaseService _purchase;
     private readonly IProductService _product;
     private readonly ICustomerService _customer;
     private readonly IPaymentService _payment;
     private readonly ICompanyService _company;
     private readonly IAuthenticationService _auth;
 
-    public DashboardService(IBillingService billing, IProductService product, ICustomerService customer, IPaymentService payment, ICompanyService company, IAuthenticationService auth)
+    public DashboardService(
+        IBillingService billing,
+        IPurchaseService purchase,
+        IProductService product,
+        ICustomerService customer,
+        IPaymentService payment,
+        ICompanyService company,
+        IAuthenticationService auth)
     {
-        _billing = billing; _product = product; _customer = customer; _payment = payment; _company = company; _auth = auth;
+        _billing = billing;
+        _purchase = purchase;
+        _product = product;
+        _customer = customer;
+        _payment = payment;
+        _company = company;
+        _auth = auth;
     }
 
     public async Task<DashboardSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
@@ -33,36 +47,200 @@ public sealed class DashboardService : IDashboardService
         var welcome = string.IsNullOrWhiteSpace(userName) ? greeting : $"{greeting}, {userName}";
 
         if (companyId == Guid.Empty)
-            return new DashboardSnapshot { WelcomeMessage = welcome, CompanyName = "No company", UserName = userName, UserRole = user?.Role ?? string.Empty, UserInitials = Initials(user), CurrentDate = DateTime.Today.ToString("dddd, dd MMMM yyyy"), CurrencySymbol = symbol };
+        {
+            return new DashboardSnapshot
+            {
+                WelcomeMessage = welcome,
+                CompanyName = "No company",
+                UserName = userName,
+                UserRole = user?.Role ?? string.Empty,
+                UserInitials = Initials(user),
+                CurrentDate = DateTime.Today.ToString("dddd, dd MMMM yyyy"),
+                CurrencySymbol = symbol
+            };
+        }
 
         var invoicesTask = _billing.GetAllAsync(companyId);
+        var purchasesTask = _purchase.GetAllAsync(companyId);
         var productsTask = _product.GetAllAsync(companyId);
         var customersTask = _customer.GetAllAsync(companyId);
         var paymentsTask = _payment.GetAllAsync(companyId);
-        await Task.WhenAll(invoicesTask, productsTask, customersTask, paymentsTask);
+        await Task.WhenAll(invoicesTask, purchasesTask, productsTask, customersTask, paymentsTask);
 
-        var invoices = invoicesTask.Result; var products = productsTask.Result; var customers = customersTask.Result; var payments = paymentsTask.Result;
-        var today = DateTime.Today; var yesterday = today.AddDays(-1); var weekStart = StartOfWeek(today); var prevWeekStart = weekStart.AddDays(-7); var monthStart = new DateTime(today.Year, today.Month, 1); var prevMonthStart = monthStart.AddMonths(-1);
-        static bool IsActiveSale(InvoiceModel i) => i.Status != InvoiceStatus.Cancelled;
-        var sales = invoices.Where(IsActiveSale).ToList();
-        decimal SalesOn(DateTime day) => sales.Where(i => i.InvoiceDate.Date == day).Sum(i => i.GrandTotal);
-        decimal SalesBetween(DateTime fromInclusive, DateTime toExclusive) => sales.Where(i => i.InvoiceDate.Date >= fromInclusive && i.InvoiceDate.Date < toExclusive).Sum(i => i.GrandTotal);
-        var pending = invoices.Where(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled).ToList();
-        var overdue = pending.Where(i => i.Status == InvoiceStatus.Overdue || i.DueDate.Date < today).ToList();
-        var lowStock = products.Where(p => p.IsLowStock).OrderBy(p => p.Stock).ThenBy(p => p.Name).Take(10).ToList();
-        var todayPayments = payments.Where(p => p.PaymentDate.Date == today && p.Status == PaymentStatus.Completed).ToList();
+        var invoices = invoicesTask.Result;
+        var purchases = purchasesTask.Result;
+        var products = productsTask.Result;
+        var customers = customersTask.Result;
+        var payments = paymentsTask.Result;
 
-        var recent = invoices.OrderByDescending(i => i.InvoiceDate).ThenByDescending(i => i.InvoiceNumber).Take(6).Select(i => new DashboardTransactionItem { Id = i.LocalId, InvoiceNumber = i.InvoiceNumber, CustomerName = string.IsNullOrWhiteSpace(i.CustomerName) ? "—" : i.CustomerName, AmountText = FormatMoney(symbol, i.GrandTotal), StatusLabel = i.StatusLabel, DateText = i.InvoiceDate.ToString("dd MMM yyyy"), Status = i.Status }).ToList();
-        var lowStockItems = lowStock.Select(p => new DashboardLowStockItem { Id = p.LocalId, ProductName = p.Name, SKU = p.SKU, Stock = p.Stock, MinimumStock = p.MinimumStock }).ToList();
+        var today = DateTime.Today;
+        var yesterday = today.AddDays(-1);
+        var weekStart = StartOfWeek(today);
+        var prevWeekStart = weekStart.AddDays(-7);
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        var prevMonthStart = monthStart.AddMonths(-1);
+
+        static bool IsPostedSale(InvoiceModel invoice)
+            => invoice.Status is InvoiceStatus.Sent or InvoiceStatus.PartialPaid or InvoiceStatus.Paid or InvoiceStatus.Overdue;
+
+        static bool IsPostedPurchase(PurchaseModel purchase)
+            => purchase.Status != PurchaseStatus.Draft && purchase.Status != PurchaseStatus.Cancelled;
+
+        var sales = invoices.Where(IsPostedSale).ToList();
+        var postedPurchases = purchases.Where(IsPostedPurchase).ToList();
+
+        decimal SalesOn(DateTime day)
+            => sales.Where(i => i.InvoiceDate.Date == day).Sum(i => i.GrandTotal);
+
+        decimal SalesBetween(DateTime fromInclusive, DateTime toExclusive)
+            => sales.Where(i => i.InvoiceDate.Date >= fromInclusive && i.InvoiceDate.Date < toExclusive).Sum(i => i.GrandTotal);
+
+        decimal PurchasesOn(DateTime day)
+            => postedPurchases.Where(p => p.PurchaseDate.Date == day).Sum(p => p.GrandTotal);
+
+        decimal PurchasesBetween(DateTime fromInclusive, DateTime toExclusive)
+            => postedPurchases.Where(p => p.PurchaseDate.Date >= fromInclusive && p.PurchaseDate.Date < toExclusive).Sum(p => p.GrandTotal);
+
+        var pending = sales
+            .Where(i => i.Status != InvoiceStatus.Paid && i.DueAmount > 0)
+            .ToList();
+
+        var overdue = pending
+            .Where(i => i.Status == InvoiceStatus.Overdue || i.DueDate.Date < today)
+            .ToList();
+
+        var purchasePayables = postedPurchases
+            .Where(p => p.DueAmount > 0)
+            .ToList();
+
+        var lowStock = products
+            .Where(p => p.IsLowStock)
+            .OrderBy(p => p.Stock)
+            .ThenBy(p => p.Name)
+            .Take(10)
+            .ToList();
+
+        var todayCustomerPayments = payments
+            .Where(p => !p.IsSupplier && p.PaymentDate.Date == today && p.Status == PaymentStatus.Completed)
+            .ToList();
+
+        var sevenDayTrend = Enumerable.Range(0, 7)
+            .Select(offset => today.AddDays(offset - 6))
+            .Select(day => new DashboardTrendPoint
+            {
+                Date = day,
+                Sales = SalesOn(day),
+                Purchases = PurchasesOn(day)
+            })
+            .ToList();
+
+        var recent = invoices
+            .Where(i => i.Status != InvoiceStatus.Cancelled)
+            .OrderByDescending(i => i.InvoiceDate)
+            .ThenByDescending(i => i.InvoiceNumber)
+            .Take(6)
+            .Select(i =>
+            {
+                var effectiveStatus = i.Status == InvoiceStatus.Sent && i.DueAmount > 0 && i.DueDate.Date < today
+                    ? InvoiceStatus.Overdue
+                    : i.Status;
+                return new DashboardTransactionItem
+                {
+                    Id = i.LocalId,
+                    InvoiceNumber = i.InvoiceNumber,
+                    CustomerName = string.IsNullOrWhiteSpace(i.CustomerName) ? "—" : i.CustomerName,
+                    AmountText = FormatMoney(symbol, i.GrandTotal),
+                    StatusLabel = effectiveStatus == InvoiceStatus.Overdue ? "Overdue" : i.StatusLabel,
+                    DateText = i.InvoiceDate.ToString("dd MMM yyyy"),
+                    Status = effectiveStatus
+                };
+            })
+            .ToList();
+
+        var lowStockItems = lowStock
+            .Select(p => new DashboardLowStockItem
+            {
+                Id = p.LocalId,
+                ProductName = p.Name,
+                SKU = p.SKU,
+                Stock = p.Stock,
+                MinimumStock = p.MinimumStock
+            })
+            .ToList();
+
         var alerts = new List<DashboardAlertItem>();
-        if (lowStockItems.Count > 0) alerts.Add(new DashboardAlertItem { Title = "Low stock", Detail = lowStockItems.Count == 1 ? $"{lowStockItems[0].ProductName} is at or below minimum stock." : $"{lowStockItems.Count} products need stock attention.", Kind = DashboardAlertKind.LowStock, Destination = MainContentNavigator.Inventory });
-        if (pending.Count > 0) alerts.Add(new DashboardAlertItem { Title = "Pending payments", Detail = $"{pending.Count} invoice{(pending.Count == 1 ? "" : "s")} · {FormatMoney(symbol, pending.Sum(i => i.DueAmount))} outstanding.", Kind = DashboardAlertKind.PendingPayment, Destination = MainContentNavigator.Payments });
-        if (overdue.Count > 0) alerts.Add(new DashboardAlertItem { Title = "Overdue invoices", Detail = $"{overdue.Count} invoice{(overdue.Count == 1 ? "" : "s")} past due date.", Kind = DashboardAlertKind.OverdueInvoice, Destination = MainContentNavigator.Billing });
+        if (lowStockItems.Count > 0)
+        {
+            alerts.Add(new DashboardAlertItem
+            {
+                Title = "Low stock",
+                Detail = lowStockItems.Count == 1
+                    ? $"{lowStockItems[0].ProductName} is at or below minimum stock."
+                    : $"{lowStockItems.Count} products need stock attention.",
+                Kind = DashboardAlertKind.LowStock,
+                Destination = MainContentNavigator.Inventory
+            });
+        }
+
+        if (pending.Count > 0)
+        {
+            alerts.Add(new DashboardAlertItem
+            {
+                Title = "Pending payments",
+                Detail = $"{pending.Count} invoice{(pending.Count == 1 ? "" : "s")} · {FormatMoney(symbol, pending.Sum(i => i.DueAmount))} outstanding.",
+                Kind = DashboardAlertKind.PendingPayment,
+                Destination = MainContentNavigator.Payments
+            });
+        }
+
+        if (overdue.Count > 0)
+        {
+            alerts.Add(new DashboardAlertItem
+            {
+                Title = "Overdue invoices",
+                Detail = $"{overdue.Count} invoice{(overdue.Count == 1 ? "" : "s")} past due date.",
+                Kind = DashboardAlertKind.OverdueInvoice,
+                Destination = MainContentNavigator.Billing
+            });
+        }
 
         return new DashboardSnapshot
         {
-            WelcomeMessage = welcome, CompanyName = string.IsNullOrWhiteSpace(company?.Name) ? (user?.CompanyName ?? "No company") : company!.Name, UserName = userName, UserRole = user?.Role ?? string.Empty, UserInitials = Initials(user), CurrentDate = today.ToString("dddd, dd MMMM yyyy"), CurrencySymbol = symbol,
-            TodaySales = SalesOn(today), TodayCollection = todayPayments.Sum(p => p.Amount), TodayOutstanding = pending.Sum(i => i.DueAmount), TotalCustomers = customers.Count, TotalProducts = products.Count, LowStockCount = lowStockItems.Count, TotalInvoices = invoices.Count, PendingPaymentCount = pending.Count, PendingPaymentAmount = pending.Sum(i => i.DueAmount), TodayInvoiceCount = sales.Count(i => i.InvoiceDate.Date == today), TodayPaymentCount = todayPayments.Count, WeekSales = SalesBetween(weekStart, today.AddDays(1)), MonthSales = SalesBetween(monthStart, today.AddDays(1)), YesterdaySales = SalesOn(yesterday), PreviousWeekSales = SalesBetween(prevWeekStart, weekStart), PreviousMonthSales = SalesBetween(prevMonthStart, monthStart), RecentTransactions = recent, LowStockItems = lowStockItems, Alerts = alerts
+            WelcomeMessage = welcome,
+            CompanyName = string.IsNullOrWhiteSpace(company?.Name) ? (user?.CompanyName ?? "No company") : company!.Name,
+            UserName = userName,
+            UserRole = user?.Role ?? string.Empty,
+            UserInitials = Initials(user),
+            CurrentDate = today.ToString("dddd, dd MMMM yyyy"),
+            CurrencySymbol = symbol,
+
+            TodaySales = SalesOn(today),
+            TodayPurchases = PurchasesOn(today),
+            TodayCollection = todayCustomerPayments.Sum(p => p.Amount),
+            TodayOutstanding = pending.Sum(i => i.DueAmount),
+            OutstandingPayable = purchasePayables.Sum(p => p.DueAmount),
+
+            TotalCustomers = customers.Count,
+            TotalProducts = products.Count,
+            LowStockCount = lowStockItems.Count,
+            TotalInvoices = invoices.Count,
+            PendingPaymentCount = pending.Count,
+            PendingPaymentAmount = pending.Sum(i => i.DueAmount),
+            TodayInvoiceCount = sales.Count(i => i.InvoiceDate.Date == today),
+            TodayPaymentCount = todayCustomerPayments.Count,
+
+            WeekSales = SalesBetween(weekStart, today.AddDays(1)),
+            WeekPurchases = PurchasesBetween(weekStart, today.AddDays(1)),
+            MonthSales = SalesBetween(monthStart, today.AddDays(1)),
+            MonthPurchases = PurchasesBetween(monthStart, today.AddDays(1)),
+            YesterdaySales = SalesOn(yesterday),
+            PreviousWeekSales = SalesBetween(prevWeekStart, weekStart),
+            PreviousMonthSales = SalesBetween(prevMonthStart, monthStart),
+
+            SevenDayTrend = sevenDayTrend,
+            RecentTransactions = recent,
+            LowStockItems = lowStockItems,
+            Alerts = alerts
         };
     }
 
