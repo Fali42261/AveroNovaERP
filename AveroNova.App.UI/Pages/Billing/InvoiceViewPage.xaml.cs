@@ -129,7 +129,7 @@ public partial class InvoiceViewPage : ContentPage
 
     private static void AddAction(HorizontalStackLayout host, string text, Func<Task> action, string style = "SmallSecondaryButton")
     {
-        var button = new Button { Text = text, Style = (Style)Application.Current!.Resources[style], HeightRequest = 36, Padding = new Thickness(14, 0) };
+        var button = new Button { Text = text, Style = (Style)Microsoft.Maui.Controls.Application.Current!.Resources[style], HeightRequest = 36, Padding = new Thickness(14, 0) };
         button.Clicked += async (_, _) => await action();
         host.Children.Add(button);
     }
