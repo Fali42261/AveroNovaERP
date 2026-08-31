@@ -23,7 +23,7 @@ public partial class BillingListPage : ContentPage
 
     public Task ReloadAsync() => LoadAsync();
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
-    private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
+    private async void OnRefreshing(object? s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private void BuildFilterTabs()
     {
@@ -79,7 +79,7 @@ public partial class BillingListPage : ContentPage
         };
         var border = new Border
         {
-            BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White,
+            BackgroundColor = Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White,
             Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1,
             StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) },
             Padding = new Thickness(14, 12)
@@ -140,6 +140,6 @@ public partial class BillingListPage : ContentPage
         ActionContent.Content = null; ActionOverlay.IsVisible = false; _ = LoadAsync();
     }
 
-    private async void OnNewClicked(object s, EventArgs e) => await OpenNewAsync();
-    private static Style? TryStyle(string key) => Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
+    private async void OnNewClicked(object? s, EventArgs e) => await OpenNewAsync();
+    private static Style? TryStyle(string key) => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
 }
