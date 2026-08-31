@@ -9,9 +9,13 @@ public sealed class DashboardSnapshot
     public string UserInitials { get; init; } = "AN";
     public string CurrentDate { get; init; } = string.Empty;
     public string CurrencySymbol { get; init; } = "₹";
+
     public decimal TodaySales { get; init; }
+    public decimal TodayPurchases { get; init; }
     public decimal TodayCollection { get; init; }
     public decimal TodayOutstanding { get; init; }
+    public decimal OutstandingPayable { get; init; }
+
     public int TotalCustomers { get; init; }
     public int TotalProducts { get; init; }
     public int LowStockCount { get; init; }
@@ -20,14 +24,28 @@ public sealed class DashboardSnapshot
     public decimal PendingPaymentAmount { get; init; }
     public int TodayInvoiceCount { get; init; }
     public int TodayPaymentCount { get; init; }
+
     public decimal WeekSales { get; init; }
+    public decimal WeekPurchases { get; init; }
     public decimal MonthSales { get; init; }
+    public decimal MonthPurchases { get; init; }
     public decimal YesterdaySales { get; init; }
     public decimal PreviousWeekSales { get; init; }
     public decimal PreviousMonthSales { get; init; }
+
+    public IReadOnlyList<DashboardTrendPoint> SevenDayTrend { get; init; } = [];
     public IReadOnlyList<DashboardTransactionItem> RecentTransactions { get; init; } = [];
     public IReadOnlyList<DashboardLowStockItem> LowStockItems { get; init; } = [];
     public IReadOnlyList<DashboardAlertItem> Alerts { get; init; } = [];
+}
+
+public sealed class DashboardTrendPoint
+{
+    public DateTime Date { get; init; }
+    public decimal Sales { get; init; }
+    public decimal Purchases { get; init; }
+    public string DayLabel => Date.ToString("ddd");
+    public string DateLabel => Date.ToString("dd MMM");
 }
 
 public sealed class DashboardTransactionItem
