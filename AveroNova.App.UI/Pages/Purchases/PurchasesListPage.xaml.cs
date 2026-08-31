@@ -15,7 +15,7 @@ public partial class PurchasesListPage : ContentPage
 
     public Task ReloadAsync() => LoadAsync();
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
-    private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
+    private async void OnRefreshing(object? s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
     {
@@ -33,7 +33,7 @@ public partial class PurchasesListPage : ContentPage
             PurchaseStatus.Received => ("#ECFDF5", "#059669"), PurchaseStatus.Ordered => ("#EFF6FF", "#2563EB"),
             PurchaseStatus.PartialReceived => ("#FFFBEB", "#D97706"), PurchaseStatus.Cancelled => ("#F3F4F6", "#9CA3AF"), _ => ("#F9FAFB", "#6B7280")
         };
-        var border = new Border { BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White, Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(14, 12) };
+        var border = new Border { BackgroundColor = Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White, Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(14, 12) };
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), ColumnSpacing = 12 };
         var left = new VerticalStackLayout { Spacing = 4 };
         left.Children.Add(new Label { Text = p.PurchaseNumber, FontSize = 14, FontAttributes = FontAttributes.Bold });
@@ -66,6 +66,6 @@ public partial class PurchasesListPage : ContentPage
     }
 
     private void CloseActionOverlay() { ActionContent.Content = null; ActionOverlay.IsVisible = false; _ = LoadAsync(); }
-    private async void OnNewClicked(object s, EventArgs e) => await OpenFormAsync();
-    private static Style? TryStyle(string key) => Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
+    private async void OnNewClicked(object? s, EventArgs e) => await OpenFormAsync();
+    private static Style? TryStyle(string key) => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Style style ? style : null;
 }
