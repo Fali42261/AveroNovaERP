@@ -6,8 +6,9 @@ using Microsoft.EntityFrameworkCore;
 namespace AveroNova.App.UI.Services.Local;
 
 /// <summary>
-/// Creates/migrates AppDbContext SQLite, seeds Administrator permissions,
-/// and ensures the subscription plan catalog exists.
+/// Creates/updates the local AppDbContext SQLite schema and seeds only the
+/// reference data required by the application. Optional demo-data failures
+/// must never prevent login, registration, or password reset.
 /// </summary>
 public sealed class LocalDatabaseInitializer
 {
@@ -84,13 +85,52 @@ public sealed class LocalDatabaseInitializer
             await SqliteInvoiceSchema.EnsureAsync(db, cancellationToken);
             await SqlitePurchaseSchema.EnsureAsync(db, cancellationToken);
             await SqlitePaymentSchema.EnsureAsync(db, cancellationToken);
-            AveroNova.App.UI.Helpers.StartupLog.Write("DB seed start");
+
+            // These catalog/reference rows are required by account creation and access control.
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB required seed start");
             await SeedAsync(db, cancellationToken);
             await RoleCatalogSeeder.SeedAsync(db, cancellationToken);
             await SubscriptionCatalogSeeder.SeedAsync(db, cancellationToken);
-            await DemoDataSeeder.SeedAsync(db, cancellationToken);
+
+            // Demo data is optional. A stale demo row/schema mismatch must not make the
+            // authentication database look unavailable to Login/Register/Reset Password.
+            try
+            {
+                AveroNova.App.UI.Helpers.StartupLog.Write("DB optional demo seed start");
+                await DemoDataSeeder.SeedAsync(db, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                var root = ex;
+                while (root.InnerException is not null)
+                    root = root.InnerException;
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[swapdigit] Optional demo seed skipped. Type={ex.GetType().FullName}; " +
+                    $"Message={ex.Message}; RootType={root.GetType().FullName}; RootMessage={root.Message}; " +
+                    $"Stack={ex.StackTrace}");
+                AveroNova.App.UI.Helpers.StartupLog.Write(
+                    $"Optional demo seed skipped: {root.GetType().Name}: {root.Message}");
+
+                // DemoDataSeeder may have tracked failed entities on this context. They are
+                // irrelevant after initialization, so clear them before the context is disposed.
+                db.ChangeTracker.Clear();
+            }
+
             _ready = true;
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Local SQLite ready: {db.Database.GetDbConnection().DataSource}");
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Local SQLite ready: {db.Database.GetDbConnection().DataSource}");
+        }
+        catch (Exception ex)
+        {
+            var root = ex;
+            while (root.InnerException is not null)
+                root = root.InnerException;
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[swapdigit] Local SQLite initialization FAILED. Type={ex.GetType().FullName}; " +
+                $"Message={ex.Message}; RootType={root.GetType().FullName}; RootMessage={root.Message}; " +
+                $"Stack={ex.StackTrace}");
+            throw;
         }
         finally
         {
