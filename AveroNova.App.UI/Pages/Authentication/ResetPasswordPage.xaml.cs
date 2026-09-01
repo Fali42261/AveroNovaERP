@@ -215,9 +215,16 @@ public partial class ResetPasswordPage : ContentPage
         switch (field)
         {
             case "Email":
-                var emailMissing = string.IsNullOrWhiteSpace(EntryEmail.Text);
-                ShowFieldError(LblEmailError, emailMissing ? "Email address is required" : null);
-                return !emailMissing;
+                var emailText = EntryEmail.Text?.Trim() ?? string.Empty;
+                var emailMissing = string.IsNullOrWhiteSpace(emailText);
+                var emailInvalid = !emailMissing && !System.Text.RegularExpressions.Regex.IsMatch(emailText, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+                if (emailMissing)
+                    ShowFieldError(LblEmailError, "Email address is required");
+                else if (emailInvalid)
+                    ShowFieldError(LblEmailError, "Please enter a valid email address.");
+                else
+                    ShowFieldError(LblEmailError, null);
+                return !emailMissing && !emailInvalid;
             case "Password":
                 var passwordMissing = string.IsNullOrWhiteSpace(EntryPassword.Text);
                 ShowFieldError(LblPasswordError, passwordMissing ? "New password is required" : null);

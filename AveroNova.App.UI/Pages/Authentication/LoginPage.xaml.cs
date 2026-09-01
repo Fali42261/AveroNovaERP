@@ -113,14 +113,20 @@ public partial class LoginPage : ContentPage
 
         HideFieldErrors();
 
-        var emailMissing = string.IsNullOrWhiteSpace(EntryEmail.Text);
-        var passwordMissing = string.IsNullOrWhiteSpace(EntryPassword.Text);
+        var emailText = EntryEmail.Text?.Trim() ?? string.Empty;
+        var passwordText = EntryPassword.Text ?? string.Empty;
+
+        var emailMissing = string.IsNullOrWhiteSpace(emailText);
+        var passwordMissing = string.IsNullOrWhiteSpace(passwordText);
+        var emailInvalid = !emailMissing && !System.Text.RegularExpressions.Regex.IsMatch(emailText, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
         if (emailMissing)
             ShowFieldError(LblEmailError, "Email address is required");
+        else if (emailInvalid)
+            ShowFieldError(LblEmailError, "Please enter a valid email address.");
         if (passwordMissing)
             ShowFieldError(LblPasswordError, "Password is required");
-        if (emailMissing || passwordMissing)
+        if (emailMissing || emailInvalid || passwordMissing)
             return;
 
         SetLoading(true);
@@ -128,8 +134,8 @@ public partial class LoginPage : ContentPage
         try
         {
             var (success, error) = await _auth.LoginAsync(
-                EntryEmail.Text.Trim(),
-                EntryPassword.Text,
+                emailText,
+                passwordText,
                 ChkRemember.IsChecked);
 
             if (success)

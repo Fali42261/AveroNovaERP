@@ -1,3 +1,4 @@
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 
@@ -23,9 +24,18 @@ public partial class ForgotPasswordPage : ContentPage
 
     private async void OnSendClicked(object sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(EntryEmail.Text))
+        var emailText = EntryEmail.Text?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(emailText))
         {
             LblError.Text = "Please enter your email address.";
+            ErrorBanner.IsVisible = true;
+            return;
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(emailText, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            LblError.Text = "Please enter a valid email address.";
             ErrorBanner.IsVisible = true;
             return;
         }
@@ -33,16 +43,31 @@ public partial class ForgotPasswordPage : ContentPage
         Loader.IsRunning = Loader.IsVisible = true;
         ErrorBanner.IsVisible = SuccessBanner.IsVisible = false;
 
-        var (success, error) = await _auth.ForgotPasswordAsync(EntryEmail.Text.Trim());
-
-        Loader.IsRunning = Loader.IsVisible = false;
-
-        if (success)
-            SuccessBanner.IsVisible = true;
-        else
+        try
         {
-            LblError.Text = error ?? "Something went wrong.";
+            var (success, error) = await _auth.ForgotPasswordAsync(emailText);
+
+            Loader.IsRunning = Loader.IsVisible = false;
+
+            if (success)
+            {
+                SuccessBanner.IsVisible = true;
+                LblSuccess.Text = "If an account exists with this email, you can reset your password.";
+                await Task.Delay(2000);
+                await Shell.Current.GoToAsync(AppRoutes.ResetPassword);
+            }
+            else
+            {
+                LblError.Text = error ?? "Something went wrong.";
+                ErrorBanner.IsVisible = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Loader.IsRunning = Loader.IsVisible = false;
+            LblError.Text = "Something went wrong. Please try again.";
             ErrorBanner.IsVisible = true;
+            System.Diagnostics.Debug.WriteLine($"[AveroNova] ForgotPassword failed: {ex}");
         }
     }
 
