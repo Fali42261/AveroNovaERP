@@ -23,7 +23,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] private string companyName = "No company";
     [ObservableProperty] private string userName = string.Empty;
     [ObservableProperty] private string userRole = string.Empty;
-    [ObservableProperty] private string userInitials = "AN";
+    [ObservableProperty] private string userInitials = "SW";
     [ObservableProperty] private string currentDate = string.Empty;
     [ObservableProperty] private string userSubtitle = string.Empty;
 

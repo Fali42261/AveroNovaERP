@@ -1,15 +1,17 @@
+using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.ViewModels;
 
 namespace AveroNova.App.UI.Views.Customers;
 
 public partial class CustomerDetailsView : ContentView
 {
-    private bool _isCompact;
+    private int _appliedColumns;
 
     public CustomerDetailsView()
     {
         InitializeComponent();
         ErrorState.RetryClicked += OnRetryClicked;
+        Loaded += (_, _) => ApplyResponsiveLayout();
     }
 
     private void OnRetryClicked(object? sender, EventArgs e)
@@ -18,49 +20,47 @@ public partial class CustomerDetailsView : ContentView
             _ = vm.RetryCommand.ExecuteAsync(null);
     }
 
-    private void OnHeaderSizeChanged(object? sender, EventArgs e)
+    private void OnRootSizeChanged(object? sender, EventArgs e)
+        => ApplyResponsiveLayout();
+
+    private void ApplyResponsiveLayout()
     {
-        var width = HeaderBar.Width > 1 ? HeaderBar.Width : Width;
-        if (width <= 0)
+        if (Root.Width <= 0)
             return;
 
-        var compact = width < 520;
-        if (compact == _isCompact && HeaderBar.RowDefinitions.Count > 0)
+        var columns = ResponsiveBreakpoints.FromWidth(Root.Width) == ScreenSize.Compact
+            ? 1
+            : 3;
+
+        if (columns == _appliedColumns)
             return;
 
-        _isCompact = compact;
-        if (compact)
+        _appliedColumns = columns;
+        ApplyGridColumns(CustomerFieldsGrid, columns, 6);
+        ApplyGridColumns(AddressFieldsGrid, columns, 5);
+    }
+
+    private static void ApplyGridColumns(Grid grid, int columns, int childCount)
+    {
+        var columnDefs = new ColumnDefinitionCollection();
+        for (var i = 0; i < columns; i++)
+            columnDefs.Add(new ColumnDefinition(GridLength.Star));
+        grid.ColumnDefinitions = columnDefs;
+
+        var rowsNeeded = Math.Max(1, (int)Math.Ceiling(childCount / (double)columns));
+        var rowDefs = new RowDefinitionCollection();
+        for (var i = 0; i < rowsNeeded; i++)
+            rowDefs.Add(new RowDefinition(GridLength.Auto));
+        grid.RowDefinitions = rowDefs;
+
+        grid.ColumnSpacing = columns == 1 ? 0 : 16;
+        grid.RowSpacing = 16;
+
+        var children = grid.Children.OfType<View>().ToList();
+        for (var i = 0; i < children.Count; i++)
         {
-            HeaderBar.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition(GridLength.Star)
-            };
-            HeaderBar.RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition(GridLength.Auto),
-                new RowDefinition(GridLength.Auto)
-            };
-            Grid.SetColumn(HeaderTitle, 0);
-            Grid.SetRow(HeaderTitle, 0);
-            Grid.SetColumn(HeaderActions, 0);
-            Grid.SetRow(HeaderActions, 1);
-            HeaderActions.HorizontalOptions = LayoutOptions.Start;
-            return;
+            Grid.SetColumn(children[i], i % columns);
+            Grid.SetRow(children[i], i / columns);
         }
-
-        HeaderBar.ColumnDefinitions = new ColumnDefinitionCollection
-        {
-            new ColumnDefinition(GridLength.Star),
-            new ColumnDefinition(GridLength.Auto)
-        };
-        HeaderBar.RowDefinitions = new RowDefinitionCollection
-        {
-            new RowDefinition(GridLength.Auto)
-        };
-        Grid.SetColumn(HeaderTitle, 0);
-        Grid.SetRow(HeaderTitle, 0);
-        Grid.SetColumn(HeaderActions, 1);
-        Grid.SetRow(HeaderActions, 0);
-        HeaderActions.HorizontalOptions = LayoutOptions.End;
     }
 }

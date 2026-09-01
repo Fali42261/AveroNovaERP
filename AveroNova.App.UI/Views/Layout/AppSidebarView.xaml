@@ -35,7 +35,7 @@
                     VerticalOptions="Center"
                     HorizontalOptions="Start">
                     <Label
-                        Text="AN"
+                        Text="SW"
                         FontFamily="OpenSansSemibold"
                         FontSize="15"
                         TextColor="{StaticResource White}"
@@ -51,7 +51,7 @@
                     Spacing="0"
                     VerticalOptions="Center">
                     <Label
-                        Text="AveroNova"
+                        Text="swapdigit"
                         Style="{StaticResource SidebarBrand}" />
                     <Label
                         Text="ERP System"

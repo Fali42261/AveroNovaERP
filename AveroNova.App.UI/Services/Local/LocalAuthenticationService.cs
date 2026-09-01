@@ -41,6 +41,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
 
     public async Task<(bool Success, string? Error)> LoginAsync(string email, string password, bool rememberMe = false)
     {
+       
         await _initializer.EnsureInitializedAsync();
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))

@@ -36,7 +36,7 @@
                             StrokeThickness="0"
                             StrokeShape="RoundRectangle 14"
                             HorizontalOptions="Center">
-                        <Label Text="A" FontSize="28" FontAttributes="Bold"
+                        <Label Text="SW" FontSize="28" FontAttributes="Bold"
                                TextColor="{StaticResource White}"
                                HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
@@ -47,7 +47,7 @@
                            HorizontalTextAlignment="Center"
                            LineBreakMode="WordWrap"
                            Margin="0,20,0,4" />
-                    <Label Text="Sign in to your AveroNova ERP account."
+                    <Label Text="Sign in to your swapdigit account."
                            Style="{StaticResource SecondaryText}"
                            HorizontalOptions="Center"
                            HorizontalTextAlignment="Center"

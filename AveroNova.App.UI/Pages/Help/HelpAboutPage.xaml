@@ -23,13 +23,13 @@
                 <VerticalStackLayout Spacing="12">
 
                     <Label
-                        Text="AveroNova"
+                        Text="swapdigit"
                         FontSize="22"
                         FontAttributes="Bold"
                         TextColor="{StaticResource PrimaryColor}" />
 
                     <Label
-                        Text="AveroNova ERP"
+                        Text="swapdigit ERP"
                         FontSize="16"
                         FontAttributes="Bold" />
 
@@ -58,7 +58,7 @@
                         FontAttributes="Bold" />
 
                     <Label
-                        Text="For application support, contact your AveroNova administrator or support team."
+                        Text="For application support, contact your swapdigit administrator or support team."
                         FontSize="14"
                         LineBreakMode="WordWrap"
                         TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />

@@ -11,12 +11,12 @@
         <Border WidthRequest="80" HeightRequest="80"
                 BackgroundColor="#1557B0" StrokeThickness="0"
                 StrokeShape="RoundRectangle 20" HorizontalOptions="Center">
-            <Label Text="A" FontSize="44" FontAttributes="Bold"
+            <Label Text="SW" FontSize="44" FontAttributes="Bold"
                    TextColor="{StaticResource Primary400}"
                    HorizontalOptions="Center" VerticalOptions="Center"/>
         </Border>
 
-        <Label Text="AveroNova ERP" FontSize="28" FontAttributes="Bold"
+        <Label Text="swapdigit" FontSize="28" FontAttributes="Bold"
                TextColor="{StaticResource White}" HorizontalOptions="Center"/>
 
         <ActivityIndicator IsRunning="True" Color="{StaticResource Primary400}"

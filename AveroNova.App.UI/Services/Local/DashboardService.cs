@@ -138,7 +138,7 @@ public sealed class DashboardService : IDashboardService
             .Where(i => i.Status != InvoiceStatus.Cancelled)
             .OrderByDescending(i => i.InvoiceDate)
             .ThenByDescending(i => i.InvoiceNumber)
-            .Take(6)
+            .Take(5)
             .Select(i =>
             {
                 var effectiveStatus = i.Status == InvoiceStatus.Sent && i.DueAmount > 0 && i.DueDate.Date < today
@@ -155,6 +155,27 @@ public sealed class DashboardService : IDashboardService
                     Status = effectiveStatus
                 };
             })
+            .ToList();
+
+        // Top selling products — aggregate posted-sale invoice line items
+        var productLookup = products.ToDictionary(p => p.LocalId);
+        var topProducts = sales
+            .SelectMany(i => i.Items)
+            .GroupBy(li => li.ProductId)
+            .Select(g =>
+            {
+                productLookup.TryGetValue(g.Key, out var prod);
+                return new DashboardTopProduct
+                {
+                    ProductId   = g.Key,
+                    ProductName = prod?.Name ?? g.First().ProductName,
+                    Category    = prod?.Category ?? string.Empty,
+                    SoldQty     = g.Sum(x => x.Quantity),
+                    Revenue     = g.Sum(x => x.GrandTotal)
+                };
+            })
+            .OrderByDescending(x => x.Revenue)
+            .Take(5)
             .ToList();
 
         var lowStockItems = lowStock
@@ -237,17 +258,21 @@ public sealed class DashboardService : IDashboardService
             PreviousWeekSales = SalesBetween(prevWeekStart, weekStart),
             PreviousMonthSales = SalesBetween(prevMonthStart, monthStart),
 
+            TodayOrderCount = sales.Count(i => i.InvoiceDate.Date == today),
+            YesterdayOrderCount = sales.Count(i => i.InvoiceDate.Date == yesterday),
+
             SevenDayTrend = sevenDayTrend,
             RecentTransactions = recent,
             LowStockItems = lowStockItems,
-            Alerts = alerts
+            Alerts = alerts,
+            TopProducts = topProducts
         };
     }
 
     private static string Initials(UserModel? user)
     {
         if (!string.IsNullOrWhiteSpace(user?.AvatarInitials)) return user.AvatarInitials;
-        if (string.IsNullOrWhiteSpace(user?.Name)) return "AN";
+        if (string.IsNullOrWhiteSpace(user?.Name)) return "SW";
         var parts = user.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return string.Concat(parts.Take(2).Select(p => char.ToUpperInvariant(p[0])));
     }

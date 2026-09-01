@@ -59,14 +59,31 @@ public static class NativeInputChrome
         }
         if (platformView is Microsoft.UI.Xaml.Controls.ComboBox combo)
         {
-            combo.Padding = new Microsoft.UI.Xaml.Thickness(0);
+            // Vertically center selected value and remove WinUI border chrome.
+            // Use small symmetric vertical padding (4px top/bottom) so the
+            // ContentPresenter inside the ComboBox header is never clipped.
+            combo.Padding = new Microsoft.UI.Xaml.Thickness(12, 4, 12, 4);
             combo.VerticalContentAlignment = Microsoft.UI.Xaml.VerticalAlignment.Center;
             combo.HorizontalContentAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Stretch;
             combo.MinHeight = 40;
-            combo.Resources["ComboBoxItemMinHeight"] = 40d;
-            combo.Resources["ComboBoxItemPadding"] = new Microsoft.UI.Xaml.Thickness(12, 8, 12, 8);
+            combo.Height = double.NaN; // let MAUI Border control height
+
+            // Override WinUI theme resources for selected-item presenter
+            combo.Resources["ComboBoxMinHeight"] = 40d;
+            combo.Resources["ComboBoxPadding"] = new Microsoft.UI.Xaml.Thickness(12, 4, 12, 4);
+            combo.Resources["ComboBoxEditableTextPadding"] = new Microsoft.UI.Xaml.Thickness(12, 4, 12, 4);
+            combo.Resources["ComboBoxTextBoxVerticalAlignment"] = Microsoft.UI.Xaml.VerticalAlignment.Center;
+
+            // Dropdown list items: vertically centered, sufficient padding
+            combo.Resources["ComboBoxItemMinHeight"] = 36d;
+            combo.Resources["ComboBoxItemPadding"] = new Microsoft.UI.Xaml.Thickness(12, 6, 12, 6);
             combo.Resources["ComboBoxItemHorizontalContentAlignment"] = Microsoft.UI.Xaml.HorizontalAlignment.Left;
             combo.Resources["ComboBoxItemVerticalContentAlignment"] = Microsoft.UI.Xaml.VerticalAlignment.Center;
+
+            // Walk the visual tree after layout to enforce center alignment on the
+            // ContentPresenter that renders the selected item text.
+            combo.Loaded += (s, _) => AlignComboBoxContent(s as Microsoft.UI.Xaml.Controls.ComboBox);
+            combo.SelectionChanged += (s, _) => AlignComboBoxContent(s as Microsoft.UI.Xaml.Controls.ComboBox);
         }
 #endif
 #if ANDROID
@@ -87,4 +104,40 @@ public static class NativeInputChrome
         if (platformView is UIKit.UIView uiView) uiView.BackgroundColor = UIKit.UIColor.Clear;
 #endif
     }
+
+#if WINDOWS
+    /// <summary>
+    /// Walks the WinUI visual tree of a ComboBox and forces VerticalAlignment=Center
+    /// on the ContentPresenter that hosts the selected-item text, preventing clipping.
+    /// </summary>
+    private static void AlignComboBoxContent(Microsoft.UI.Xaml.Controls.ComboBox? combo)
+    {
+        if (combo is null) return;
+        try
+        {
+            var presenter = FindVisualChild<Microsoft.UI.Xaml.Controls.ContentPresenter>(combo);
+            if (presenter is not null)
+            {
+                presenter.VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment.Center;
+                presenter.VerticalContentAlignment = Microsoft.UI.Xaml.VerticalAlignment.Center;
+            }
+        }
+        catch { /* ignore layout-phase exceptions */ }
+    }
+
+    private static T? FindVisualChild<T>(Microsoft.UI.Xaml.DependencyObject parent)
+        where T : Microsoft.UI.Xaml.DependencyObject
+    {
+        if (parent is null) return null;
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < count; i++)
+        {
+            var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(parent, i);
+            if (child is T match) return match;
+            var result = FindVisualChild<T>(child);
+            if (result is not null) return result;
+        }
+        return null;
+    }
+#endif
 }

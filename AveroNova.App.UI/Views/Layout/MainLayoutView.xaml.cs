@@ -169,7 +169,7 @@ public partial class MainLayoutView : ContentView
         if (user == null)
             return;
 
-        var initials = string.IsNullOrWhiteSpace(user.AvatarInitials) ? "AN" : user.AvatarInitials;
+        var initials = string.IsNullOrWhiteSpace(user.AvatarInitials) ? "SW" : user.AvatarInitials;
         LblHeaderInitials.Text = initials;
         MLblHeaderInitials.Text = initials;
         LblHeaderName.Text = user.Name;

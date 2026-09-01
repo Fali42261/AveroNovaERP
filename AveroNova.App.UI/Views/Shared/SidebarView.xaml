@@ -31,7 +31,7 @@
                 VerticalOptions="Center">
 
                 <Label
-                    Text="A"
+                    Text="SW"
                     FontSize="42"
                     FontAttributes="Bold"
                     TextColor="{StaticResource PrimaryColor}" />
@@ -41,7 +41,7 @@
                     Spacing="0">
 
                     <Label
-                        Text="AveroNova"
+                        Text="swapdigit"
                         FontSize="20"
                         FontAttributes="Bold"
                         TextColor="White" />

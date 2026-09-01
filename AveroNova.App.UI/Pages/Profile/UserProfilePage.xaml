@@ -30,7 +30,7 @@
                         StrokeShape="RoundRectangle 28">
                         <Label
                             x:Name="LblInitials"
-                            Text="AN"
+                            Text="SW"
                             FontSize="18"
                             FontAttributes="Bold"
                             TextColor="{StaticResource PrimaryColor}"

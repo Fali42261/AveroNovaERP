@@ -82,10 +82,13 @@ public sealed class LocalDatabaseInitializer
             await SqliteProductSchema.EnsureAsync(db, cancellationToken);
             await SqliteUserSchema.EnsureAsync(db, cancellationToken);
             await SqliteInvoiceSchema.EnsureAsync(db, cancellationToken);
+            await SqlitePurchaseSchema.EnsureAsync(db, cancellationToken);
+            await SqlitePaymentSchema.EnsureAsync(db, cancellationToken);
             AveroNova.App.UI.Helpers.StartupLog.Write("DB seed start");
             await SeedAsync(db, cancellationToken);
             await RoleCatalogSeeder.SeedAsync(db, cancellationToken);
             await SubscriptionCatalogSeeder.SeedAsync(db, cancellationToken);
+            await DemoDataSeeder.SeedAsync(db, cancellationToken);
             _ready = true;
             System.Diagnostics.Debug.WriteLine($"[AveroNova] Local SQLite ready: {db.Database.GetDbConnection().DataSource}");
         }

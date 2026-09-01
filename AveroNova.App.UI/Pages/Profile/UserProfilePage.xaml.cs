@@ -17,7 +17,7 @@ public partial class UserProfilePage : ContentPage
         var user = _auth.CurrentUser;
         LblName.Text = user?.Name ?? "Unknown user";
         LblEmail.Text = user?.Email ?? string.Empty;
-        LblInitials.Text = string.IsNullOrWhiteSpace(user?.AvatarInitials) ? "AN" : user.AvatarInitials;
+        LblInitials.Text = string.IsNullOrWhiteSpace(user?.AvatarInitials) ? "SW" : user.AvatarInitials;
     }
 
     protected override void OnAppearing()

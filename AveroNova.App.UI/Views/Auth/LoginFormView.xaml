@@ -22,7 +22,7 @@
                 FontAttributes="Bold"
                 TextColor="{StaticResource TextPrimary}" />
             <Label
-                Text="Sign in to your AveroNova ERP account"
+                Text="Sign in to your swapdigit ERP account"
                 FontSize="{StaticResource FontSizeBody}"
                 TextColor="{StaticResource TextSecondary}" />
         </VerticalStackLayout>
@@ -55,7 +55,7 @@
         <!-- ── EMAIL / USERNAME ────────────────────────────────────────── -->
         <inputs:AppEntry
             Label="Email or Username"
-            Placeholder="admin@averonova.com"
+            Placeholder="admin@swapdigit.com"
             Text="{Binding Email, Mode=TwoWay}"
             Keyboard="Email"
             HasError="{Binding HasEmailError}"

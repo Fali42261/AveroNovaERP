@@ -53,6 +53,7 @@
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
         <Setter Property="FontSize" Value="14" />
         <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="VerticalOptions" Value="Center"/>
     </Style>
 
     <Style TargetType="SearchBar">
@@ -213,6 +214,17 @@
         <Setter Property="MinimumHeightRequest" Value="44"/>
     </Style>
 
+    <Style x:Key="LinkButton" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource PrimaryColor}"/>
+        <Setter Property="BackgroundColor" Value="Transparent"/>
+        <Setter Property="BorderWidth" Value="0"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="HeightRequest" Value="32"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinimumHeightRequest" Value="28"/>
+    </Style>
+
     <Style x:Key="GhostButton" TargetType="Button">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
         <Setter Property="BackgroundColor" Value="Transparent"/>
@@ -350,6 +362,7 @@
         <Setter Property="HeightRequest" Value="52"/>
         <Setter Property="MinimumHeightRequest" Value="48"/>
         <Setter Property="HorizontalOptions" Value="Fill"/>
+        <Setter Property="VerticalOptions" Value="Center"/>
     </Style>
 
     <Style x:Key="AuthField" TargetType="Border" BasedOn="{StaticResource InputContainer}" />

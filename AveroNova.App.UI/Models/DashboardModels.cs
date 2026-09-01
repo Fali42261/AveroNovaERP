@@ -6,7 +6,7 @@ public sealed class DashboardSnapshot
     public string CompanyName { get; init; } = "No company";
     public string UserName { get; init; } = string.Empty;
     public string UserRole { get; init; } = string.Empty;
-    public string UserInitials { get; init; } = "AN";
+    public string UserInitials { get; init; } = "SW";
     public string CurrentDate { get; init; } = string.Empty;
     public string CurrencySymbol { get; init; } = "₹";
 
@@ -37,6 +37,11 @@ public sealed class DashboardSnapshot
     public IReadOnlyList<DashboardTransactionItem> RecentTransactions { get; init; } = [];
     public IReadOnlyList<DashboardLowStockItem> LowStockItems { get; init; } = [];
     public IReadOnlyList<DashboardAlertItem> Alerts { get; init; } = [];
+    public IReadOnlyList<DashboardTopProduct> TopProducts { get; init; } = [];
+
+    // Today-specific KPIs
+    public int TodayOrderCount { get; init; }
+    public int YesterdayOrderCount { get; init; }
 }
 
 public sealed class DashboardTrendPoint
@@ -83,3 +88,15 @@ public enum DashboardAlertKind
     PendingPayment,
     OverdueInvoice
 }
+
+public sealed class DashboardTopProduct
+{
+    public Guid    ProductId   { get; init; }
+    public string  ProductName { get; init; } = string.Empty;
+    public string  Category    { get; init; } = string.Empty;
+    public int     SoldQty     { get; init; }
+    public decimal Revenue     { get; init; }
+}
+
+// Per-day trend points enriched with weekly aggregation period label
+public enum DashboardChartPeriod { Today, ThisWeek, ThisMonth }
