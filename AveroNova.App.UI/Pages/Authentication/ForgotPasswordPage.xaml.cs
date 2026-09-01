@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 
@@ -24,16 +25,16 @@ public partial class ForgotPasswordPage : ContentPage
 
     private async void OnSendClicked(object sender, EventArgs e)
     {
-        var emailText = EntryEmail.Text?.Trim() ?? string.Empty;
+        var email = (EntryEmail.Text ?? string.Empty).Trim();
 
-        if (string.IsNullOrWhiteSpace(emailText))
+        if (string.IsNullOrWhiteSpace(email))
         {
             LblError.Text = "Please enter your email address.";
             ErrorBanner.IsVisible = true;
             return;
         }
 
-        if (!System.Text.RegularExpressions.Regex.IsMatch(emailText, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        if (!IsValidEmail(email))
         {
             LblError.Text = "Please enter a valid email address.";
             ErrorBanner.IsVisible = true;
@@ -45,14 +46,13 @@ public partial class ForgotPasswordPage : ContentPage
 
         try
         {
-            var (success, error) = await _auth.ForgotPasswordAsync(emailText);
+            var (success, error) = await _auth.ForgotPasswordAsync(email);
 
             Loader.IsRunning = Loader.IsVisible = false;
 
             if (success)
             {
                 SuccessBanner.IsVisible = true;
-                LblSuccess.Text = "If an account exists with this email, you can reset your password.";
                 await Task.Delay(2000);
                 await Shell.Current.GoToAsync(AppRoutes.ResetPassword);
             }
@@ -70,6 +70,9 @@ public partial class ForgotPasswordPage : ContentPage
             System.Diagnostics.Debug.WriteLine($"[AveroNova] ForgotPassword failed: {ex}");
         }
     }
+
+    private static bool IsValidEmail(string email)
+        => System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 }

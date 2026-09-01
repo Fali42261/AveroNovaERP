@@ -13,6 +13,7 @@ public partial class LoginPage : ContentPage
     private bool _layoutBusy;
     private double _appliedMinHeight = double.NaN;
     private ScreenSize? _appliedSize;
+    private bool _navBusy;
 
     public LoginPage(IAuthenticationService auth, IToastService toasts)
     {
@@ -27,6 +28,7 @@ public partial class LoginPage : ContentPage
         base.OnAppearing();
         _toasts.AttachTo(this);
         ApplyLayout();
+        HideFieldErrors();
         var pending = PendingAuthMessage.Take();
         if (!string.IsNullOrWhiteSpace(pending))
             ShowBanner(pending);
@@ -104,8 +106,6 @@ public partial class LoginPage : ContentPage
 
     private void OnPasswordCompleted(object? sender, EventArgs e) => OnLoginClicked(sender, e);
 
-    private bool _navBusy;
-
     private async void OnLoginClicked(object? sender, EventArgs e)
     {
         if (_navBusy)
@@ -113,43 +113,48 @@ public partial class LoginPage : ContentPage
 
         HideFieldErrors();
 
-        var emailText = EntryEmail.Text?.Trim() ?? string.Empty;
-        var passwordText = EntryPassword.Text ?? string.Empty;
+        var email = (EntryEmail.Text ?? string.Empty).Trim();
+        var password = EntryPassword.Text ?? string.Empty;
+        var valid = true;
 
-        var emailMissing = string.IsNullOrWhiteSpace(emailText);
-        var passwordMissing = string.IsNullOrWhiteSpace(passwordText);
-        var emailInvalid = !emailMissing && !System.Text.RegularExpressions.Regex.IsMatch(emailText, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-
-        if (emailMissing)
+        if (string.IsNullOrWhiteSpace(email))
+        {
             ShowFieldError(LblEmailError, "Email address is required");
-        else if (emailInvalid)
+            valid = false;
+        }
+        else if (!IsValidEmail(email))
+        {
             ShowFieldError(LblEmailError, "Please enter a valid email address.");
-        if (passwordMissing)
+            valid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
             ShowFieldError(LblPasswordError, "Password is required");
-        if (emailMissing || emailInvalid || passwordMissing)
+            valid = false;
+        }
+
+        if (!valid)
             return;
 
         SetLoading(true);
 
         try
         {
-            var (success, error) = await _auth.LoginAsync(
-                emailText,
-                passwordText,
-                ChkRemember.IsChecked);
+            var (success, error) = await _auth.LoginAsync(email, password, ChkRemember.IsChecked);
 
             if (success)
             {
                 await Shell.Current.GoToAsync(AppRoutes.Main);
+                return;
             }
-            else
-            {
-                ShowCredentialFailure(error);
-            }
+
+            ShowCredentialFailure(error);
         }
-        catch
+        catch (Exception ex)
         {
-            ShowCredentialFailure(AuthenticationMessages.InvalidEmailOrPassword);
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Offline login failed: {ex}");
+            ShowBanner("Unable to access the local account database. Please try again.");
         }
         finally
         {
@@ -173,11 +178,23 @@ public partial class LoginPage : ContentPage
         {
             await Shell.Current.GoToAsync(route);
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Auth navigation failed route={route}: {ex}");
+            ShowBanner("Unable to open this page. Please try again.");
+        }
         finally
         {
             SetLoading(false);
         }
     }
+
+    private static bool IsValidEmail(string email)
+        => System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+
+    private static bool IsValidEmail(string email)
+        => MailAddress.TryCreate(email, out var address)
+           && string.Equals(address.Address, email, StringComparison.OrdinalIgnoreCase);
 
     private static void ShowFieldError(Label label, string message)
     {

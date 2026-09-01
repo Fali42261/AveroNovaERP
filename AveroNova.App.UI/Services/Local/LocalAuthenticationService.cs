@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
@@ -41,16 +42,17 @@ public sealed class LocalAuthenticationService : IAuthenticationService
 
     public async Task<(bool Success, string? Error)> LoginAsync(string email, string password, bool rememberMe = false)
     {
-       
         await _initializer.EnsureInitializedAsync();
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-            return (false, "Email and password are required.");
+        var normalizedEmail = NormalizeEmail(email);
+        if (!IsValidEmail(normalizedEmail))
+            return (false, "Please enter a valid email address.");
+        if (string.IsNullOrWhiteSpace(password))
+            return (false, "Password is required.");
 
         await using var db = await _factory.CreateDbContextAsync();
-        var user = await FindUserByLoginEmailAsync(db, email);
+        var user = await FindUserByLoginEmailAsync(db, normalizedEmail);
 
-        // Authenticate against Users only. Company.Email is never used for login.
         if (user == null || !user.IsActiveUser || !LocalPasswordHasher.Verify(password, user.PasswordHash))
             return (false, AuthenticationMessages.InvalidEmailOrPassword);
 
@@ -87,7 +89,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         _access.Invalidate();
 
         System.Diagnostics.Debug.WriteLine(
-            $"[AveroNova] Login OK user={user.Id} userEmail={user.Email} company={company.Id} via UserCompany");
+            $"[swapdigit] Login OK user={user.Id} userEmail={user.Email} company={company.Id}");
 
         return (true, null);
     }
@@ -102,11 +104,22 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         if (request == null)
             return RegistrationResult.Fail("Registration details are required.");
 
-        var email = request.Email.Trim();
+        var email = NormalizeEmail(request.Email);
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            return RegistrationResult.Fail("Full name is required.");
+        if (!IsValidEmail(email))
+            return RegistrationResult.Fail("Please enter a valid email address.");
+        if (string.IsNullOrWhiteSpace(request.Password))
+            return RegistrationResult.Fail("Password is required.");
+        if (string.IsNullOrWhiteSpace(request.CompanyName))
+            return RegistrationResult.Fail("Company name is required.");
+        if (string.IsNullOrWhiteSpace(request.OwnerName))
+            return RegistrationResult.Fail("Owner name is required.");
+
         await using var db = await _factory.CreateDbContextAsync();
 
-        if (await db.Users.AnyAsync(u => u.Email == email && !u.IsDeleted))
-            return RegistrationResult.Fail("An account with this email already exists.");
+        if (await db.Users.AnyAsync(u => !u.IsDeleted && u.Email.ToLower() == email))
+            return RegistrationResult.Fail("An account with this email already exists. Please sign in or reset the password.");
 
         var now = DateTime.UtcNow;
         var userId = Guid.NewGuid();
@@ -114,7 +127,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         var subscriptionId = Guid.NewGuid();
         var userRoleId = Guid.NewGuid();
 
-        var admin = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Administrator");
+        var admin = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Administrator" && !r.IsDeleted);
         if (admin == null)
             return RegistrationResult.Fail("Administrator role is missing from the local database.");
 
@@ -138,6 +151,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 UserCode = UniqueCode("U"),
                 FullName = Clamp(request.FullName, 150),
                 Email = Clamp(email, 150),
+                MobileNumber = Clamp(request.Mobile, 15),
                 PasswordHash = LocalPasswordHasher.Hash(request.Password),
                 IsActiveUser = true,
                 CreatedAt = now,
@@ -186,36 +200,24 @@ public sealed class LocalAuthenticationService : IAuthenticationService
 
             await db.SaveChangesAsync();
 
-            var persistedUser = await db.Users.AnyAsync(u => u.Id == userId && u.Email == user.Email && !u.IsDeleted);
-            var persistedCompany = await db.Companies.AnyAsync(
-                c => c.Id == companyId && c.UserId == userId && !c.IsDeleted);
+            var persistedUser = await db.Users.AnyAsync(u => u.Id == userId && !u.IsDeleted);
+            var persistedCompany = await db.Companies.AnyAsync(c => c.Id == companyId && c.UserId == userId && !c.IsDeleted);
             var persistedUserCompany = await db.UserCompanies.AnyAsync(
-                uc => uc.UserId == userId && uc.CompanyId == companyId && !uc.IsDeleted);
+                uc => uc.UserId == userId && uc.CompanyId == companyId && uc.IsActive && !uc.IsDeleted);
             var persistedSubscription = await db.Subscriptions.AnyAsync(
                 s => s.Id == subscriptionId && s.CompanyId == companyId && !s.IsDeleted);
             var persistedUserRole = await db.UserRoles.AnyAsync(
                 ur => ur.UserId == userId && ur.RoleId == admin.Id && ur.CompanyId == companyId && !ur.IsDeleted);
-            var permissionCount = await db.RolePermissions.CountAsync(
-                rp => rp.RoleId == admin.Id && !rp.IsDeleted);
 
-            if (!persistedUser || !persistedCompany || !persistedUserCompany || !persistedSubscription || !persistedUserRole || permissionCount == 0)
+            if (!persistedUser || !persistedCompany || !persistedUserCompany || !persistedSubscription || !persistedUserRole)
             {
                 await tx.RollbackAsync();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[AveroNova] Registration persistence check failed path={dbPath} " +
-                    $"user={persistedUser} company={persistedCompany} userCompany={persistedUserCompany} " +
-                    $"subscription={persistedSubscription} userRole={persistedUserRole} permissions={permissionCount}");
-                return RegistrationResult.Fail(
-                    "Account could not be saved to the local database. The account was not created.");
+                return RegistrationResult.Fail("Account could not be saved to the local database. The account was not created.");
             }
 
             await tx.CommitAsync();
-
             System.Diagnostics.Debug.WriteLine(
-                "[AveroNova] LOCAL ACCOUNT CREATED " +
-                $"path={dbPath} User={userId} Company={companyId} UserCompany={userCompanyId} " +
-                $"Subscription={subscriptionId} Role={admin.Id} RolePermissions={permissionCount} " +
-                "ServerSynced=false");
+                $"[swapdigit] LOCAL ACCOUNT CREATED path={dbPath} User={userId} Company={companyId} Subscription={subscriptionId}");
         }
         catch (Exception ex)
         {
@@ -225,24 +227,20 @@ public sealed class LocalAuthenticationService : IAuthenticationService
             }
             catch (Exception rollbackEx)
             {
-                System.Diagnostics.Debug.WriteLine($"[AveroNova] Registration rollback failed: {rollbackEx}");
+                System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration rollback failed: {rollbackEx}");
             }
 
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Registration failed path={dbPath}: {ex}");
-            return RegistrationResult.Fail($"Account could not be created. {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration failed path={dbPath}: {ex}");
+            return RegistrationResult.Fail("Account could not be created in the local database. Please try again.");
         }
 
         if (user is null || company is null)
             return RegistrationResult.Fail("Account could not be created.");
 
-        // Stay logged out. Dashboard is reached only after a manual Login.
         _currentUser = null;
         LocalSessionStore.ClearSession();
         TrialReminderState.ClearSession();
         LocalSessionStore.MarkLocalAccountExists();
-
-        System.Diagnostics.Debug.WriteLine(
-            "[AveroNova] Registration complete without session. User must sign in manually.");
 
         return new RegistrationResult
         {
@@ -256,47 +254,55 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         };
     }
 
-    public Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
+    public async Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
     {
-        if (string.IsNullOrWhiteSpace(email))
-            return Task.FromResult((false, "Email is required."));
+        await _initializer.EnsureInitializedAsync();
 
-        // User.Email only. Do not disclose whether the address exists.
-        return Task.FromResult<(bool, string?)>((true, null));
+        var normalizedEmail = NormalizeEmail(email);
+        if (!IsValidEmail(normalizedEmail))
+            return (false, "Please enter a valid email address.");
+
+        await using var db = await _factory.CreateDbContextAsync();
+        var user = await FindUserByLoginEmailAsync(db, normalizedEmail);
+        if (user == null || !user.IsActiveUser)
+            return (false, "No active local account was found for this email address.");
+
+        return (true, null);
     }
 
     public async Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword)
     {
         await _initializer.EnsureInitializedAsync();
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(newPassword))
-            return (false, "Email and new password are required.");
+        var normalizedEmail = NormalizeEmail(email);
+        if (!IsValidEmail(normalizedEmail))
+            return (false, "Please enter a valid email address.");
+        if (string.IsNullOrWhiteSpace(newPassword))
+            return (false, "New password is required.");
+        if (newPassword.Length < 8)
+            return (false, "New password must be at least 8 characters.");
 
         await using var db = await _factory.CreateDbContextAsync();
+        var user = await FindUserByLoginEmailAsync(db, normalizedEmail, track: true);
 
-        // Same User.Email lookup as login. Company.Email is never used.
-        var user = await FindUserByLoginEmailAsync(db, email, track: true);
+        if (user == null || !user.IsActiveUser)
+            return (false, "No active local account was found for this email address.");
 
-        if (user is { IsActiveUser: true })
-        {
-            user.PasswordHash = LocalPasswordHasher.Hash(newPassword);
-            user.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-            System.Diagnostics.Debug.WriteLine(
-                $"[AveroNova] User password reset user={user.Id} userEmail={user.Email}");
-        }
-        else
-        {
-            System.Diagnostics.Debug.WriteLine(
-                "[AveroNova] Password reset requested for an email that is not an active User.Email. No password was changed.");
-        }
+        user.PasswordHash = LocalPasswordHasher.Hash(newPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
 
-        // Generic result so callers cannot tell whether a User.Email existed.
+        _currentUser = null;
+        LocalSessionStore.ClearSession();
+        TrialReminderState.ClearSession();
+        _access.Invalidate();
+
+        System.Diagnostics.Debug.WriteLine($"[swapdigit] Password reset user={user.Id} userEmail={user.Email}");
         return (true, null);
     }
 
     public Task<(bool Success, string? Error)> VerifyOtpAsync(string otp)
-        => Task.FromResult<(bool, string?)>((true, null));
+        => Task.FromResult<(bool, string?)>((false, "OTP verification is not available in offline mode."));
 
     public Task LogoutAsync()
     {
@@ -351,9 +357,6 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         _currentUser = MapUser(user, company, roleName);
         LocalSessionStore.Set(user.Id, company.Id, user.Email);
         _access.Invalidate();
-
-        System.Diagnostics.Debug.WriteLine(
-            $"[AveroNova] Session restored user={user.Id} company={company.Id} (no API)");
         return true;
     }
 
@@ -367,13 +370,9 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         return exists;
     }
 
-    /// <summary>
-    /// Resolves the login identity from the Users table by User.Email only.
-    /// Company.Email is not consulted.
-    /// </summary>
     private static async Task<User?> FindUserByLoginEmailAsync(AppDbContext db, string email, bool track = false)
     {
-        var normalized = email.Trim().ToLowerInvariant();
+        var normalized = NormalizeEmail(email);
         if (string.IsNullOrWhiteSpace(normalized))
             return null;
 
@@ -428,6 +427,14 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         };
     }
 
+    private static string NormalizeEmail(string? email)
+        => (email ?? string.Empty).Trim().ToLowerInvariant();
+
+    private static bool IsValidEmail(string? email)
+        => !string.IsNullOrWhiteSpace(email)
+           && MailAddress.TryCreate(email.Trim(), out var address)
+           && string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
+
     private static string Initials(string name)
     {
         var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -441,7 +448,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
     private static string UniqueCode(string prefix)
         => prefix + Convert.ToHexString(Guid.NewGuid().ToByteArray())[..8];
 
-    private static string FirstNonEmpty(string primary, string fallback)
+    private static string FirstNonEmpty(string? primary, string? fallback)
     {
         var value = primary?.Trim();
         return string.IsNullOrWhiteSpace(value) ? (fallback ?? string.Empty).Trim() : value;

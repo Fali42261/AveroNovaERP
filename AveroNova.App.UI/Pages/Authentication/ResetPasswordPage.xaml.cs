@@ -161,11 +161,16 @@ public partial class ResetPasswordPage : ContentPage
         try
         {
             var (success, error) = await _auth.ResetPasswordAsync(
-                EntryEmail.Text.Trim(),
-                EntryPassword.Text);
+                (EntryEmail.Text ?? string.Empty).Trim(),
+                EntryPassword.Text ?? string.Empty);
 
             if (success)
             {
+                _toasts.ShowSuccess(
+                    "Password Updated",
+                    "Your local password was changed successfully. Sign in with the new password.",
+                    TimeSpan.FromSeconds(2));
+                await Task.Delay(500);
                 await GoToLoginAsync();
             }
             else
@@ -173,9 +178,10 @@ public partial class ResetPasswordPage : ContentPage
                 ShowBanner(error ?? "Unable to reset password. Please try again.");
             }
         }
-        catch
+        catch (Exception ex)
         {
-            ShowBanner("Unable to reset password. Please try again.");
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Password reset failed: {ex}");
+            ShowBanner("Unable to access the local account database. Please try again.");
         }
         finally
         {
@@ -192,6 +198,11 @@ public partial class ResetPasswordPage : ContentPage
         try
         {
             await GoToLoginAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Navigate to login failed: {ex}");
+            ShowBanner("Unable to open Sign In. Please try again.");
         }
         finally
         {
@@ -215,38 +226,69 @@ public partial class ResetPasswordPage : ContentPage
         switch (field)
         {
             case "Email":
-                var emailText = EntryEmail.Text?.Trim() ?? string.Empty;
-                var emailMissing = string.IsNullOrWhiteSpace(emailText);
-                var emailInvalid = !emailMissing && !System.Text.RegularExpressions.Regex.IsMatch(emailText, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-                if (emailMissing)
+            {
+                var email = (EntryEmail.Text ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(email))
+                {
                     ShowFieldError(LblEmailError, "Email address is required");
-                else if (emailInvalid)
+                    return false;
+                }
+
+                if (!IsValidEmail(email))
+                {
                     ShowFieldError(LblEmailError, "Please enter a valid email address.");
-                else
-                    ShowFieldError(LblEmailError, null);
-                return !emailMissing && !emailInvalid;
+                    return false;
+                }
+
+                ShowFieldError(LblEmailError, null);
+                return true;
+            }
             case "Password":
-                var passwordMissing = string.IsNullOrWhiteSpace(EntryPassword.Text);
-                ShowFieldError(LblPasswordError, passwordMissing ? "New password is required" : null);
+            {
+                var password = EntryPassword.Text ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    ShowFieldError(LblPasswordError, "New password is required");
+                    return false;
+                }
+
+                if (password.Length < 8)
+                {
+                    ShowFieldError(LblPasswordError, "Password must be at least 8 characters");
+                    return false;
+                }
+
+                ShowFieldError(LblPasswordError, null);
                 if (_touched.Contains("Confirm") && !string.IsNullOrWhiteSpace(EntryConfirm.Text))
                     ValidateField("Confirm");
-                return !passwordMissing;
+                return true;
+            }
             case "Confirm":
-                var confirmMissing = string.IsNullOrWhiteSpace(EntryConfirm.Text);
-                var mismatch = !confirmMissing
-                               && !string.IsNullOrWhiteSpace(EntryPassword.Text)
-                               && !string.Equals(EntryPassword.Text, EntryConfirm.Text, StringComparison.Ordinal);
-                if (confirmMissing)
+            {
+                var confirm = EntryConfirm.Text ?? string.Empty;
+                var password = EntryPassword.Text ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(confirm))
+                {
                     ShowFieldError(LblConfirmError, "Confirm password is required");
-                else if (mismatch)
+                    return false;
+                }
+
+                if (!string.Equals(password, confirm, StringComparison.Ordinal))
+                {
                     ShowFieldError(LblConfirmError, "Passwords do not match");
-                else
-                    ShowFieldError(LblConfirmError, null);
-                return !confirmMissing && !mismatch;
+                    return false;
+                }
+
+                ShowFieldError(LblConfirmError, null);
+                return true;
+            }
             default:
                 return true;
         }
     }
+
+    private static bool IsValidEmail(string email)
+        => System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
     private static void ShowFieldError(Label label, string? message)
     {
