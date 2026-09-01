@@ -1,5 +1,4 @@
 using AveroNova.App.UI.Navigation;
-using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 
