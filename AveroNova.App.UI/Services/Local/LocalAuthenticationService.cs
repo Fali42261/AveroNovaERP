@@ -1,4 +1,3 @@
-using System.Net.Mail;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
@@ -121,31 +120,30 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         if (await db.Users.AnyAsync(u => !u.IsDeleted && u.Email.ToLower() == email))
             return RegistrationResult.Fail("An account with this email already exists. Please sign in or reset the password.");
 
+        var admin = await db.Roles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Name == "Administrator" && !r.IsDeleted);
+        if (admin == null)
+            return RegistrationResult.Fail("Local account setup is incomplete: Administrator role is missing.");
+
+        var freeTrialPlan = await db.SubscriptionPlans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Code == SubscriptionPlanCodes.FreeTrial && !p.IsDeleted);
+        if (freeTrialPlan == null)
+            return RegistrationResult.Fail("Local account setup is incomplete: Free Trial plan is missing.");
+
         var now = DateTime.UtcNow;
         var userId = Guid.NewGuid();
         var companyId = Guid.NewGuid();
+        var userCompanyId = Guid.NewGuid();
         var subscriptionId = Guid.NewGuid();
         var userRoleId = Guid.NewGuid();
-
-        var admin = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Administrator" && !r.IsDeleted);
-        if (admin == null)
-            return RegistrationResult.Fail("Administrator role is missing from the local database.");
-
-        var freeTrialPlan = await db.SubscriptionPlans
-            .FirstOrDefaultAsync(p => p.Code == SubscriptionPlanCodes.FreeTrial && !p.IsDeleted);
-        if (freeTrialPlan == null)
-            return RegistrationResult.Fail("Free Trial plan is missing from the local database.");
-
-        var userCompanyId = Guid.NewGuid();
         var dbPath = db.Database.GetDbConnection().DataSource;
-
-        User? user = null;
-        Company? company = null;
 
         await using var tx = await db.Database.BeginTransactionAsync();
         try
         {
-            user = new User
+            var user = new User
             {
                 Id = userId,
                 UserCode = UniqueCode("U"),
@@ -154,12 +152,14 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 MobileNumber = Clamp(request.Mobile, 15),
                 PasswordHash = LocalPasswordHasher.Hash(request.Password),
                 IsActiveUser = true,
+                UserImg = string.Empty,
                 CreatedAt = now,
                 IsDeleted = false
             };
             db.Users.Add(user);
+            await SaveRegistrationStageAsync(db, "User", dbPath);
 
-            company = new Company
+            var company = new Company
             {
                 Id = companyId,
                 UserId = userId,
@@ -179,14 +179,17 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 IsDeleted = false
             };
             db.Companies.Add(company);
+            await SaveRegistrationStageAsync(db, "Company", dbPath);
 
             var userCompany = UserCompanyFactory.CreateOwner(userId, companyId, now);
             userCompany.Id = userCompanyId;
             db.UserCompanies.Add(userCompany);
+            await SaveRegistrationStageAsync(db, "UserCompany", dbPath);
 
             var subscription = FreeTrialSubscriptionFactory.Create(companyId, freeTrialPlan, now);
             subscription.Id = subscriptionId;
             db.Subscriptions.Add(subscription);
+            await SaveRegistrationStageAsync(db, "Subscription", dbPath);
 
             db.UserRoles.Add(new UserRole
             {
@@ -197,27 +200,46 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 CreatedAt = now,
                 IsDeleted = false
             });
+            await SaveRegistrationStageAsync(db, "UserRole", dbPath);
 
-            await db.SaveChangesAsync();
-
-            var persistedUser = await db.Users.AnyAsync(u => u.Id == userId && !u.IsDeleted);
-            var persistedCompany = await db.Companies.AnyAsync(c => c.Id == companyId && c.UserId == userId && !c.IsDeleted);
-            var persistedUserCompany = await db.UserCompanies.AnyAsync(
-                uc => uc.UserId == userId && uc.CompanyId == companyId && uc.IsActive && !uc.IsDeleted);
-            var persistedSubscription = await db.Subscriptions.AnyAsync(
-                s => s.Id == subscriptionId && s.CompanyId == companyId && !s.IsDeleted);
-            var persistedUserRole = await db.UserRoles.AnyAsync(
-                ur => ur.UserId == userId && ur.RoleId == admin.Id && ur.CompanyId == companyId && !ur.IsDeleted);
+            var persistedUser = await db.Users.AsNoTracking()
+                .AnyAsync(u => u.Id == userId && !u.IsDeleted);
+            var persistedCompany = await db.Companies.AsNoTracking()
+                .AnyAsync(c => c.Id == companyId && c.UserId == userId && !c.IsDeleted);
+            var persistedUserCompany = await db.UserCompanies.AsNoTracking()
+                .AnyAsync(uc => uc.UserId == userId && uc.CompanyId == companyId && uc.IsActive && !uc.IsDeleted);
+            var persistedSubscription = await db.Subscriptions.AsNoTracking()
+                .AnyAsync(s => s.Id == subscriptionId && s.CompanyId == companyId && !s.IsDeleted);
+            var persistedUserRole = await db.UserRoles.AsNoTracking()
+                .AnyAsync(ur => ur.UserId == userId && ur.RoleId == admin.Id && ur.CompanyId == companyId && !ur.IsDeleted);
 
             if (!persistedUser || !persistedCompany || !persistedUserCompany || !persistedSubscription || !persistedUserRole)
-            {
-                await tx.RollbackAsync();
-                return RegistrationResult.Fail("Account could not be saved to the local database. The account was not created.");
-            }
+                throw new InvalidOperationException(
+                    $"Registration persistence verification failed. " +
+                    $"User={persistedUser}, Company={persistedCompany}, UserCompany={persistedUserCompany}, " +
+                    $"Subscription={persistedSubscription}, UserRole={persistedUserRole}.");
 
             await tx.CommitAsync();
+
+            _currentUser = null;
+            LocalSessionStore.ClearSession();
+            TrialReminderState.ClearSession();
+            LocalSessionStore.MarkLocalAccountExists();
+
             System.Diagnostics.Debug.WriteLine(
-                $"[swapdigit] LOCAL ACCOUNT CREATED path={dbPath} User={userId} Company={companyId} Subscription={subscriptionId}");
+                $"[swapdigit] LOCAL ACCOUNT CREATED path={dbPath} User={userId} Company={companyId} " +
+                $"UserCompany={userCompanyId} Subscription={subscriptionId} UserRole={userRoleId}");
+
+            return new RegistrationResult
+            {
+                Success = true,
+                LocalAccountCreated = true,
+                ServerSynced = false,
+                UserId = userId,
+                CompanyId = companyId,
+                SubscriptionId = subscriptionId,
+                RoleId = admin.Id
+            };
         }
         catch (Exception ex)
         {
@@ -230,28 +252,20 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration rollback failed: {rollbackEx}");
             }
 
-            System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration failed path={dbPath}: {ex}");
-            return RegistrationResult.Fail("Account could not be created in the local database. Please try again.");
+            LogException("Registration failed", ex, dbPath);
+
+            var rootMessage = GetInnermostMessage(ex);
+            if (rootMessage.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase)
+                && rootMessage.Contains("Users.Email", StringComparison.OrdinalIgnoreCase))
+            {
+                return RegistrationResult.Fail("An account with this email already exists. Please sign in or reset the password.");
+            }
+
+            if (rootMessage.Contains("FOREIGN KEY constraint failed", StringComparison.OrdinalIgnoreCase))
+                return RegistrationResult.Fail("Local account setup is incomplete. Please restart the app and try again.");
+
+            return RegistrationResult.Fail("Account could not be created due to a local database error. Please try again.");
         }
-
-        if (user is null || company is null)
-            return RegistrationResult.Fail("Account could not be created.");
-
-        _currentUser = null;
-        LocalSessionStore.ClearSession();
-        TrialReminderState.ClearSession();
-        LocalSessionStore.MarkLocalAccountExists();
-
-        return new RegistrationResult
-        {
-            Success = true,
-            LocalAccountCreated = true,
-            ServerSynced = false,
-            UserId = userId,
-            CompanyId = companyId,
-            SubscriptionId = subscriptionId,
-            RoleId = admin.Id
-        };
     }
 
     public async Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
@@ -290,7 +304,16 @@ public sealed class LocalAuthenticationService : IAuthenticationService
 
         user.PasswordHash = LocalPasswordHasher.Hash(newPassword);
         user.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            LogException("Password reset failed", ex, db.Database.GetDbConnection().DataSource);
+            return (false, "Unable to update the password in the local account database. Please try again.");
+        }
 
         _currentUser = null;
         LocalSessionStore.ClearSession();
@@ -427,13 +450,61 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         };
     }
 
+    private static async Task SaveRegistrationStageAsync(AppDbContext db, string stage, string dbPath)
+    {
+        try
+        {
+            await db.SaveChangesAsync();
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration stage OK stage={stage} path={dbPath}");
+        }
+        catch (Exception ex)
+        {
+            LogException($"Registration stage failed stage={stage}", ex, dbPath);
+            throw;
+        }
+    }
+
+    private static void LogException(string operation, Exception ex, string? dbPath)
+    {
+        System.Diagnostics.Debug.WriteLine($"[swapdigit] {operation} path={dbPath}");
+        var current = ex;
+        var depth = 0;
+        while (current != null)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[swapdigit] exception[{depth}] type={current.GetType().FullName} message={current.Message}");
+            current = current.InnerException;
+            depth++;
+        }
+        System.Diagnostics.Debug.WriteLine($"[swapdigit] stack={ex.StackTrace}");
+
+        if (ex is DbUpdateException dbUpdateException)
+        {
+            foreach (var entry in dbUpdateException.Entries)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[swapdigit] DbUpdate entity={entry.Metadata.ClrType.Name} state={entry.State}");
+            }
+        }
+    }
+
+    private static string GetInnermostMessage(Exception ex)
+    {
+        var current = ex;
+        while (current.InnerException != null)
+            current = current.InnerException;
+        return current.Message ?? string.Empty;
+    }
+
     private static string NormalizeEmail(string? email)
         => (email ?? string.Empty).Trim().ToLowerInvariant();
 
     private static bool IsValidEmail(string? email)
         => !string.IsNullOrWhiteSpace(email)
-           && MailAddress.TryCreate(email.Trim(), out var address)
-           && string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
+           && System.Text.RegularExpressions.Regex.IsMatch(
+               email.Trim(),
+               @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+               System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     private static string Initials(string name)
     {
