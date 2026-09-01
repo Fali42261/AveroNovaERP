@@ -192,10 +192,6 @@ public partial class LoginPage : ContentPage
     private static bool IsValidEmail(string email)
         => System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
-    private static bool IsValidEmail(string email)
-        => MailAddress.TryCreate(email, out var address)
-           && string.Equals(address.Address, email, StringComparison.OrdinalIgnoreCase);
-
     private static void ShowFieldError(Label label, string message)
     {
         label.Text = message;
