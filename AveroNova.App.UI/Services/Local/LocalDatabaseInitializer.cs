@@ -65,16 +65,8 @@ public sealed class LocalDatabaseInitializer
                 return;
 
             await using var db = await _factory.CreateDbContextAsync(cancellationToken);
-            var canConnect = await db.Database.CanConnectAsync(cancellationToken);
-            if (!canConnect)
-            {
-                AveroNova.App.UI.Helpers.StartupLog.Write("DB creating");
-                await db.Database.EnsureCreatedAsync(cancellationToken);
-            }
-            else
-            {
-                AveroNova.App.UI.Helpers.StartupLog.Write("DB already present, skipping migrate");
-            }
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB schema create/ensure start");
+            await db.Database.EnsureCreatedAsync(cancellationToken);
 
             AveroNova.App.UI.Helpers.StartupLog.Write("DB schema ensure start");
             await SqliteSubscriptionSchema.EnsureAsync(db, cancellationToken);

@@ -15,7 +15,7 @@ public partial class SplashPage : ContentPage
         IAuthenticationService auth,
         LocalDatabaseInitializer db,
         IConnectivityService connectivity,
-        ISyncService sync)
+        ISyncService? sync = null)
     {
         InitializeComponent();
         AveroNova.App.UI.Helpers.StartupLog.Write("Splash ctor");
@@ -62,7 +62,7 @@ public partial class SplashPage : ContentPage
         await MainThread.InvokeOnMainThreadAsync(async () =>
         {
             await Shell.Current.GoToAsync(nextRoute);
-            if (nextRoute == AppRoutes.Main && _connectivity.IsOnline)
+            if (nextRoute == AppRoutes.Main && _connectivity.IsOnline && _sync is not null)
                 _ = SafeSyncAsync();
         });
     }
@@ -71,7 +71,7 @@ public partial class SplashPage : ContentPage
     {
         try
         {
-            await _sync.SyncNowAsync();
+            await _sync!.SyncNowAsync();
         }
         catch (Exception ex)
         {

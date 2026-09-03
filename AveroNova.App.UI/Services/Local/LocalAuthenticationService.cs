@@ -481,6 +481,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
     private static void LogException(string operation, Exception ex, string? dbPath)
     {
         System.Diagnostics.Debug.WriteLine($"[swapdigit] {operation} path={dbPath}");
+        AveroNova.App.UI.Helpers.StartupLog.Write($"{operation} path={dbPath}{Environment.NewLine}{ex}");
         var current = ex;
         var depth = 0;
         while (current != null)

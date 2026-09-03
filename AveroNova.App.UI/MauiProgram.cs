@@ -56,6 +56,7 @@ public static class MauiProgram
             options.UseSqlite($"Data Source={dbPath}");
         });
         builder.Services.AddSingleton<LocalDatabaseInitializer>();
+        builder.Services.AddSingleton<ISettingsService, LocalSettingsService>();
         builder.Services.AddSingleton<ISubscriptionAccessRepository, SubscriptionAccessRepository>();
         builder.Services.AddSingleton<ICompanySubscriptionService, CompanySubscriptionService>();
         builder.Services.AddSingleton<AveroNova.Application.Interfaces.IAccessControlService, AccessControlService>();

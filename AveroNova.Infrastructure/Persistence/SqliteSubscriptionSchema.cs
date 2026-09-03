@@ -79,12 +79,20 @@ namespace AveroNova.Infrastructure.Persistence
                 """, cancellationToken);
 
             await EnsureSubscriptionColumnAsync(db, "PlanId", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "PlanName", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "Price", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "DurationInDays", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "StartDate", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "ExpiryDate", cancellationToken);
             await EnsureSubscriptionColumnAsync(db, "SubscriptionType", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "Plan", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "Status", cancellationToken);
             await EnsureSubscriptionColumnAsync(db, "TrialStartDate", cancellationToken);
             await EnsureSubscriptionColumnAsync(db, "TrialEndDate", cancellationToken);
             await EnsureSubscriptionColumnAsync(db, "IsTrial", cancellationToken);
             await EnsureSubscriptionColumnAsync(db, "IsActive", cancellationToken);
             await EnsureSubscriptionColumnAsync(db, "AutoRenew", cancellationToken);
+            await EnsureSubscriptionColumnAsync(db, "IsSubscription", cancellationToken);
 
             await db.Database.ExecuteSqlRawAsync(
                 """
@@ -126,12 +134,20 @@ namespace AveroNova.Infrastructure.Persistence
             var sql = column switch
             {
                 "PlanId" => """ALTER TABLE "Subscriptions" ADD COLUMN "PlanId" TEXT NULL;""",
+                "PlanName" => """ALTER TABLE "Subscriptions" ADD COLUMN "PlanName" TEXT NOT NULL DEFAULT '';""",
+                "Price" => """ALTER TABLE "Subscriptions" ADD COLUMN "Price" TEXT NOT NULL DEFAULT 0;""",
+                "DurationInDays" => """ALTER TABLE "Subscriptions" ADD COLUMN "DurationInDays" INTEGER NOT NULL DEFAULT 0;""",
+                "StartDate" => """ALTER TABLE "Subscriptions" ADD COLUMN "StartDate" TEXT NOT NULL DEFAULT '0001-01-01T00:00:00.0000000';""",
+                "ExpiryDate" => """ALTER TABLE "Subscriptions" ADD COLUMN "ExpiryDate" TEXT NOT NULL DEFAULT '0001-01-01T00:00:00.0000000';""",
                 "SubscriptionType" => """ALTER TABLE "Subscriptions" ADD COLUMN "SubscriptionType" INTEGER NOT NULL DEFAULT 1;""",
+                "Plan" => """ALTER TABLE "Subscriptions" ADD COLUMN "Plan" INTEGER NOT NULL DEFAULT 0;""",
+                "Status" => """ALTER TABLE "Subscriptions" ADD COLUMN "Status" INTEGER NOT NULL DEFAULT 0;""",
                 "TrialStartDate" => """ALTER TABLE "Subscriptions" ADD COLUMN "TrialStartDate" TEXT NULL;""",
                 "TrialEndDate" => """ALTER TABLE "Subscriptions" ADD COLUMN "TrialEndDate" TEXT NULL;""",
                 "IsTrial" => """ALTER TABLE "Subscriptions" ADD COLUMN "IsTrial" INTEGER NOT NULL DEFAULT 0;""",
                 "IsActive" => """ALTER TABLE "Subscriptions" ADD COLUMN "IsActive" INTEGER NOT NULL DEFAULT 0;""",
                 "AutoRenew" => """ALTER TABLE "Subscriptions" ADD COLUMN "AutoRenew" INTEGER NOT NULL DEFAULT 0;""",
+                "IsSubscription" => """ALTER TABLE "Subscriptions" ADD COLUMN "IsSubscription" INTEGER NOT NULL DEFAULT 0;""",
                 _ => throw new ArgumentOutOfRangeException(nameof(column), column, "Unknown subscription column.")
             };
 
