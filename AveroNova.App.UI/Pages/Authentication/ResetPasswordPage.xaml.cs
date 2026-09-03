@@ -4,6 +4,7 @@ using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Authentication;
 
+[QueryProperty(nameof(Email), "email")]
 public partial class ResetPasswordPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
@@ -15,6 +16,16 @@ public partial class ResetPasswordPage : ContentPage
     private bool _unfocusedAttached;
     private double _appliedMinHeight = double.NaN;
     private ScreenSize? _appliedSize;
+
+    public string Email
+    {
+        get => EntryEmail?.Text ?? string.Empty;
+        set
+        {
+            if (EntryEmail != null)
+                EntryEmail.Text = Uri.UnescapeDataString(value ?? string.Empty);
+        }
+    }
 
     public ResetPasswordPage(IAuthenticationService auth, IToastService toasts)
     {

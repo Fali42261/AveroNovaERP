@@ -7,162 +7,60 @@ using Microsoft.EntityFrameworkCore;
 namespace AveroNova.App.UI.Services.Local;
 
 /// <summary>
-/// Seeds realistic demo data for the demo@gmail.com test account.
-/// Idempotent: if demo records already exist for that company, does nothing.
+/// Seeds realistic demo data for the first company in the database.
+/// This provides sample data for dashboard/customers/products/etc. without hardcoded demo users.
+/// Idempotent: if demo records already exist for the first company, does nothing.
 /// </summary>
 internal static class DemoDataSeeder
 {
-    private const string DemoEmail = "demo@gmail.com";
-    private const string DemoPassword = "Demo@1234";
-    private const string DemoCompanyName = "swapdigit Demo";
-
-    // Fixed IDs so re-runs never duplicate
-    private static readonly Guid DemoUserId    = Guid.Parse("dddddddd-0000-4000-8000-000000000001");
-    private static readonly Guid DemoCompanyId = Guid.Parse("dddddddd-0000-4000-8000-000000000002");
+    private const string DemoCompanyName = "AveroNova Demo";
 
     public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
     {
-        // Idempotency check: if the demo company's customers already exist, skip.
-        if (await db.Customers.AnyAsync(c => c.CompanyId == DemoCompanyId && !c.IsDeleted, ct))
+        // Get the first company from the database (created by real user registration)
+        var firstCompany = await db.Companies
+            .AsNoTracking()
+            .OrderBy(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        if (firstCompany == null)
+            return;
+
+        var companyId = firstCompany.Id;
+
+        // Idempotency check: if the company's customers already exist, skip.
+        if (await db.Customers.AnyAsync(c => c.CompanyId == companyId && !c.IsDeleted, ct))
             return;
 
         var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // ── 1. User ─────────────────────────────────────────────────────
-        await EnsureUserAsync(db, now, ct);
+        // ── 1. Products ──────────────────────────────────────────────────
+        var productIds = await SeedProductsAsync(db, companyId, now, ct);
 
-        // ── 2. Company ───────────────────────────────────────────────────
-        await EnsureCompanyAsync(db, now, ct);
+        // ── 2. Customers ─────────────────────────────────────────────────
+        var customerIds = await SeedCustomersAsync(db, companyId, now, ct);
 
-        // ── 3. Subscription (30-day trial starting now) ─────────────────
-        await EnsureSubscriptionAsync(db, now, ct);
+        // ── 3. Sales / Invoices ──────────────────────────────────────────
+        var invoiceIds = await SeedInvoicesAsync(db, companyId, now, productIds, customerIds, ct);
 
-        // ── 4. UserRole ──────────────────────────────────────────────────
-        await EnsureUserRoleAsync(db, now, ct);
+        // ── 4. Payments ──────────────────────────────────────────────────
+        await SeedPaymentsAsync(db, companyId, now, invoiceIds, customerIds, ct);
 
-        // ── 5. Products ──────────────────────────────────────────────────
-        var productIds = await SeedProductsAsync(db, now, ct);
+        // ── 5. Purchases ─────────────────────────────────────────────────
+        await SeedPurchasesAsync(db, companyId, now, productIds, ct);
 
-        // ── 6. Customers ─────────────────────────────────────────────────
-        var customerIds = await SeedCustomersAsync(db, now, ct);
-
-        // ── 7. Sales / Invoices ──────────────────────────────────────────
-        var invoiceIds = await SeedInvoicesAsync(db, now, productIds, customerIds, ct);
-
-        // ── 8. Payments ──────────────────────────────────────────────────
-        await SeedPaymentsAsync(db, now, invoiceIds, customerIds, ct);
-
-        // ── 9. Purchases ─────────────────────────────────────────────────
-        await SeedPurchasesAsync(db, now, productIds, ct);
-
-        // ── 10. Stock Movements ──────────────────────────────────────────
-        await SeedStockMovementsAsync(db, now, productIds, ct);
+        // ── 6. Stock Movements ──────────────────────────────────────────
+        await SeedStockMovementsAsync(db, companyId, now, productIds, ct);
 
         await db.SaveChangesAsync(ct);
 
         System.Diagnostics.Debug.WriteLine(
-            "[swapdigit] Demo data seeded for demo@gmail.com / company=" + DemoCompanyId);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    private static async Task EnsureUserAsync(AppDbContext db, DateTime now, CancellationToken ct)
-    {
-        if (await db.Users.AnyAsync(u => u.Id == DemoUserId, ct))
-            return;
-
-        db.Users.Add(new User
-        {
-            Id = DemoUserId,
-            UserCode = "UDEMO001",
-            FullName = "Demo User",
-            Email = DemoEmail,
-            PasswordHash = LocalPasswordHasher.Hash(DemoPassword),
-            IsActiveUser = true,
-            CreatedAt = now,
-            IsDeleted = false
-        });
-        await db.SaveChangesAsync(ct);
-    }
-
-    private static async Task EnsureCompanyAsync(AppDbContext db, DateTime now, CancellationToken ct)
-    {
-        if (await db.Companies.AnyAsync(c => c.Id == DemoCompanyId, ct))
-            return;
-
-        db.Companies.Add(new Company
-        {
-            Id = DemoCompanyId,
-            UserId = DemoUserId,
-            CompanyCode = "CDEMO001",
-            CompanyName = DemoCompanyName,
-            OwnerName = "Demo User",
-            Email = DemoEmail,
-            MobileNumber = "9000000000",
-            Address = "123 Demo Street",
-            City = "Mumbai",
-            State = "Maharashtra",
-            Country = "India",
-            PinCode = "400001",
-            CreatedAt = now,
-            IsDeleted = false
-        });
-
-        db.UserCompanies.Add(new UserCompany
-        {
-            Id = Guid.Parse("dddddddd-0000-4000-8000-000000000003"),
-            UserId = DemoUserId,
-            CompanyId = DemoCompanyId,
-            IsOwner = true,
-            IsActive = true,
-            CreatedAt = now,
-            IsDeleted = false
-        });
-
-        await db.SaveChangesAsync(ct);
-    }
-
-    private static async Task EnsureSubscriptionAsync(AppDbContext db, DateTime now, CancellationToken ct)
-    {
-        if (await db.Subscriptions.AnyAsync(s => s.CompanyId == DemoCompanyId && !s.IsDeleted, ct))
-            return;
-
-        var plan = await db.SubscriptionPlans
-            .FirstOrDefaultAsync(p => p.Code == SubscriptionPlanCodes.FreeTrial && !p.IsDeleted, ct);
-        if (plan == null)
-            return;
-
-        var sub = FreeTrialSubscriptionFactory.Create(DemoCompanyId, plan, now);
-        // Extend demo subscription so it doesn't expire during testing
-        sub.ExpiryDate = now.AddDays(3650);
-        sub.TrialEndDate = now.AddDays(3650);
-        db.Subscriptions.Add(sub);
-        await db.SaveChangesAsync(ct);
-    }
-
-    private static async Task EnsureUserRoleAsync(AppDbContext db, DateTime now, CancellationToken ct)
-    {
-        if (await db.UserRoles.AnyAsync(ur => ur.UserId == DemoUserId && ur.CompanyId == DemoCompanyId && !ur.IsDeleted, ct))
-            return;
-
-        var admin = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Administrator" && !r.IsDeleted, ct);
-        if (admin == null)
-            return;
-
-        db.UserRoles.Add(new UserRole
-        {
-            Id = Guid.NewGuid(),
-            UserId = DemoUserId,
-            RoleId = admin.Id,
-            CompanyId = DemoCompanyId,
-            CreatedAt = now,
-            IsDeleted = false
-        });
-        await db.SaveChangesAsync(ct);
+            "[swapdigit] Demo data seeded for company=" + companyId);
     }
 
     // ─── Products ────────────────────────────────────────────────────────
     private static async Task<List<(Guid Id, string Name, string Sku, decimal Price)>> SeedProductsAsync(
-        AppDbContext db, DateTime now, CancellationToken ct)
+        AppDbContext db, Guid companyId, DateTime now, CancellationToken ct)
     {
         var defs = new (string Name, string Sku, string Cat, decimal PurchasePrice, decimal SalePrice, int Stock, int MinStock)[]
         {
@@ -182,7 +80,7 @@ internal static class DemoDataSeeder
         foreach (var (name, sku, cat, pp, sp, stock, minStock) in defs)
         {
             var existing = await db.Products.FirstOrDefaultAsync(
-                p => p.CompanyId == DemoCompanyId && p.SKU == sku && !p.IsDeleted, ct);
+                p => p.CompanyId == companyId && p.SKU == sku && !p.IsDeleted, ct);
             if (existing != null)
             {
                 result.Add((existing.Id, existing.Name, existing.SKU, existing.SellingPrice));
@@ -193,11 +91,11 @@ internal static class DemoDataSeeder
             db.Products.Add(new Product
             {
                 Id = id,
-                CompanyId = DemoCompanyId,
+                CompanyId = companyId,
                 Name = name,
                 SKU = sku,
                 Category = cat,
-                Brand = "swapdigit",
+                Brand = "AveroNova",
                 Unit = "pcs",
                 PurchasePrice = pp,
                 SellingPrice = sp,
@@ -218,7 +116,7 @@ internal static class DemoDataSeeder
 
     // ─── Customers ───────────────────────────────────────────────────────
     private static async Task<List<Guid>> SeedCustomersAsync(
-        AppDbContext db, DateTime now, CancellationToken ct)
+        AppDbContext db, Guid companyId, DateTime now, CancellationToken ct)
     {
         var defs = new (string Name, string Mobile, string Email, string City)[]
         {
@@ -236,7 +134,7 @@ internal static class DemoDataSeeder
         foreach (var (name, mobile, email, city) in defs)
         {
             var existing = await db.Customers.FirstOrDefaultAsync(
-                c => c.CompanyId == DemoCompanyId && c.Name == name && !c.IsDeleted, ct);
+                c => c.CompanyId == companyId && c.Name == name && !c.IsDeleted, ct);
             if (existing != null)
             {
                 result.Add(existing.Id);
@@ -247,7 +145,7 @@ internal static class DemoDataSeeder
             db.Customers.Add(new Customer
             {
                 Id = id,
-                CompanyId = DemoCompanyId,
+                CompanyId = companyId,
                 Name = name,
                 MobileNumber = mobile,
                 Email = email,
@@ -266,7 +164,7 @@ internal static class DemoDataSeeder
 
     // ─── Invoices ────────────────────────────────────────────────────────
     private static async Task<List<(Guid Id, string Number, decimal Total)>> SeedInvoicesAsync(
-        AppDbContext db, DateTime now,
+        AppDbContext db, Guid companyId, DateTime now,
         List<(Guid Id, string Name, string Sku, decimal Price)> products,
         List<Guid> customers,
         CancellationToken ct)
@@ -285,16 +183,16 @@ internal static class DemoDataSeeder
         };
 
         var result = new List<(Guid, string, decimal)>();
-        var invoiceCount = await db.Invoices.CountAsync(i => i.CompanyId == DemoCompanyId, ct);
+        var invoiceCount = await db.Invoices.CountAsync(i => i.CompanyId == companyId, ct);
 
         for (var i = 0; i < defs.Length; i++)
         {
             var d = defs[i];
             var invoiceNum = $"INV-DEMO-{(i + 1):D3}";
 
-            if (await db.Invoices.AnyAsync(inv => inv.InvoiceNumber == invoiceNum && inv.CompanyId == DemoCompanyId, ct))
+            if (await db.Invoices.AnyAsync(inv => inv.InvoiceNumber == invoiceNum && inv.CompanyId == companyId, ct))
             {
-                var ex = await db.Invoices.FirstAsync(inv => inv.InvoiceNumber == invoiceNum && inv.CompanyId == DemoCompanyId, ct);
+                var ex = await db.Invoices.FirstAsync(inv => inv.InvoiceNumber == invoiceNum && inv.CompanyId == companyId, ct);
                 result.Add((ex.Id, ex.InvoiceNumber, ex.PaidAmount));
                 continue;
             }
@@ -335,7 +233,7 @@ internal static class DemoDataSeeder
             db.Invoices.Add(new Invoice
             {
                 Id = invoiceId,
-                CompanyId = DemoCompanyId,
+                CompanyId = companyId,
                 InvoiceNumber = invoiceNum,
                 CustomerId = custId,
                 CustomerName = custName,
@@ -361,7 +259,7 @@ internal static class DemoDataSeeder
 
     // ─── Payments ────────────────────────────────────────────────────────
     private static async Task SeedPaymentsAsync(
-        AppDbContext db, DateTime now,
+        AppDbContext db, Guid companyId, DateTime now,
         List<(Guid Id, string Number, decimal Total)> invoices,
         List<Guid> customers,
         CancellationToken ct)
@@ -377,7 +275,7 @@ internal static class DemoDataSeeder
 
         foreach (var (num, isSupplier, custIdx, invIdx, amount, date, notes) in demoPayments)
         {
-            if (await db.Payments.AnyAsync(p => p.PaymentNumber == num && p.CompanyId == DemoCompanyId, ct))
+            if (await db.Payments.AnyAsync(p => p.PaymentNumber == num && p.CompanyId == companyId, ct))
                 continue;
 
             var partyId   = isSupplier ? Guid.NewGuid() : customers[custIdx % customers.Count];
@@ -393,7 +291,7 @@ internal static class DemoDataSeeder
             db.Payments.Add(new Payment
             {
                 Id = Guid.NewGuid(),
-                CompanyId = DemoCompanyId,
+                CompanyId = companyId,
                 PaymentNumber = num,
                 PartyId = partyId,
                 PartyName = partyName,
@@ -416,7 +314,7 @@ internal static class DemoDataSeeder
 
     // ─── Purchases ───────────────────────────────────────────────────────
     private static async Task SeedPurchasesAsync(
-        AppDbContext db, DateTime now,
+        AppDbContext db, Guid companyId, DateTime now,
         List<(Guid Id, string Name, string Sku, decimal Price)> products,
         CancellationToken ct)
     {
@@ -431,7 +329,7 @@ internal static class DemoDataSeeder
 
         foreach (var (num, supplier, date, status, items) in defs)
         {
-            if (await db.Purchases.AnyAsync(p => p.PurchaseNumber == num && p.CompanyId == DemoCompanyId, ct))
+            if (await db.Purchases.AnyAsync(p => p.PurchaseNumber == num && p.CompanyId == companyId, ct))
                 continue;
 
             var purchaseId = Guid.NewGuid();
@@ -457,7 +355,7 @@ internal static class DemoDataSeeder
             db.Purchases.Add(new Purchase
             {
                 Id = purchaseId,
-                CompanyId = DemoCompanyId,
+                CompanyId = companyId,
                 PurchaseNumber = num,
                 SupplierId = supplierId,
                 SupplierName = supplier,
@@ -478,12 +376,12 @@ internal static class DemoDataSeeder
 
     // ─── Stock Movements ─────────────────────────────────────────────────
     private static async Task SeedStockMovementsAsync(
-        AppDbContext db, DateTime now,
+        AppDbContext db, Guid companyId, DateTime now,
         List<(Guid Id, string Name, string Sku, decimal Price)> products,
         CancellationToken ct)
     {
         // Only seed if no movements exist for this company
-        if (await db.StockMovements.AnyAsync(sm => sm.CompanyId == DemoCompanyId, ct))
+        if (await db.StockMovements.AnyAsync(sm => sm.CompanyId == companyId, ct))
             return;
 
         // MovementType: 1=Purchase(In), 2=Sale(Out), 3=Adjustment
@@ -512,14 +410,14 @@ internal static class DemoDataSeeder
             db.StockMovements.Add(new StockMovement
             {
                 Id = Guid.NewGuid(),
-                CompanyId = DemoCompanyId,
+                CompanyId = companyId,
                 ProductId = prod.Id,
                 MovementType = movType,
                 Quantity = qty,
                 StockBefore = before,
                 StockAfter = after,
                 Reference = reference,
-                CreatedBy = DemoEmail,
+                CreatedBy = "System",
                 SyncStatus = 0,
                 CreatedAt = date,
                 IsDeleted = false

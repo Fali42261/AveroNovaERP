@@ -53,7 +53,8 @@ public partial class ForgotPasswordPage : ContentPage
             {
                 SuccessBanner.IsVisible = true;
                 await Task.Delay(2000);
-                await Shell.Current.GoToAsync(AppRoutes.ResetPassword);
+                await Shell.Current.GoToAsync(
+                    $"{AppRoutes.ResetPassword}?email={Uri.EscapeDataString(email.Trim().ToLowerInvariant())}");
             }
             else
             {
