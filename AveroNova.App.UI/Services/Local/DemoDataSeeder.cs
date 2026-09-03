@@ -7,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 namespace AveroNova.App.UI.Services.Local;
 
 /// <summary>
-/// Seeds realistic demo data for the abc@gmail.com test account.
+/// Seeds realistic demo data for the demo@gmail.com test account.
 /// Idempotent: if demo records already exist for that company, does nothing.
 /// </summary>
 internal static class DemoDataSeeder
 {
-    private const string DemoEmail = "abc@gmail.com";
+    private const string DemoEmail = "demo@gmail.com";
     private const string DemoPassword = "Demo@1234";
     private const string DemoCompanyName = "swapdigit Demo";
 
@@ -61,7 +61,7 @@ internal static class DemoDataSeeder
         await db.SaveChangesAsync(ct);
 
         System.Diagnostics.Debug.WriteLine(
-            "[swapdigit] Demo data seeded for abc@gmail.com / company=" + DemoCompanyId);
+            "[swapdigit] Demo data seeded for demo@gmail.com / company=" + DemoCompanyId);
     }
 
     // ─────────────────────────────────────────────────────────────────────

@@ -135,7 +135,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 UserCode = UniqueCode("U"),
                 FullName = Clamp(request.FullName, 150),
                 Email = Clamp(email, 150),
-                MobileNumber = Clamp(request.Mobile, 15),
+                MobileNumber = Clamp(FirstNonEmpty(request.Mobile, "0000000000"), 15),
                 PasswordHash = LocalPasswordHasher.Hash(request.Password),
                 IsActiveUser = true,
                 UserImg = string.Empty,
@@ -154,8 +154,8 @@ public sealed class LocalAuthenticationService : IAuthenticationService
                 OwnerName = Clamp(request.OwnerName, 150),
                 GSTNumber = Clamp(request.GSTNumber, 20),
                 PANNumber = Clamp(request.PANNumber, 20),
-                Email = Clamp(FirstNonEmpty(request.CompanyEmail, request.Email), 150),
-                MobileNumber = Clamp(FirstNonEmpty(request.CompanyMobile, request.Mobile), 15),
+                Email = Clamp(FirstNonEmpty(request.CompanyEmail, request.Email, "noemail@example.com"), 150),
+                MobileNumber = Clamp(FirstNonEmpty(request.CompanyMobile, request.Mobile, "0000000000"), 15),
                 Address = Clamp(request.Address, 500),
                 City = Clamp(request.City, 100),
                 State = Clamp(request.State, 100),
@@ -533,10 +533,17 @@ public sealed class LocalAuthenticationService : IAuthenticationService
     private static string UniqueCode(string prefix)
         => prefix + Convert.ToHexString(Guid.NewGuid().ToByteArray())[..8];
 
-    private static string FirstNonEmpty(string? primary, string? fallback)
+    private static string FirstNonEmpty(string? primary, string? fallback, string? finalFallback = null)
     {
         var value = primary?.Trim();
-        return string.IsNullOrWhiteSpace(value) ? (fallback ?? string.Empty).Trim() : value;
+        if (!string.IsNullOrWhiteSpace(value))
+            return value;
+
+        value = fallback?.Trim();
+        if (!string.IsNullOrWhiteSpace(value))
+            return value;
+
+        return (finalFallback ?? string.Empty).Trim();
     }
 
     private static string Clamp(string? value, int maxLength)

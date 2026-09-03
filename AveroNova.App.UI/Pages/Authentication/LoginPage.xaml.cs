@@ -240,5 +240,10 @@ public partial class LoginPage : ContentPage
         Loader.IsVisible = loading;
         if (loading)
             ErrorBanner.IsVisible = false;
+        else
+        {
+            // Ensure navigation is always enabled after loading completes
+            _navBusy = false;
+        }
     }
 }
