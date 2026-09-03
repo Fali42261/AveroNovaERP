@@ -55,31 +55,17 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         if (user == null || !user.IsActiveUser || !LocalPasswordHasher.Verify(password, user.PasswordHash))
             return (false, AuthenticationMessages.InvalidEmailOrPassword);
 
-        var access = await _subscriptions.ResolveLoginCompanyAsync(user.Id, LocalSessionStore.CompanyId);
-        if (!access.IsAllowed || access.CompanyId is not Guid allowedCompanyId || allowedCompanyId == Guid.Empty)
-            return (false, access.Message ?? SubscriptionMessages.FreeTrialExpiredAccess);
-
-        var belongsToCompany = await db.UserCompanies
-            .AsNoTracking()
-            .AnyAsync(uc => uc.UserId == user.Id
-                            && uc.CompanyId == allowedCompanyId
-                            && uc.IsActive
-                            && !uc.IsDeleted);
-        if (!belongsToCompany)
-        {
-            belongsToCompany = await db.Companies
-                .AsNoTracking()
-                .AnyAsync(c => c.Id == allowedCompanyId && c.UserId == user.Id && !c.IsDeleted);
-        }
-
-        if (!belongsToCompany)
+        // Resolve user's company independently of subscription status
+        // Subscription restrictions are applied later when accessing protected features
+        var companyId = await ResolveUserCompanyAsync(db, user.Id, LocalSessionStore.CompanyId);
+        if (companyId == Guid.Empty)
             return (false, AuthenticationMessages.InvalidEmailOrPassword);
 
         var company = await db.Companies
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == allowedCompanyId && !c.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Id == companyId && !c.IsDeleted);
         if (company == null)
-            return (false, SubscriptionMessages.FreeTrialExpiredAccess);
+            return (false, AuthenticationMessages.InvalidEmailOrPassword);
 
         var roleName = await GetRoleNameAsync(db, user.Id, company.Id);
         _currentUser = MapUser(user, company, roleName);
@@ -117,7 +103,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
 
         await using var db = await _factory.CreateDbContextAsync();
 
-        if (await db.Users.AnyAsync(u => !u.IsDeleted && u.Email.ToLower() == email))
+        if (await db.Users.AnyAsync(u => !u.IsDeleted && u.Email == email))
             return RegistrationResult.Fail("An account with this email already exists. Please sign in or reset the password.");
 
         var admin = await db.Roles
@@ -356,19 +342,18 @@ public sealed class LocalAuthenticationService : IAuthenticationService
             return false;
         }
 
-        var access = await _subscriptions.ResolveLoginCompanyAsync(user.Id, LocalSessionStore.CompanyId);
-        if (!access.IsAllowed || access.CompanyId is not Guid allowedCompanyId || allowedCompanyId == Guid.Empty)
+        // Resolve user's company independently of subscription status
+        var companyId = await ResolveUserCompanyAsync(db, user.Id, LocalSessionStore.CompanyId);
+        if (companyId == Guid.Empty)
         {
-            PendingAuthMessage.Set(access.Message ?? SubscriptionMessages.FreeTrialExpiredAccess);
             LocalSessionStore.ClearSession();
-            TrialReminderState.ClearSession();
             _currentUser = null;
             return false;
         }
 
         var company = await db.Companies
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == allowedCompanyId && !c.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Id == companyId && !c.IsDeleted);
         if (company == null)
         {
             LocalSessionStore.ClearSession();
@@ -393,6 +378,35 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         return exists;
     }
 
+    private static async Task<Guid> ResolveUserCompanyAsync(AppDbContext db, Guid userId, Guid? preferredCompanyId)
+    {
+        if (preferredCompanyId is Guid preferred && preferred != Guid.Empty)
+        {
+            var belongs = await db.UserCompanies
+                .AsNoTracking()
+                .AnyAsync(uc => uc.UserId == userId && uc.CompanyId == preferred && uc.IsActive && !uc.IsDeleted);
+            if (belongs)
+                return preferred;
+
+            var owns = await db.Companies
+                .AsNoTracking()
+                .AnyAsync(c => c.Id == preferred && c.UserId == userId && !c.IsDeleted);
+            if (owns)
+                return preferred;
+        }
+
+        var userCompany = await db.UserCompanies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.IsActive && !uc.IsDeleted);
+        if (userCompany != null)
+            return userCompany.CompanyId;
+
+        var company = await db.Companies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsDeleted);
+        return company?.Id ?? Guid.Empty;
+    }
+
     private static async Task<User?> FindUserByLoginEmailAsync(AppDbContext db, string email, bool track = false)
     {
         var normalized = NormalizeEmail(email);
@@ -400,7 +414,7 @@ public sealed class LocalAuthenticationService : IAuthenticationService
             return null;
 
         IQueryable<User> query = track ? db.Users : db.Users.AsNoTracking();
-        return await query.FirstOrDefaultAsync(u => !u.IsDeleted && u.Email.ToLower() == normalized);
+        return await query.FirstOrDefaultAsync(u => !u.IsDeleted && u.Email == normalized);
     }
 
     private static async Task<string> GetRoleNameAsync(AppDbContext db, Guid userId, Guid companyId)
