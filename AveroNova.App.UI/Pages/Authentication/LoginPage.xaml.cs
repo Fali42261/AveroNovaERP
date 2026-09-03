@@ -29,10 +29,21 @@ public partial class LoginPage : ContentPage
         _toasts.AttachTo(this);
         ApplyLayout();
         HideFieldErrors();
+
+        // Login is authentication-only. Subscription/trial status is evaluated
+        // after authentication and must never be presented as a login failure.
         var pending = PendingAuthMessage.Take();
-        if (!string.IsNullOrWhiteSpace(pending))
+        if (!string.IsNullOrWhiteSpace(pending)
+            && !IsSubscriptionAccessMessage(pending))
+        {
             ShowBanner(pending);
+        }
     }
+
+    private static bool IsSubscriptionAccessMessage(string message)
+        => message.Contains("subscription", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("free trial", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("trial has expired", StringComparison.OrdinalIgnoreCase);
 
     private void ApplyLayout()
     {
