@@ -76,6 +76,11 @@ namespace AveroNova.Application.Services
             var subscription = await _subscriptions.GetCurrentAsync(companyId, cancellationToken);
             if (subscription == null || subscription.IsExpired || !subscription.IsActive)
             {
+                var expiredPermissions = await _repository.GetUserPermissionNamesAsync(userId, companyId, cancellationToken);
+                var expiredPermissionSet = new HashSet<string>(expiredPermissions, StringComparer.OrdinalIgnoreCase);
+                var expiredMenus = subscription == null
+                    ? []
+                    : NavigationMenuCatalog.Build(expiredPermissionSet, subscription.EnabledModules);
                 var expiredMessage = subscription?.IsTrial == true
                     ? SubscriptionMessages.FreeTrialExpiredAccess
                     : SubscriptionMessages.ModuleNotIncluded;
@@ -85,7 +90,10 @@ namespace AveroNova.Application.Services
                     CompanyId = companyId,
                     IsMember = true,
                     IsSubscriptionExpired = true,
-                    RestrictionReason = expiredMessage
+                    RestrictionReason = expiredMessage,
+                    EnabledModules = subscription?.EnabledModules ?? [],
+                    Permissions = expiredPermissionSet,
+                    Menus = expiredMenus
                 };
             }
 

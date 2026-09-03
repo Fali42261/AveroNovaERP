@@ -41,7 +41,7 @@ namespace AveroNova.Application.Services
                 : null;
 
             IReadOnlyList<string> modules = [];
-            if (evaluated == SubscriptionStatus.Active && subscription.PlanId.HasValue)
+            if (subscription.PlanId.HasValue)
                 modules = await _repository.GetEnabledModuleKeysAsync(subscription.PlanId.Value, cancellationToken);
 
             return new CompanySubscriptionSnapshot

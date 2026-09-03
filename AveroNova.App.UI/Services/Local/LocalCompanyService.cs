@@ -216,10 +216,6 @@ public sealed class LocalCompanyService : ICompanyService
         if (!belongs)
             return (false, SubscriptionMessages.UserNotInCompany);
 
-        var snapshot = await _subscriptions.GetCurrentAsync(id);
-        if (snapshot == null || snapshot.IsExpired || !snapshot.IsActive)
-            return (false, SubscriptionMessages.FreeTrialExpiredAccess);
-
         LocalSessionStore.Set(userId.Value, id, email);
         CurrentCompanyChanged?.Invoke(this, EventArgs.Empty);
         return (true, null);

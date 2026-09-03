@@ -81,13 +81,16 @@ public partial class AppShell : Shell
         if (decision.IsAllowed)
             return;
 
-        e.Cancel();
         if (decision.IsSubscriptionExpired)
         {
-            await SignOutExpiredAsync();
+            e.Cancel();
+            var expiredPage = Current?.CurrentPage;
+            if (expiredPage != null)
+                await expiredPage.DisplayAlertAsync("Subscription", decision.Reason ?? SubscriptionMessages.FreeTrialExpiredAccess, "OK");
             return;
         }
 
+        e.Cancel();
         var message = decision.Reason ?? SubscriptionMessages.FreeTrialExpiredAccess;
         var page = Current?.CurrentPage;
         if (page != null)

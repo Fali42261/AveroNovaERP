@@ -469,11 +469,11 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         try
         {
             await db.SaveChangesAsync();
-            System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration stage OK stage={stage} path={dbPath}");
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Registration stage: {stage} OK path={dbPath}");
         }
         catch (Exception ex)
         {
-            LogException($"Registration stage failed stage={stage}", ex, dbPath);
+            LogException($"Registration stage failed: {stage}", ex, dbPath);
             throw;
         }
     }
@@ -487,7 +487,14 @@ public sealed class LocalAuthenticationService : IAuthenticationService
         while (current != null)
         {
             System.Diagnostics.Debug.WriteLine(
-                $"[swapdigit] exception[{depth}] type={current.GetType().FullName} message={current.Message}");
+                $"[swapdigit] exception[{depth}] Type: {current.GetType().FullName}; " +
+                $"Message: {current.Message}; Inner: {current.InnerException?.Message ?? "<none>"}");
+            if (current is Microsoft.Data.Sqlite.SqliteException sqlite)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[swapdigit] SQLite error code={sqlite.SqliteErrorCode}; " +
+                    $"extendedCode={sqlite.SqliteExtendedErrorCode}; message={sqlite.Message}");
+            }
             current = current.InnerException;
             depth++;
         }

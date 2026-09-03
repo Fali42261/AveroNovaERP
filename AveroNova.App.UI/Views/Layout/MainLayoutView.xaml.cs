@@ -583,11 +583,6 @@ public partial class MainLayoutView : ContentView
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
                 BindMenus(snapshot.Menus);
-                if (snapshot.IsSubscriptionExpired)
-                {
-                    await SignOutExpiredAsync();
-                    return;
-                }
 
                 var sidebar = NavigationMenuCatalog.SidebarOnly(snapshot.Menus);
                 var target = FindNavigablePage(sidebar, _selectedMenuKey)
