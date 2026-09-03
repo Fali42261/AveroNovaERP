@@ -41,13 +41,19 @@ public sealed class AuthorizationSnapshot
         if (!IsMember)
             return AccessDecision.Deny(CompanyId, moduleKey, SubscriptionMessages.UserNotInCompany);
 
+        // For expired subscriptions, allow read operations but block write operations
         if (IsSubscriptionExpired || !IsSubscriptionActive)
         {
-            return AccessDecision.Deny(
-                CompanyId,
-                moduleKey,
-                RestrictionReason ?? SubscriptionMessages.FreeTrialExpiredAccess,
-                expired: true);
+            if (IsWriteOperation(requiredAnyPermission))
+            {
+                return AccessDecision.Deny(
+                    CompanyId,
+                    moduleKey,
+                    RestrictionReason ?? SubscriptionMessages.FreeTrialExpiredAccess,
+                    expired: true);
+            }
+            // Allow read operations for expired subscriptions
+            return AccessDecision.Allow(CompanyId, moduleKey);
         }
 
         if (!EnabledModules.Contains(moduleKey, StringComparer.OrdinalIgnoreCase))
@@ -60,6 +66,30 @@ public sealed class AuthorizationSnapshot
         }
 
         return AccessDecision.Allow(CompanyId, moduleKey);
+    }
+
+    private static bool IsWriteOperation(IReadOnlyList<string> permissions)
+    {
+        // These are write/manage operations that should be blocked for expired subscriptions
+        var writePermissions = new[]
+        {
+            PermissionNames.BillingCreate,
+            PermissionNames.BillingDelete,
+            PermissionNames.CustomersManage,
+            PermissionNames.ProductsManage,
+            PermissionNames.InventoryManage,
+            PermissionNames.PaymentsManage,
+            PermissionNames.UsersCreate,
+            PermissionNames.UsersUpdate,
+            PermissionNames.UsersDelete,
+            PermissionNames.UsersAssignRole,
+            PermissionNames.UsersManage,
+            PermissionNames.SettingsManage,
+            PermissionNames.CompanyUpdate,
+            PermissionNames.PurchasesManage
+        };
+
+        return permissions.Any(p => writePermissions.Contains(p, StringComparer.OrdinalIgnoreCase));
     }
 
     private bool HasPermission(string permissionName)

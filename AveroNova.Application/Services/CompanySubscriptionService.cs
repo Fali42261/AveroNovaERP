@@ -106,25 +106,19 @@ namespace AveroNova.Application.Services
             CancellationToken cancellationToken = default)
         {
             if (userId == Guid.Empty)
-                return LoginCompanyAccessResult.Deny(SubscriptionMessages.FreeTrialExpiredAccess);
+                return LoginCompanyAccessResult.Deny("User not found.");
 
             var companyIds = await _repository.GetCompanyIdsForUserAsync(userId, cancellationToken);
             if (companyIds.Count == 0)
-                return LoginCompanyAccessResult.Deny(SubscriptionMessages.FreeTrialExpiredAccess);
+                return LoginCompanyAccessResult.Deny("No company found for this user.");
 
+            // Return preferred company if user belongs to it, regardless of subscription status
             if (preferredCompanyId is Guid preferred && preferred != Guid.Empty && companyIds.Contains(preferred))
-            {
-                if (await IsCompanyActiveAsync(preferred, cancellationToken))
-                    return LoginCompanyAccessResult.Allow(preferred);
-            }
+                return LoginCompanyAccessResult.Allow(preferred);
 
-            foreach (var companyId in companyIds)
-            {
-                if (await IsCompanyActiveAsync(companyId, cancellationToken))
-                    return LoginCompanyAccessResult.Allow(companyId);
-            }
-
-            return LoginCompanyAccessResult.Deny(SubscriptionMessages.FreeTrialExpiredAccess);
+            // Return first available company, regardless of subscription status
+            // Subscription restrictions are applied during feature access, not login
+            return LoginCompanyAccessResult.Allow(companyIds[0]);
         }
 
         public async Task<TrialReminderInfo?> GetTrialReminderAsync(
@@ -144,12 +138,6 @@ namespace AveroNova.Application.Services
                 EndDate = current.EndDate,
                 IsDue = true
             };
-        }
-
-        private async Task<bool> IsCompanyActiveAsync(Guid companyId, CancellationToken cancellationToken)
-        {
-            var snapshot = await GetCurrentAsync(companyId, cancellationToken);
-            return snapshot is { IsActive: true, IsExpired: false };
         }
     }
 }
