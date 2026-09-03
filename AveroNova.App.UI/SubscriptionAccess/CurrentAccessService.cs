@@ -38,7 +38,18 @@ public sealed class CurrentAccessService
         if (definition == null)
             return AccessDecision.Deny(LocalSessionStore.CompanyId ?? Guid.Empty, menuKey, "Unknown menu.");
 
-        return await AuthorizeFeatureAsync(definition.SubscriptionModule, definition.PermissionName, cancellationToken);
+        var decision = await AuthorizeFeatureAsync(
+            definition.SubscriptionModule,
+            definition.PermissionName,
+            cancellationToken);
+
+        // An expired/inactive subscription must never sign the user out or prevent
+        // opening existing data. Menu navigation is read access; write operations
+        // continue to be enforced by AuthorizeFeatureAsync at the form/service layer.
+        if (decision.IsSubscriptionExpired)
+            return AccessDecision.Allow(LocalSessionStore.CompanyId ?? Guid.Empty, definition.SubscriptionModule);
+
+        return decision;
     }
 
     public async Task<AuthorizationSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
