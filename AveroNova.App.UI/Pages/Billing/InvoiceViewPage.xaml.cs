@@ -45,6 +45,7 @@ public partial class InvoiceViewPage : ContentPage
         AddAction("Record Payment", async () => await AppToast.InfoAsync("Open Payments to record this invoice payment."), "SmallButton");
         if (inv.Status != InvoiceStatus.Cancelled)
             AddAction("Cancel Invoice", CancelInvoice, "DangerButton");
+        AddAction("Delete", DeleteInvoice, "DangerButton");
         Content.Children.Add(actions);
 
         var (statusBg, statusColor) = inv.Status switch
@@ -128,12 +129,18 @@ public partial class InvoiceViewPage : ContentPage
         if (_invoice == null) return;
         if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Are you sure you want to cancel this invoice?", "Cancel Invoice", "Keep")) return;
         var (ok, error) = await _svc.CancelAsync(_invoice.LocalId);
-        if (!ok)
-        {
-            await AppToast.ErrorAsync(error ?? "Unable to cancel invoice.");
-            return;
-        }
+        if (!ok) { await AppToast.ErrorAsync(error ?? "Unable to cancel invoice."); return; }
         await AppToast.SuccessAsync("Invoice cancelled successfully.");
+        await Shell.Current.GoToAsync("..");
+    }
+
+    private async Task DeleteInvoice()
+    {
+        if (_invoice == null) return;
+        if (!await DialogHelper.ConfirmDeleteAsync("Invoice", $"Delete {_invoice.InvoiceNumber}?")) return;
+        var (ok, error) = await _svc.DeleteAsync(_invoice.LocalId);
+        if (!ok) { await AppToast.ErrorAsync(error ?? "Unable to delete invoice."); return; }
+        await AppToast.SuccessAsync("Invoice deleted successfully.");
         await Shell.Current.GoToAsync("..");
     }
 
