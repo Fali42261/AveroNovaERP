@@ -39,6 +39,7 @@ public sealed class ReturnSyncService : IReturnSyncService
             var token = await _tokens.GetAccessTokenAsync();
             if (string.IsNullOrWhiteSpace(token)) return;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await LocalSyncVersionStore.EnsureSchemaAsync(db,cancellationToken);
             var items = await db.SyncQueue.Where(x => (x.EntityType == "SalesReturn" || x.EntityType == "PurchaseReturn") &&
                 (x.Status == (int)RecordSyncStatus.Pending || x.Status == (int)RecordSyncStatus.Failed)).OrderBy(x => x.CreatedAt).ToListAsync(cancellationToken);
 
@@ -61,6 +62,9 @@ public sealed class ReturnSyncService : IReturnSyncService
                     {
                         MarkFailed(item,"Return sync payload is incomplete."); await db.SaveChangesAsync(cancellationToken); continue;
                     }
+                    payload.SyncVersion=item.EntityType=="SalesReturn"
+                        ?await LocalSyncVersionStore.GetSalesReturnAsync(db,payload.Id,cancellationToken)
+                        :await LocalSyncVersionStore.GetPurchaseReturnAsync(db,payload.Id,cancellationToken);
                     ApiCallResult<ReturnSyncResponse> typed=op switch
                     {
                         SyncOperation.Create=>await _api.PostAsync<ReturnSyncResponse>(route,payload,token,cancellationToken),
@@ -74,11 +78,13 @@ public sealed class ReturnSyncService : IReturnSyncService
                         {
                             var row=await db.SalesReturns.FirstOrDefaultAsync(x=>x.Id==payload.Id,cancellationToken);
                             if(row is not null){row.ServerId=typed.Data.Id;row.SyncStatus=(int)RecordSyncStatus.Synced;row.LastSyncedAtUtc=DateTime.UtcNow;row.SyncError=null;}
+                            await LocalSyncVersionStore.SetSalesReturnAsync(db,payload.Id,typed.Data.SyncVersion,cancellationToken);
                         }
                         else
                         {
                             var row=await db.PurchaseReturns.FirstOrDefaultAsync(x=>x.Id==payload.Id,cancellationToken);
                             if(row is not null){row.ServerId=typed.Data.Id;row.SyncStatus=(int)RecordSyncStatus.Synced;row.LastSyncedAtUtc=DateTime.UtcNow;row.SyncError=null;}
+                            await LocalSyncVersionStore.SetPurchaseReturnAsync(db,payload.Id,typed.Data.SyncVersion,cancellationToken);
                         }
                     }
                 }
