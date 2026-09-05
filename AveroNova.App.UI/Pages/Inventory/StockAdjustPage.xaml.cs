@@ -1,5 +1,6 @@
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Inventory;
@@ -11,11 +12,24 @@ public partial class StockAdjustPage : ContentPage, IHostedPage
     private readonly IProductService   _product;
     private readonly ICompanyService   _company;
     private readonly IMainContentNavigator _navigator;
+    private readonly IConnectivityService _connectivity;
     private List<ProductModel>         _products = [];
     public  string? ProductIdParam { get; set; }
 
-    public StockAdjustPage(IInventoryService inv, IProductService product, ICompanyService company, IMainContentNavigator navigator)
-    { InitializeComponent(); _inv = inv; _product = product; _company = company; _navigator = navigator; }
+    public StockAdjustPage(
+        IInventoryService inv,
+        IProductService product,
+        ICompanyService company,
+        IMainContentNavigator navigator,
+        IConnectivityService connectivity)
+    {
+        InitializeComponent();
+        _inv = inv;
+        _product = product;
+        _company = company;
+        _navigator = navigator;
+        _connectivity = connectivity;
+    }
 
     protected override async void OnAppearing()
     {
@@ -49,9 +63,9 @@ public partial class StockAdjustPage : ContentPage, IHostedPage
 
     private async void OnSaveClicked(object s, EventArgs e)
     {
-        if (ProductPicker.SelectedIndex < 0) { ShowError("Select a product."); return; }
-        if (!int.TryParse(EntryNewStock.Text, out var newStock)) { ShowError("Enter a valid stock quantity."); return; }
-        if (ReasonPicker.SelectedIndex < 0) { ShowError("Select a reason."); return; }
+        if (ProductPicker.SelectedIndex < 0) { await ShowErrorAsync("Select a product."); return; }
+        if (!int.TryParse(EntryNewStock.Text, out var newStock)) { await ShowErrorAsync("Enter a valid stock quantity."); return; }
+        if (ReasonPicker.SelectedIndex < 0) { await ShowErrorAsync("Select a reason."); return; }
 
         var product = _products[ProductPicker.SelectedIndex];
         var adj = new StockAdjustmentModel
@@ -62,15 +76,31 @@ public partial class StockAdjustPage : ContentPage, IHostedPage
             NewStock     = newStock,
             Reason       = ReasonPicker.SelectedItem?.ToString() ?? "",
             Notes        = EditorNotes.Text?.Trim() ?? "",
-            AdjustedBy   = "Admin",
+            AdjustedBy   = "Current user",
             CompanyId    = _company.CurrentCompany?.LocalId ?? Guid.Empty
         };
 
         var (ok, err) = await _inv.AdjustStockAsync(adj);
-        if (ok) { await DisplayAlert("Success", "Stock adjusted successfully.", "OK"); await _navigator.GoBackAsync(); }
-        else ShowError(err ?? "Adjustment failed.");
+        if (ok)
+        {
+            ErrorBanner.IsVisible = false;
+            await AppToast.SuccessAsync(_connectivity.IsOnline
+                ? "Stock adjusted. Sync started."
+                : "Stock adjusted offline. It will sync automatically when internet returns.");
+            await _navigator.GoBackAsync();
+        }
+        else
+        {
+            await ShowErrorAsync(err ?? "Adjustment failed.");
+        }
+    }
+
+    private async Task ShowErrorAsync(string msg)
+    {
+        LblError.Text = msg;
+        ErrorBanner.IsVisible = true;
+        await AppToast.ErrorAsync(msg);
     }
 
     private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
-    private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 }
