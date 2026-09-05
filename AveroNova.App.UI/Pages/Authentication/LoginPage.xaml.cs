@@ -1,5 +1,6 @@
 using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Authentication;
@@ -106,7 +107,10 @@ public partial class LoginPage : ContentPage
         if (passwordMissing)
             ShowFieldError(LblPasswordError, "Password is required");
         if (emailMissing || passwordMissing)
+        {
+            await AppToast.ErrorAsync("Please complete the required sign-in fields.");
             return;
+        }
 
         SetLoading(true);
 
@@ -123,12 +127,16 @@ public partial class LoginPage : ContentPage
             }
             else
             {
-                ShowBanner(error ?? "Invalid credentials. Please try again.");
+                var message = error ?? "Invalid credentials. Please try again.";
+                ShowBanner(message);
+                await AppToast.ErrorAsync(message);
             }
         }
-        catch
+        catch (Exception)
         {
-            ShowBanner("Unable to sign in. Please try again.");
+            const string message = "Unable to sign in. Please try again.";
+            ShowBanner(message);
+            await AppToast.ErrorAsync(message);
         }
         finally
         {
