@@ -41,12 +41,6 @@ public partial class RegisterPage : ContentPage
     {
         base.OnAppearing();
         await _installation.EnsureInitializedAsync();
-        if (_installation.IsRegistered)
-        {
-            await Shell.Current.GoToAsync(AppRoutes.Login);
-            return;
-        }
-
         UpdateStepUi();
         ApplyLayout();
         if (_vm.CurrentStep < 1 || _vm.CurrentStep > 4)
