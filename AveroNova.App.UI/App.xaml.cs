@@ -1,16 +1,22 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using AveroNova.App.UI.Pages;
+﻿using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI
 {
     public partial class App : Microsoft.Maui.Controls.Application
     {
         private readonly AppShell _appShell;
+        private readonly IConnectivityService _connectivity;
+        private readonly ISyncService _sync;
 
-        public App(AppShell appShell)
+        public App(
+            AppShell appShell,
+            IConnectivityService connectivity,
+            ISyncService sync)
         {
             InitializeComponent();
             _appShell = appShell;
+            _connectivity = connectivity;
+            _sync = sync;
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
@@ -20,8 +26,9 @@ namespace AveroNova.App.UI
                 Title = "AveroNova"
             };
 
-            // Desktop window sizing is Windows-only. Setting Width/Height on Android
-            // crashes the process (Fatal signal 11 / SIGSEGV) before the first page.
+            window.Created += (_, _) => TriggerSyncIfOnline();
+            window.Activated += (_, _) => TriggerSyncIfOnline();
+
 #if WINDOWS
             window.Width = 1400;
             window.Height = 900;
@@ -38,6 +45,12 @@ namespace AveroNova.App.UI
 #endif
 
             return window;
+        }
+
+        private void TriggerSyncIfOnline()
+        {
+            if (_connectivity.IsOnline)
+                _ = _sync.SyncNowAsync();
         }
     }
 }
