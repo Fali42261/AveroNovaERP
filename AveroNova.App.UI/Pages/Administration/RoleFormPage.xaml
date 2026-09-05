@@ -20,7 +20,7 @@
         </Border>
 
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16">
+            <VerticalStackLayout Padding="20,16" Spacing="16" MaximumWidthRequest="760">
                 <Border Style="{StaticResource AppCard}">
                     <VerticalStackLayout Spacing="14">
                         <Label Text="Role Information" FontSize="14" FontAttributes="Bold"
@@ -39,8 +39,7 @@
                         <Label Text="Permissions" FontSize="14" FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <BoxView Style="{StaticResource Divider}"/>
-                        <Label Text="Module permissions coming soon." FontSize="13"
-                               TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                        <VerticalStackLayout x:Name="PermissionsList" Spacing="8"/>
                     </VerticalStackLayout>
                 </Border>
                 <Border x:Name="ErrorBanner" IsVisible="False"

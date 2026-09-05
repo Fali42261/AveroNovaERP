@@ -17,6 +17,8 @@ public sealed class LocalAppDbContext : DbContext
     public DbSet<LocalUserEntity> Users => Set<LocalUserEntity>();
     public DbSet<LocalCompanyEntity> Companies => Set<LocalCompanyEntity>();
     public DbSet<LocalUserCompanyEntity> UserCompanies => Set<LocalUserCompanyEntity>();
+    public DbSet<LocalCompanyRoleEntity> CompanyRoles => Set<LocalCompanyRoleEntity>();
+    public DbSet<LocalCompanyRolePermissionEntity> CompanyRolePermissions => Set<LocalCompanyRolePermissionEntity>();
     public DbSet<LocalRoleEntity> Roles => Set<LocalRoleEntity>();
     public DbSet<LocalPermissionEntity> Permissions => Set<LocalPermissionEntity>();
     public DbSet<LocalSubscriptionEntity> Subscriptions => Set<LocalSubscriptionEntity>();
@@ -74,6 +76,8 @@ public sealed class LocalAppDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.UserId, x.CompanyId }).IsUnique();
         });
+        modelBuilder.Entity<LocalCompanyRoleEntity>(e=>{e.ToTable("LocalCompanyRoles");e.HasKey(x=>x.Id);e.HasIndex(x=>new{x.CompanyId,x.Name}).IsUnique();});
+        modelBuilder.Entity<LocalCompanyRolePermissionEntity>(e=>{e.ToTable("LocalCompanyRolePermissions");e.HasKey(x=>x.Id);e.HasIndex(x=>new{x.CompanyId,x.RoleId,x.PermissionKey}).IsUnique();});
 
         modelBuilder.Entity<LocalRoleEntity>(e =>
         {

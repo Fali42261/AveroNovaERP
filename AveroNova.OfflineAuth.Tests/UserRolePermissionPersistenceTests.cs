@@ -1,0 +1,17 @@
+using AveroNova.App.UI.Data;
+using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Services;
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+
+namespace AveroNova.OfflineAuth.Tests;
+
+public sealed class UserRolePermissionPersistenceTests:IAsyncLifetime
+{
+ private string _path=null!;private IDbContextFactory<LocalAppDbContext> _factory=null!;private LocalUserService _service=null!;private readonly Guid _company=Guid.NewGuid(),_admin=Guid.NewGuid();
+ public async Task InitializeAsync(){_path=Path.Combine(Path.GetTempPath(),$"averonova-users-{Guid.NewGuid():N}.db");var o=new DbContextOptionsBuilder<LocalAppDbContext>().UseSqlite($"Data Source={_path}").Options;_factory=new Factory(o);await using(var db=await _factory.CreateDbContextAsync()){await db.Database.EnsureCreatedAsync();db.Users.Add(new LocalUserEntity{Id=_admin,FullName="Owner",Email="owner@test.local"});db.UserCompanies.Add(new LocalUserCompanyEntity{Id=Guid.NewGuid(),UserId=_admin,CompanyId=_company,IsOwner=true,IsActive=true});await db.SaveChangesAsync();}var s=new AppSessionContext();s.SetFromLocal(new LocalUserEntity{Id=_admin,FullName="Owner",Email="owner@test.local"},new LocalCompanyEntity{Id=_company,CompanyName="Admin Co"},["Owner"],["users.manage"],Guid.NewGuid());_service=new LocalUserService(_factory,s);}
+ public Task DisposeAsync(){try{if(File.Exists(_path))File.Delete(_path);}catch{}return Task.CompletedTask;}
+ [Fact]public async Task RoleAndUser_CrudPermissionsAndSyncQueue_Work(){var role=new RoleModel{Name="Manager",Description="Operations",Permissions=["inventory.manage","purchases.manage"]};Assert.True((await _service.CreateRoleAsync(role)).Ok);var user=new UserModel{CompanyId=_company,Name="Team User",Email="team@test.local",Phone="123",RoleId=role.LocalId,Status=UserStatus.Active};Assert.True((await _service.CreateAsync(user)).Ok);var saved=await _service.GetByIdAsync(user.LocalId);Assert.NotNull(saved);Assert.Equal("Manager",saved.Role);Assert.False((await _service.DeleteRoleAsync(role.LocalId)).Ok);Assert.True((await _service.DeactivateAsync(user.LocalId)).Ok);Assert.True((await _service.ResetPasswordAsync(user.LocalId)).Ok);Assert.True((await _service.DeleteAsync(user.LocalId)).Ok);Assert.True((await _service.DeleteRoleAsync(role.LocalId)).Ok);await using var db=await _factory.CreateDbContextAsync();Assert.Equal(6,await db.SyncQueue.CountAsync());}
+ [Fact]public async Task ValidationCompanyIsolationAndSelfProtection_Work(){Assert.Empty(await _service.GetAllAsync(Guid.NewGuid()));Assert.False((await _service.DeleteAsync(_admin)).Ok);var badRole=new RoleModel{Name="Bad",Permissions=["unknown.permission"]};Assert.False((await _service.CreateRoleAsync(badRole)).Ok);var validRole=new RoleModel{Name="Viewer",Permissions=["dashboard.view"]};Assert.True((await _service.CreateRoleAsync(validRole)).Ok);Assert.False((await _service.CreateAsync(new UserModel{CompanyId=Guid.NewGuid(),Name="Other",Email="other@test.local",RoleId=validRole.LocalId})).Ok);Assert.False((await _service.CreateAsync(new UserModel{CompanyId=_company,Name="Bad email",Email="invalid",RoleId=validRole.LocalId})).Ok);}
+ private sealed class Factory(DbContextOptions<LocalAppDbContext> o):IDbContextFactory<LocalAppDbContext>{public LocalAppDbContext CreateDbContext()=>new(o);public Task<LocalAppDbContext>CreateDbContextAsync(CancellationToken cancellationToken=default)=>Task.FromResult(CreateDbContext());}
+}

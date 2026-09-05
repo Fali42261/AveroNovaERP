@@ -44,6 +44,9 @@ public class LocalUserEntity
     public string Email { get; set; } = string.Empty;
     public string MobileNumber { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public string Notes { get; set; } = string.Empty;
+    public int AdminStatus { get; set; }
+    public DateTime? LastLoginAtUtc { get; set; }
     public long SyncVersion { get; set; } = 1;
 }
 
@@ -65,6 +68,22 @@ public class LocalUserCompanyEntity
     public bool IsDefault { get; set; }
     public bool IsOwner { get; set; }
     public bool IsActive { get; set; } = true;
+    public Guid? RoleId { get; set; }
+}
+
+public class LocalCompanyRoleEntity
+{
+    public Guid Id { get; set; } public Guid? ServerId { get; set; } public Guid CompanyId { get; set; }
+    public string Name { get; set; } = string.Empty; public string Description { get; set; } = string.Empty;
+    public bool IsSystem { get; set; } public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } public DateTime UpdatedAtUtc { get; set; }
+    public DateTime? LastSyncedAtUtc { get; set; } public string? SyncError { get; set; }
+}
+
+public class LocalCompanyRolePermissionEntity
+{
+    public Guid Id { get; set; } public Guid CompanyId { get; set; } public Guid RoleId { get; set; }
+    public string PermissionKey { get; set; } = string.Empty;
 }
 
 public class LocalRoleEntity

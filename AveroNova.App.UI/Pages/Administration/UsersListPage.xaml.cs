@@ -7,22 +7,25 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Administration;
 
-public partial class UsersListPage : ContentPage
+public partial class UsersListPage : ContentPage, IHostedPage
 {
     private readonly IUserService _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;private readonly Func<UserFormPage> _formFactory;private readonly Func<UserViewPage> _viewFactory;
 
     private List<UserModel> _all = [];
 
     public UsersListPage(
         IUserService svc,
-        ICompanyService company)
+        ICompanyService company, IMainContentNavigator navigator, Func<UserFormPage> formFactory, Func<UserViewPage> viewFactory)
     {
         InitializeComponent();
 
         _svc = svc;
         _company = company;
+        _navigator=navigator;_formFactory=formFactory;_viewFactory=viewFactory;
     }
+    public Task LoadForHostAsync()=>LoadAsync();
 
     protected override async void OnAppearing()
     {
@@ -288,8 +291,7 @@ public partial class UsersListPage : ContentPage
 
         viewButton.Clicked += async (_, _) =>
         {
-            await Shell.Current.GoToAsync(
-                $"{AppRoutes.UserView}?id={user.LocalId}");
+            var page=_viewFactory();page.UserId=user.LocalId.ToString("D");await _navigator.NavigateAsync(page,"User Details","Home / Users / Details");
         };
 
         var editButton = new Button
@@ -300,8 +302,7 @@ public partial class UsersListPage : ContentPage
 
         editButton.Clicked += async (_, _) =>
         {
-            await Shell.Current.GoToAsync(
-                $"{AppRoutes.UserEdit}?id={user.LocalId}");
+            var page=_formFactory();page.EditId=user.LocalId.ToString("D");await _navigator.NavigateAsync(page,"Edit User","Home / Users / Edit");
         };
 
         actionsRow.Children.Add(viewButton);
@@ -326,8 +327,7 @@ public partial class UsersListPage : ContentPage
         object sender,
         EventArgs e)
     {
-        await Shell.Current.GoToAsync(
-            AppRoutes.UserAdd);
+        await _navigator.NavigateAsync(_formFactory(),"Add User","Home / Users / Add");
     }
 
     private async void OnFilterClicked(

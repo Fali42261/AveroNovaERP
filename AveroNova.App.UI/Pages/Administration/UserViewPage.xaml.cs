@@ -9,23 +9,29 @@ using Microsoft.Maui.Controls.Shapes;
 namespace AveroNova.App.UI.Pages.Administration;
 
 [QueryProperty(nameof(UserId), "id")]
-public partial class UserViewPage : ContentPage
+public partial class UserViewPage : ContentPage, IHostedPage
 {
     private readonly IUserService _svc;
     private UserModel? _user;
+    private readonly IMainContentNavigator _navigator;private readonly Func<UserFormPage> _formFactory;
 
     public string? UserId { get; set; }
 
-    public UserViewPage(IUserService svc)
+    public UserViewPage(IUserService svc, IMainContentNavigator navigator, Func<UserFormPage> formFactory)
     {
         InitializeComponent();
         _svc = svc;
+        _navigator=navigator;_formFactory=formFactory;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
 
+        await LoadForHostAsync();
+    }
+    public async Task LoadForHostAsync()
+    {
         if (!string.IsNullOrEmpty(UserId) &&
             Guid.TryParse(UserId, out var id))
         {
@@ -231,15 +237,14 @@ public partial class UserViewPage : ContentPage
         if (_user == null)
             return;
 
-        await Shell.Current.GoToAsync(
-            $"{AppRoutes.UserEdit}?id={_user.LocalId}");
+        var page=_formFactory();page.EditId=_user.LocalId.ToString("D");await _navigator.NavigateAsync(page,"Edit User","Home / Users / Edit");
     }
 
     private async void OnBackClicked(
         object sender,
         EventArgs e)
     {
-        await Shell.Current.GoToAsync("..");
+        await _navigator.GoBackAsync();
     }
 
     private async void OnDeleteClicked(
@@ -256,8 +261,7 @@ public partial class UserViewPage : ContentPage
             return;
         }
 
-        await _svc.DeleteAsync(_user.LocalId);
-
-        await Shell.Current.GoToAsync("..");
+        var result=await _svc.DeleteAsync(_user.LocalId);if(!result.Ok){await DisplayAlert("Delete failed",result.Error??"Unable to delete user.","OK");return;}
+        await _navigator.GoBackAsync();
     }
 }

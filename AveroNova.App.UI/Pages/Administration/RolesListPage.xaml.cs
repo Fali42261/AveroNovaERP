@@ -5,23 +5,26 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Administration;
 
-public partial class RolesListPage : ContentPage
+public partial class RolesListPage : ContentPage, IHostedPage
 {
     private readonly IUserService _svc;
     private readonly ICompanyService _company;
     private List<RoleModel> _all = [];
+    private readonly IMainContentNavigator _navigator;private readonly Func<RoleFormPage> _formFactory;
 
     public RolesListPage(
     IUserService svc,
-    ICompanyService company)
+    ICompanyService company, IMainContentNavigator navigator, Func<RoleFormPage> formFactory)
     {
         InitializeComponent();
 
         _svc = svc;
         _company = company;
+        _navigator=navigator;_formFactory=formFactory;
     }
 
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync()=>LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
     private async void OnRefreshClicked(object s, EventArgs e) { await LoadAsync(); }
 
@@ -79,8 +82,9 @@ public partial class RolesListPage : ContentPage
 
         var actionsRow = new HorizontalStackLayout { Spacing = 6, VerticalOptions = LayoutOptions.Center, HorizontalOptions = LayoutOptions.End };
         var editBtn = new Button { Text = "Edit", Style = (Style)Resources["SmallButton"] };
-        editBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.RoleEdit}?id={r.LocalId}");
+        editBtn.Clicked += async (_, _) => {var page=_formFactory();page.EditId=r.LocalId.ToString("D");await _navigator.NavigateAsync(page,"Edit Role","Home / Roles / Edit");};
         actionsRow.Children.Add(editBtn);
+        var deleteBtn=new Button{Text="Delete",Style=(Style)Resources["SmallSecondaryButton"],IsEnabled=!r.IsSystem};deleteBtn.Clicked+=async(_,_)=>{var result=await _svc.DeleteRoleAsync(r.LocalId);if(result.Ok)await LoadAsync();else await DisplayAlert("Delete failed",result.Error??"Unable to delete role.","OK");};actionsRow.Children.Add(deleteBtn);
 
         grid.Add(iconBorder, 0, 0);
         grid.Add(info, 1, 0);
@@ -89,5 +93,5 @@ public partial class RolesListPage : ContentPage
         return border;
     }
 
-    private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.RoleAdd);
+    private async void OnAddClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(),"Add Role","Home / Roles / Add");
 }

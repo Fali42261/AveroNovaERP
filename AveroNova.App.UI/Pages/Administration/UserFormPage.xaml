@@ -20,7 +20,7 @@
         </Border>
 
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16">
+            <VerticalStackLayout Padding="20,16" Spacing="16" MaximumWidthRequest="760">
                 <Border Style="{StaticResource AppCard}">
                     <VerticalStackLayout Spacing="14">
                         <Label Text="User Information" FontSize="14" FontAttributes="Bold"
@@ -33,7 +33,7 @@
                         <Label Text="Phone" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="+1 555-0000" Keyboard="Telephone"/></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Role" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PickerRole" Title="Select role"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Spacing="4"><Label Text="Role" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PickerRole" Title="Select role" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Status" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Switch x:Name="SwitchActive" IsToggled="True" HorizontalOptions="Start"/></Border></VerticalStackLayout>
                         </Grid>
                         <Label Text="Notes" Style="{StaticResource InputLabel}"/>

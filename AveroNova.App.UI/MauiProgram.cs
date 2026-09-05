@@ -161,9 +161,15 @@ public static class MauiProgram
 
         builder.Services.AddTransient<UsersListPage>();
         builder.Services.AddTransient<Func<UsersListPage>>(sp => () => sp.GetRequiredService<UsersListPage>());
+        builder.Services.AddTransient<UserFormPage>();
+        builder.Services.AddTransient<Func<UserFormPage>>(sp => () => sp.GetRequiredService<UserFormPage>());
+        builder.Services.AddTransient<UserViewPage>();
+        builder.Services.AddTransient<Func<UserViewPage>>(sp => () => sp.GetRequiredService<UserViewPage>());
 
         builder.Services.AddTransient<RolesListPage>();
         builder.Services.AddTransient<Func<RolesListPage>>(sp => () => sp.GetRequiredService<RolesListPage>());
+        builder.Services.AddTransient<RoleFormPage>();
+        builder.Services.AddTransient<Func<RoleFormPage>>(sp => () => sp.GetRequiredService<RoleFormPage>());
 
         builder.Services.AddTransient<PermissionsPage>();
         builder.Services.AddTransient<Func<PermissionsPage>>(sp => () => sp.GetRequiredService<PermissionsPage>());
@@ -247,7 +253,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ISettingsService, MockSettingsService>();
         builder.Services.AddTransient<ISubscriptionService, MockSubscriptionService>();
         builder.Services.AddSingleton<ISyncService, RegistrationSyncService>();
-        builder.Services.AddTransient<IUserService, MockUserService>();
+        builder.Services.AddTransient<IUserService, LocalUserService>();
 
 #if DEBUG
         builder.Logging.AddDebug();
