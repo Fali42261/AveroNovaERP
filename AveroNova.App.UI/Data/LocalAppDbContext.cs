@@ -23,6 +23,7 @@ public sealed class LocalAppDbContext : DbContext
     public DbSet<LocalRoleEntity> Roles => Set<LocalRoleEntity>();
     public DbSet<LocalPermissionEntity> Permissions => Set<LocalPermissionEntity>();
     public DbSet<LocalSubscriptionEntity> Subscriptions => Set<LocalSubscriptionEntity>();
+    public DbSet<LocalSubscriptionPaymentEntity> SubscriptionPayments => Set<LocalSubscriptionPaymentEntity>();
     public DbSet<LocalLicenseEntity> Licenses => Set<LocalLicenseEntity>();
     public DbSet<LocalCustomerEntity> Customers => Set<LocalCustomerEntity>();
     public DbSet<LocalProductEntity> Products => Set<LocalProductEntity>();
@@ -101,6 +102,7 @@ public sealed class LocalAppDbContext : DbContext
             e.HasIndex(x => x.CompanyId);
             e.Property(x => x.PlanName).HasMaxLength(64);
         });
+        modelBuilder.Entity<LocalSubscriptionPaymentEntity>(e=>{e.ToTable("LocalSubscriptionPayments");e.HasKey(x=>x.Id);e.HasIndex(x=>new{x.CompanyId,x.PaymentDate});e.HasIndex(x=>new{x.CompanyId,x.PaymentNumber}).IsUnique();});
 
         modelBuilder.Entity<LocalLicenseEntity>(e =>
         {
