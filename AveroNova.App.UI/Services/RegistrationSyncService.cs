@@ -61,7 +61,8 @@ public sealed class RegistrationSyncService : ISyncService
             }
 
             await using var db = await _dbFactory.CreateDbContextAsync();
-            var pending = await db.SyncQueue.Where(q => q.Status == (int)RecordSyncStatus.Pending || q.Status == (int)RecordSyncStatus.Failed)
+            var pending = await db.SyncQueue
+                .Where(q => q.Status == (int)RecordSyncStatus.Pending || q.Status == (int)RecordSyncStatus.Failed)
                 .OrderBy(q => q.CreatedAt).ToListAsync();
             if (pending.Count == 0)
             {
@@ -79,19 +80,16 @@ public sealed class RegistrationSyncService : ISyncService
 
             var registrationIds = registrationItems.Select(x => x.Id).ToHashSet();
             foreach (var item in pending.Where(p => !registrationIds.Contains(p.Id) && p.EntityType.Equals("Company", StringComparison.OrdinalIgnoreCase)))
-            {
-                if (await SyncCompanyAsync(db, item)) succeeded++; else failed++;
-            }
+            { if (await SyncCompanyAsync(db, item)) succeeded++; else failed++; }
 
             foreach (var item in pending.Where(p => p.EntityType.Equals("Customer", StringComparison.OrdinalIgnoreCase)))
-            {
-                if (await SyncCustomerAsync(db, item)) succeeded++; else failed++;
-            }
+            { if (await SyncCustomerAsync(db, item)) succeeded++; else failed++; }
 
             foreach (var item in pending.Where(p => p.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase)))
-            {
-                if (await SyncProductAsync(db, item)) succeeded++; else failed++;
-            }
+            { if (await SyncProductAsync(db, item)) succeeded++; else failed++; }
+
+            foreach (var item in pending.Where(p => p.EntityType.Equals("StockMovement", StringComparison.OrdinalIgnoreCase)))
+            { if (await SyncStockMovementAsync(db, item)) succeeded++; else failed++; }
 
             if (_licenses is not null)
             {
@@ -121,6 +119,43 @@ public sealed class RegistrationSyncService : ISyncService
         await RefreshCountsAsync();
         return [new SyncHistoryModel { SyncedAt = LastSyncAt ?? DateTime.UtcNow, Success = FailedCount == 0, ItemsSynced = 0,
             Module = "Sync", Message = PendingCount > 0 ? $"{PendingCount} pending, {FailedCount} failed." : "Queue is clear." }];
+    }
+
+    private async Task<bool> SyncStockMovementAsync(LocalAppDbContext db, LocalSyncQueueEntity item)
+    {
+        var token = await _tokens.GetAccessTokenAsync();
+        if (string.IsNullOrWhiteSpace(token)) { KeepPending(item, "Sign in is required before inventory changes can sync."); return false; }
+
+        StockMovementSyncPayload? payload;
+        try { payload = string.IsNullOrWhiteSpace(item.PayloadJson) ? null : JsonSerializer.Deserialize<StockMovementSyncPayload>(item.PayloadJson, JsonOptions); }
+        catch { MarkFailed([item], "Invalid stock movement sync payload."); return false; }
+        if (payload is null || payload.Id == Guid.Empty || payload.CompanyId == Guid.Empty || payload.ProductId == Guid.Empty)
+        { MarkFailed([item], "Stock movement sync payload is incomplete."); return false; }
+
+        item.Status = (int)RecordSyncStatus.Syncing;
+        item.LastAttemptAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        var result = await _api.PostAsync<StockMovementSyncResponse>("api/inventory/movements", payload, token);
+        if (!result.Success || result.Data is null)
+        {
+            item.RetryCount++; item.LastAttemptAt = DateTime.UtcNow; item.Error = result.Error ?? "Inventory sync failed.";
+            item.Status = (int)(result.IsNetworkError || item.RetryCount < 5 ? RecordSyncStatus.Pending : RecordSyncStatus.Failed);
+            return false;
+        }
+
+        var row = await db.StockMovements.FirstOrDefaultAsync(x => x.Id == payload.Id);
+        if (row is not null)
+        {
+            row.ServerId = result.Data.Id;
+            row.SyncStatus = (int)RecordSyncStatus.Synced;
+            row.LastSyncedAtUtc = DateTime.UtcNow;
+            row.SyncError = null;
+        }
+
+        MarkSynced(item);
+        _connectivity.DecrementPending();
+        return true;
     }
 
     private async Task<bool> SyncProductAsync(LocalAppDbContext db, LocalSyncQueueEntity item)
@@ -299,4 +334,6 @@ public sealed class RegistrationSyncService : ISyncService
     private sealed class CustomerSyncResponse { public Guid Id { get; set; } public long SyncVersion { get; set; } public DateTime? UpdatedAt { get; set; } }
     private sealed class ProductSyncPayload { public Guid Id { get; set; } public Guid CompanyId { get; set; } public string Name { get; set; } = string.Empty; public string? Sku { get; set; } public string? Barcode { get; set; } public string? Category { get; set; } public string? Brand { get; set; } public string? Unit { get; set; } public decimal PurchasePrice { get; set; } public decimal SellingPrice { get; set; } public decimal TaxPercent { get; set; } public int Stock { get; set; } public int MinimumStock { get; set; } public string? Description { get; set; } public int Status { get; set; } public long SyncVersion { get; set; } }
     private sealed class ProductSyncResponse { public Guid Id { get; set; } public long SyncVersion { get; set; } public DateTime? UpdatedAt { get; set; } }
+    private sealed class StockMovementSyncPayload { public Guid Id { get; set; } public Guid CompanyId { get; set; } public Guid ProductId { get; set; } public string? ProductName { get; set; } public string? Sku { get; set; } public int Type { get; set; } public int Quantity { get; set; } public int StockBefore { get; set; } public int StockAfter { get; set; } public string? Reference { get; set; } public string? Notes { get; set; } public string? CreatedBy { get; set; } public long SyncVersion { get; set; } }
+    private sealed class StockMovementSyncResponse { public Guid Id { get; set; } public long SyncVersion { get; set; } public DateTime? UpdatedAt { get; set; } }
 }
