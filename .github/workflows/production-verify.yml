@@ -22,6 +22,18 @@ jobs:
       - name: Build API
         run: dotnet build AveroNova.API/AveroNova.API.csproj -c Release --no-restore
 
+  unit-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore API tests
+        run: dotnet restore AveroNova.API.Tests/AveroNova.API.Tests.csproj
+      - name: Run API unit/integration tests
+        run: dotnet test AveroNova.API.Tests/AveroNova.API.Tests.csproj -c Release --no-restore --logger "console;verbosity=normal"
+
   maui-windows-build:
     runs-on: windows-latest
     steps:
