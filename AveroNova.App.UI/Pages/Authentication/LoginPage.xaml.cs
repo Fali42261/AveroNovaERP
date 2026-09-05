@@ -1,6 +1,9 @@
 using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.Shared.Security;
+using System.Text.RegularExpressions;
 
 namespace AveroNova.App.UI.Pages.Authentication;
 
@@ -102,11 +105,21 @@ public partial class LoginPage : ContentPage
         var passwordMissing = string.IsNullOrWhiteSpace(EntryPassword.Text);
 
         if (emailMissing)
-            ShowFieldError(LblEmailError, "Email address is required");
+            ShowFieldError(LblEmailError, "Company Email ID is required");
         if (passwordMissing)
             ShowFieldError(LblPasswordError, "Password is required");
         if (emailMissing || passwordMissing)
             return;
+        if (!Regex.IsMatch(EntryEmail.Text!.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            ShowFieldError(LblEmailError, "Enter a valid Company Email ID");
+            return;
+        }
+        if (!PasswordPolicy.IsStrong(EntryPassword.Text))
+        {
+            ShowFieldError(LblPasswordError, PasswordPolicy.RequirementMessage);
+            return;
+        }
 
         SetLoading(true);
 
@@ -136,7 +149,7 @@ public partial class LoginPage : ContentPage
         }
     }
 
-    private async void OnRegisterTapped(object? sender, TappedEventArgs e)
+    private async void OnRegisterClicked(object? sender, EventArgs e)
         => await Shell.Current.GoToAsync(AppRoutes.Register);
 
     private async void OnResetPasswordTapped(object? sender, TappedEventArgs e)
@@ -157,8 +170,8 @@ public partial class LoginPage : ContentPage
 
     private void ShowBanner(string message)
     {
-        LblError.Text = message;
-        ErrorBanner.IsVisible = true;
+        ErrorBanner.IsVisible = false;
+        _ = AppToast.ShowAsync(this, message, AppToastKind.Error);
     }
 
     private void SetLoading(bool loading)

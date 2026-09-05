@@ -65,17 +65,17 @@
                                LineBreakMode="WordWrap" />
                     </Border>
 
-                    <Label Text="Email" Style="{StaticResource InputLabel}" />
+                    <Label Text="Company Email ID" Style="{StaticResource InputLabel}" />
                     <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
                         <Entry x:Name="EntryEmail"
-                               Placeholder="you@company.com"
+                               Placeholder="company@email.com"
                                PlaceholderColor="{StaticResource Gray400}"
                                Keyboard="Email"
                                ReturnType="Next"
                                BackgroundColor="Transparent"
                                TextColor="{StaticResource TextPrimary}"
                                ClearButtonVisibility="Never"
-                               SemanticProperties.Description="Email address"
+                               SemanticProperties.Description="Company email address"
                                Completed="OnEmailCompleted" />
                     </Border>
                     <Label x:Name="LblEmailError"
@@ -160,15 +160,16 @@
                                FontSize="13"
                                Margin="0,0,4,0"
                                TextColor="{StaticResource TextSecondary}" />
-                        <Label Text="Create Account"
-                               FontSize="13"
-                               FontAttributes="Bold"
-                               TextColor="{StaticResource PrimaryColor}"
-                               helpers:CursorBehavior.Cursor="Hand">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnRegisterTapped" />
-                            </Label.GestureRecognizers>
-                        </Label>
+                        <Button Text="Create Account"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource PrimaryColor}"
+                                BackgroundColor="Transparent"
+                                BorderWidth="0"
+                                Padding="0"
+                                MinimumHeightRequest="36"
+                                helpers:CursorBehavior.Cursor="Hand"
+                                Clicked="OnRegisterClicked" />
                     </FlexLayout>
                 </VerticalStackLayout>
             </Border>
