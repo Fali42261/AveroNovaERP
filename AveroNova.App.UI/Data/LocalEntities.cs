@@ -86,6 +86,17 @@ public class LocalCompanyRolePermissionEntity
     public string PermissionKey { get; set; } = string.Empty;
 }
 
+public class LocalAppSettingsEntity
+{
+    public Guid Id { get; set; } public Guid UserId { get; set; } public Guid CompanyId { get; set; }
+    public int Theme { get; set; } public string AccentColor { get; set; } = "#2563EB"; public bool CompactMode { get; set; }
+    public string Language { get; set; } = "en"; public string DateFormat { get; set; } = "dd MMM yyyy";
+    public string Currency { get; set; } = "USD"; public string CurrencySymbol { get; set; } = "$"; public string TimeZone { get; set; } = "UTC";
+    public bool Notifications { get; set; } = true; public bool AutoSync { get; set; } = true; public bool OfflineMode { get; set; }
+    public bool RememberLogin { get; set; } public Guid? LastCompanyId { get; set; } public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } public DateTime UpdatedAtUtc { get; set; } public DateTime? LastSyncedAtUtc { get; set; } public string? SyncError { get; set; }
+}
+
 public class LocalRoleEntity
 {
     public Guid Id { get; set; }

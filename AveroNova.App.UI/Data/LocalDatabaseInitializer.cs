@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 11;
+    public const int CurrentSchemaVersion = 12;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -361,6 +361,15 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
               "Id" TEXT NOT NULL CONSTRAINT "PK_LocalCompanyRolePermissions" PRIMARY KEY, "CompanyId" TEXT NOT NULL,
               "RoleId" TEXT NOT NULL, "PermissionKey" TEXT NOT NULL);
             """, cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "LocalAppSettings" (
+              "Id" TEXT NOT NULL CONSTRAINT "PK_LocalAppSettings" PRIMARY KEY, "UserId" TEXT NOT NULL, "CompanyId" TEXT NOT NULL,
+              "Theme" INTEGER NOT NULL, "AccentColor" TEXT NOT NULL, "CompactMode" INTEGER NOT NULL, "Language" TEXT NOT NULL,
+              "DateFormat" TEXT NOT NULL, "Currency" TEXT NOT NULL, "CurrencySymbol" TEXT NOT NULL, "TimeZone" TEXT NOT NULL,
+              "Notifications" INTEGER NOT NULL, "AutoSync" INTEGER NOT NULL, "OfflineMode" INTEGER NOT NULL, "RememberLogin" INTEGER NOT NULL,
+              "LastCompanyId" TEXT NULL, "SyncStatus" INTEGER NOT NULL, "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL,
+              "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL);
+            """, cancellationToken);
 
         await _db.Database.ExecuteSqlRawAsync(
             """
@@ -412,6 +421,7 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await _db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LocalPurchaseReturns_CompanyId_PurchaseId\" ON \"LocalPurchaseReturns\" (\"CompanyId\", \"PurchaseId\");", cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalCompanyRoles_CompanyId_Name\" ON \"LocalCompanyRoles\" (\"CompanyId\", \"Name\");", cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalCompanyRolePermissions_Key\" ON \"LocalCompanyRolePermissions\" (\"CompanyId\", \"RoleId\", \"PermissionKey\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalAppSettings_CompanyId_UserId\" ON \"LocalAppSettings\" (\"CompanyId\", \"UserId\");", cancellationToken);
     }
 
     private async Task TryAddColumnAsync(string table, string column, string definition, CancellationToken cancellationToken)
