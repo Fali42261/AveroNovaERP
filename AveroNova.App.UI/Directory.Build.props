@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Maui" Version="15.0.1" />
+  </ItemGroup>
+</Project>
