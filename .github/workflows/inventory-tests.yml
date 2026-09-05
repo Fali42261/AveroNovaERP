@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: inventory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   inventory-tests:
     runs-on: ubuntu-latest
