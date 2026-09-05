@@ -35,7 +35,7 @@ public partial class AddProcurement : Migration
             },
             constraints: table => table.PrimaryKey("PK_Suppliers", x => x.Id));
 
-        migrationBuilder.CreateIndex(name: "IX_Suppliers_CompanyId_Name", table: "Suppliers", columns: new[] { "CompanyId", "Name" }, unique: true);
+        migrationBuilder.CreateIndex(name: "IX_Suppliers_CompanyId_Name", table: "Suppliers", columns: new[] { "CompanyId", "Name" });
 
         migrationBuilder.CreateTable(
             name: "Purchases",
@@ -63,7 +63,7 @@ public partial class AddProcurement : Migration
             },
             constraints: table => table.PrimaryKey("PK_Purchases", x => x.Id));
 
-        migrationBuilder.CreateIndex(name: "IX_Purchases_CompanyId_PurchaseNumber", table: "Purchases", columns: new[] { "CompanyId", "PurchaseNumber" }, unique: true);
+        migrationBuilder.CreateIndex(name: "IX_Purchases_CompanyId_PurchaseNumber", table: "Purchases", columns: new[] { "CompanyId", "PurchaseNumber" });
         migrationBuilder.CreateIndex(name: "IX_Purchases_CompanyId_SupplierId", table: "Purchases", columns: new[] { "CompanyId", "SupplierId" });
     }
 
