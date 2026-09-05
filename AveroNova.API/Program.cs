@@ -67,7 +67,7 @@ else if (!string.IsNullOrWhiteSpace(configured)
 }
 else
 {
-    // Development default: SQLite under API/Data/AveroNovaDev.db
+    // Development default: SQLite under API/Database/AveroNovaDev.db
     var dbPath = AveroNova.Shared.Helpers.DatabasePath.GetDatabasePath(builder.Environment.ContentRootPath);
     connectionString = $"Data Source={dbPath}";
     providerLabel = "SQLite";

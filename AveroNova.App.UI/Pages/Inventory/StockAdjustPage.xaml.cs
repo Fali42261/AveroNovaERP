@@ -1,23 +1,30 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Inventory;
 
 [QueryProperty(nameof(ProductIdParam), "productId")]
-public partial class StockAdjustPage : ContentPage
+public partial class StockAdjustPage : ContentPage, IHostedPage
 {
     private readonly IInventoryService _inv;
     private readonly IProductService   _product;
     private readonly ICompanyService   _company;
+    private readonly IMainContentNavigator _navigator;
     private List<ProductModel>         _products = [];
     public  string? ProductIdParam { get; set; }
 
-    public StockAdjustPage(IInventoryService inv, IProductService product, ICompanyService company)
-    { InitializeComponent(); _inv = inv; _product = product; _company = company; }
+    public StockAdjustPage(IInventoryService inv, IProductService product, ICompanyService company, IMainContentNavigator navigator)
+    { InitializeComponent(); _inv = inv; _product = product; _company = company; _navigator = navigator; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
         _products = await _product.GetAllAsync(_company.CurrentCompany?.LocalId ?? Guid.Empty);
         ProductPicker.ItemsSource = _products.Select(p => p.Name).ToList();
 
@@ -27,8 +34,12 @@ public partial class StockAdjustPage : ContentPage
             if (idx >= 0) { ProductPicker.SelectedIndex = idx; UpdateCurrentStock(idx); }
         }
 
-        ProductPicker.SelectedIndexChanged += (_, _) => UpdateCurrentStock(ProductPicker.SelectedIndex);
+        ProductPicker.SelectedIndexChanged -= OnProductSelected;
+        ProductPicker.SelectedIndexChanged += OnProductSelected;
     }
+
+    private void OnProductSelected(object? sender, EventArgs e)
+        => UpdateCurrentStock(ProductPicker.SelectedIndex);
 
     private void UpdateCurrentStock(int idx)
     {
@@ -56,10 +67,10 @@ public partial class StockAdjustPage : ContentPage
         };
 
         var (ok, err) = await _inv.AdjustStockAsync(adj);
-        if (ok) { await DisplayAlert("Success", "Stock adjusted successfully.", "OK"); await Shell.Current.GoToAsync(".."); }
+        if (ok) { await DisplayAlert("Success", "Stock adjusted successfully.", "OK"); await _navigator.GoBackAsync(); }
         else ShowError(err ?? "Adjustment failed.");
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 }

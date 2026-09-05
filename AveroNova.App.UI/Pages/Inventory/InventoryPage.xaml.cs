@@ -5,15 +5,31 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Inventory;
 
-public partial class InventoryPage : ContentPage
+public partial class InventoryPage : ContentPage, IHostedPage
 {
     private readonly IInventoryService _svc;
     private readonly ICompanyService   _company;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<StockAdjustPage> _adjustFactory;
+    private readonly Func<StockMovementPage> _movementFactory;
 
-    public InventoryPage(IInventoryService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public InventoryPage(
+        IInventoryService svc,
+        ICompanyService company,
+        IMainContentNavigator navigator,
+        Func<StockAdjustPage> adjustFactory,
+        Func<StockMovementPage> movementFactory)
+    {
+        InitializeComponent();
+        _svc = svc;
+        _company = company;
+        _navigator = navigator;
+        _adjustFactory = adjustFactory;
+        _movementFactory = movementFactory;
+    }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync() => LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
@@ -63,7 +79,12 @@ public partial class InventoryPage : ContentPage
         stockInfo.Children.Add(new Label { Text = $"Min: {item.MinimumStock}", FontSize = 11, TextColor = Color.FromArgb("#94A3B8"), HorizontalOptions = LayoutOptions.End });
 
         var adjBtn = new Button { Text = "Adjust", Style = (Style)Resources["SmallButton"] };
-        adjBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.StockAdjust}?productId={item.ProductId}");
+        adjBtn.Clicked += async (_, _) =>
+        {
+            var page = _adjustFactory();
+            page.ProductIdParam = item.ProductId.ToString("D");
+            await _navigator.NavigateAsync(page, "Stock Adjustment", "Home / Inventory / Adjust Stock");
+        };
 
         grid.Add(info,     0, 0);
         grid.Add(stockInfo, 1, 0);
@@ -72,6 +93,9 @@ public partial class InventoryPage : ContentPage
         return border;
     }
 
-    private async void OnAdjustClicked(object s, EventArgs e)  => await Shell.Current.GoToAsync(AppRoutes.StockAdjust);
-    private async void OnHistoryClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.StockMovement);
+    private async void OnAdjustClicked(object s, EventArgs e)
+        => await _navigator.NavigateAsync(_adjustFactory(), "Stock Adjustment", "Home / Inventory / Adjust Stock");
+
+    private async void OnHistoryClicked(object s, EventArgs e)
+        => await _navigator.NavigateAsync(_movementFactory(), "Stock Movement History", "Home / Inventory / Stock History");
 }

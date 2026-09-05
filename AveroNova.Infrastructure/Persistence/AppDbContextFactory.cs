@@ -14,9 +14,9 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         if (!Directory.Exists(basePath))
             basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "AveroNova.API"));
 
-        var dataFolder = Path.Combine(basePath, "Data");
-        Directory.CreateDirectory(dataFolder);
-        var dbPath = Path.Combine(dataFolder, "AveroNovaDev.db");
+        var databaseFolder = Path.Combine(basePath, "Database");
+        Directory.CreateDirectory(databaseFolder);
+        var dbPath = Path.Combine(databaseFolder, "AveroNovaDev.db");
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         optionsBuilder.UseSqlite($"Data Source={dbPath}");

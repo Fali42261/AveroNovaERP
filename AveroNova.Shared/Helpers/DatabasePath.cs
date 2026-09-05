@@ -6,11 +6,12 @@
 /// </summary>
 public static class DatabasePath
 {
+    public const string DevelopmentDatabaseFolderName = "Database";
     public const string DevelopmentDatabaseFileName = "AveroNovaDev.db";
 
     public static string GetDatabasePath(string contentRootPath)
     {
-        var folder = Path.Combine(contentRootPath, "Data");
+        var folder = Path.Combine(contentRootPath, DevelopmentDatabaseFolderName);
         Directory.CreateDirectory(folder);
         return Path.Combine(folder, DevelopmentDatabaseFileName);
     }

@@ -29,6 +29,7 @@ public partial class MainLayoutView : ContentView
     private readonly ICompanyService _company;
     private readonly ILicenseService _licenses;
     private readonly IAppSessionContext _session;
+    private readonly IMainContentNavigator _contentNavigator;
 
     private Button? _activeNavButton;
 
@@ -58,6 +59,7 @@ public partial class MainLayoutView : ContentView
         ICompanyService company,
         ILicenseService licenses,
         IAppSessionContext session,
+        IMainContentNavigator contentNavigator,
         Func<DashboardPage> dashboardFactory,
         Func<CompanyListPage> companyFactory,
         Func<CustomersListPage> customersFactory,
@@ -85,6 +87,8 @@ public partial class MainLayoutView : ContentView
         _company = company;
         _licenses = licenses;
         _session = session;
+        _contentNavigator = contentNavigator;
+        _contentNavigator.PageChanged += OnHostedPageChanged;
 
         _dashboardFactory = dashboardFactory;
         _companyFactory = companyFactory;
@@ -114,11 +118,13 @@ public partial class MainLayoutView : ContentView
         ApplyMenuPermissions();
         UpdateConnectivityUI(_connectivity.Status);
 
+        var desktopDashboard = _dashboardFactory();
         ShowDesktopPage(
-            _dashboardFactory(),
+            desktopDashboard,
             "Dashboard",
             "Home / Dashboard",
             BtnDashboard);
+        _contentNavigator.SetRoot(desktopDashboard, "Dashboard", "Home / Dashboard");
 
         ShowMobilePage(
             _dashboardFactory(),
@@ -307,20 +313,39 @@ public partial class MainLayoutView : ContentView
 
             if (isMobile)
             {
+                var page = pageFactory();
+                if (page is IHostedPage hosted)
+                    await hosted.LoadForHostAsync();
                 ShowMobilePage(
-                    pageFactory(),
+                    page,
                     title,
                     breadcrumb);
+                _contentNavigator.SetRoot(page, title, breadcrumb);
             }
             else
             {
+                var page = pageFactory();
+                if (page is IHostedPage hosted)
+                    await hosted.LoadForHostAsync();
                 ShowDesktopPage(
-                    pageFactory(),
+                    page,
                     title,
                     breadcrumb,
                     button);
+                _contentNavigator.SetRoot(page, title, breadcrumb);
             }
         }
+    }
+
+    private void OnHostedPageChanged(object? sender, HostedPage entry)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (DesktopLayout.IsVisible)
+                ShowDesktopPage(entry.Page, entry.Title, entry.Breadcrumb);
+            else
+                ShowMobilePage(entry.Page, entry.Title, entry.Breadcrumb);
+        });
     }
 
     private bool IsMobileButton(Button button)
@@ -639,6 +664,7 @@ public partial class MainLayoutView : ContentView
         {
             _connectivity.StatusChanged -=
                 OnConnectivityChanged;
+            _contentNavigator.PageChanged -= OnHostedPageChanged;
         }
     }
 }

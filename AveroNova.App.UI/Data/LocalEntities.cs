@@ -164,6 +164,28 @@ public class LocalProductEntity
     public string? SyncError { get; set; }
 }
 
+public class LocalStockMovementEntity
+{
+    public Guid Id { get; set; }
+    public Guid? ServerId { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string SKU { get; set; } = string.Empty;
+    public int Type { get; set; }
+    public int Quantity { get; set; }
+    public int StockBefore { get; set; }
+    public int StockAfter { get; set; }
+    public string Reference { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+    public string CreatedBy { get; set; } = string.Empty;
+    public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? LastSyncedAtUtc { get; set; }
+    public string? SyncError { get; set; }
+}
+
 public class LocalInvoiceEntity
 {
     public Guid Id { get; set; }

@@ -1,0 +1,71 @@
+name: Inventory database tests
+
+on:
+  pull_request:
+    branches:
+      - feature/api-database-foundation
+      - AuthModule
+  push:
+    branches:
+      - feature/inventory-database-navigation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inventory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inventory-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore offline database tests
+        run: dotnet restore AveroNova.OfflineAuth.Tests/AveroNova.OfflineAuth.Tests.csproj
+
+      - name: Run inventory and offline database tests
+        run: dotnet test AveroNova.OfflineAuth.Tests/AveroNova.OfflineAuth.Tests.csproj --no-restore --configuration Release --logger "trx;LogFileName=inventory.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: warn
+
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Install Android workload
+        run: dotnet workload install maui-android
+      - name: Build Android UI
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-android --configuration Debug -p:AveroNovaCiTargetFramework=net10.0-android
+
+  windows-build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Install Windows MAUI workload
+        run: dotnet workload install maui-windows
+      - name: Build Windows UI
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-windows10.0.19041.0 --configuration Debug -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0
