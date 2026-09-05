@@ -16,6 +16,7 @@ using AveroNova.App.UI.Services.Security;
 using AveroNova.App.UI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using CommunityToolkit.Maui;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Pages.Administration;
 using AveroNova.App.UI.Pages.Billing;
@@ -41,6 +42,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -244,6 +246,7 @@ public static class MauiProgram
         builder.Services.AddTransient<IExpenseService, LocalExpenseService>();
         builder.Services.AddTransient<IInventoryService, LocalInventoryService>();
         builder.Services.AddSingleton<INotificationService, LocalNotificationService>();
+        builder.Services.AddSingleton<IPaymentSyncService, PaymentSyncService>();
         builder.Services.AddTransient<IPaymentService, LocalPaymentService>();
         builder.Services.AddTransient<IProductService, LocalProductService>();
         builder.Services.AddTransient<IPurchaseService, LocalPurchaseService>();
