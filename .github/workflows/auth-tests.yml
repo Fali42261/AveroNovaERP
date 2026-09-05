@@ -1,0 +1,46 @@
+name: Auth tests
+
+on:
+  pull_request:
+    branches:
+      - AveroNovaERP
+      - AuthModule
+  push:
+    branches:
+      - fix/offline-auth-flows
+
+permissions:
+  contents: read
+
+jobs:
+  auth-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore auth test projects
+        run: |
+          dotnet restore AveroNova.API.Tests/AveroNova.API.Tests.csproj
+          dotnet restore AveroNova.OfflineAuth.Tests/AveroNova.OfflineAuth.Tests.csproj
+
+      - name: Run API auth tests
+        run: dotnet test AveroNova.API.Tests/AveroNova.API.Tests.csproj --no-restore --configuration Release --logger "trx;LogFileName=api-auth.trx"
+
+      - name: Run offline auth tests
+        run: dotnet test AveroNova.OfflineAuth.Tests/AveroNova.OfflineAuth.Tests.csproj --no-restore --configuration Release --logger "trx;LogFileName=offline-auth.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: warn
