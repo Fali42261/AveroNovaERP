@@ -1,10 +1,14 @@
 using System;
+using AveroNova.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace AveroNova.Infrastructure.Migrations;
 
+[DbContext(typeof(AppDbContext))]
+[Migration("20260905180000_AddStockMovements")]
 public partial class AddStockMovements : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
