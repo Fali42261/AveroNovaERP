@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -314,6 +314,20 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 
         await _db.Database.ExecuteSqlRawAsync(
             """
+            CREATE TABLE IF NOT EXISTS "LocalExpenses" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_LocalExpenses" PRIMARY KEY,
+                "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
+                "Category" TEXT NOT NULL, "Description" TEXT NOT NULL,
+                "Amount" TEXT NOT NULL, "ExpenseDate" TEXT NOT NULL, "Method" INTEGER NOT NULL,
+                "Reference" TEXT NOT NULL, "Notes" TEXT NOT NULL, "Status" INTEGER NOT NULL,
+                "ApprovedBy" TEXT NOT NULL, "SyncStatus" INTEGER NOT NULL,
+                "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL,
+                "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL
+            );
+            """, cancellationToken);
+
+        await _db.Database.ExecuteSqlRawAsync(
+            """
             CREATE INDEX IF NOT EXISTS "IX_LocalCustomers_CompanyId" ON "LocalCustomers" ("CompanyId");
             """,
             cancellationToken);
@@ -352,6 +366,9 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
             cancellationToken);
         await _db.Database.ExecuteSqlRawAsync(
             "CREATE INDEX IF NOT EXISTS \"IX_LocalPurchases_CompanyId_SupplierId\" ON \"LocalPurchases\" (\"CompanyId\", \"SupplierId\");",
+            cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            "CREATE INDEX IF NOT EXISTS \"IX_LocalExpenses_CompanyId_ExpenseDate\" ON \"LocalExpenses\" (\"CompanyId\", \"ExpenseDate\");",
             cancellationToken);
     }
 

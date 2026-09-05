@@ -147,6 +147,10 @@ public static class MauiProgram
 
         builder.Services.AddTransient<ExpensesListPage>();
         builder.Services.AddTransient<Func<ExpensesListPage>>(sp => () => sp.GetRequiredService<ExpensesListPage>());
+        builder.Services.AddTransient<ExpenseFormPage>();
+        builder.Services.AddTransient<Func<ExpenseFormPage>>(sp => () => sp.GetRequiredService<ExpenseFormPage>());
+        builder.Services.AddTransient<ExpenseViewPage>();
+        builder.Services.AddTransient<Func<ExpenseViewPage>>(sp => () => sp.GetRequiredService<ExpenseViewPage>());
 
         builder.Services.AddTransient<ReportsPage>();
         builder.Services.AddTransient<Func<ReportsPage>>(sp => () => sp.GetRequiredService<ReportsPage>());
@@ -228,7 +232,7 @@ public static class MauiProgram
         builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
         builder.Services.AddSingleton<IConnectivityService, MauiConnectivityService>();
         builder.Services.AddTransient<ICustomerService, LocalCustomerService>();
-        builder.Services.AddTransient<IExpenseService, MockExpenseService>();
+        builder.Services.AddTransient<IExpenseService, LocalExpenseService>();
         builder.Services.AddTransient<IInventoryService, LocalInventoryService>();
         builder.Services.AddTransient<INotificationService, MockNotificationService>();
         builder.Services.AddTransient<IPaymentService, LocalPaymentService>();

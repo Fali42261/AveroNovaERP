@@ -1,0 +1,35 @@
+using AveroNova.App.UI.Data;
+using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+
+namespace AveroNova.App.UI.Services;
+
+public sealed class LocalExpenseService : IExpenseService
+{
+    public static readonly IReadOnlyList<string> Categories = ["Office Supplies", "Travel", "Software", "Hardware", "Marketing", "Utilities", "Rent", "Salaries", "Maintenance", "Other"];
+    private readonly IDbContextFactory<LocalAppDbContext> _factory;
+    private readonly IAppSessionContext _session;
+    public LocalExpenseService(IDbContextFactory<LocalAppDbContext> factory, IAppSessionContext session) { _factory=factory; _session=session; }
+
+    public async Task<List<ExpenseModel>> GetAllAsync(Guid companyId)
+    {
+        if(!Allows(companyId)) return [];
+        await using var db=await _factory.CreateDbContextAsync();
+        return (await db.Expenses.AsNoTracking().Where(x=>x.CompanyId==companyId).OrderByDescending(x=>x.ExpenseDate).ThenByDescending(x=>x.CreatedAtUtc).ToListAsync()).Select(Map).ToList();
+    }
+    public async Task<ExpenseModel?> GetByIdAsync(Guid id){await using var db=await _factory.CreateDbContextAsync();var x=await db.Expenses.AsNoTracking().FirstOrDefaultAsync(e=>e.Id==id);return x is null||!Allows(x.CompanyId)?null:Map(x);}
+    public async Task<(bool Ok,string? Error)> CreateAsync(ExpenseModel model){var error=Validate(model);if(error is not null)return(false,error);await using var db=await _factory.CreateDbContextAsync();var now=DateTime.UtcNow;model.LocalId=model.LocalId==Guid.Empty?Guid.NewGuid():model.LocalId;var row=ToEntity(model,now);db.Expenses.Add(row);LocalSyncQueueWriter.Enqueue(db,"Expense",row.Id,row.CompanyId,SyncOperation.Create,Payload(row),now);await db.SaveChangesAsync();return(true,null);}
+    public async Task<(bool Ok,string? Error)> UpdateAsync(ExpenseModel model){var error=Validate(model);if(error is not null)return(false,error);await using var db=await _factory.CreateDbContextAsync();var row=await db.Expenses.FirstOrDefaultAsync(x=>x.Id==model.LocalId);if(row is null||!Allows(row.CompanyId)||row.CompanyId!=model.CompanyId)return(false,"Expense not found.");Apply(row,model,DateTime.UtcNow);LocalSyncQueueWriter.Enqueue(db,"Expense",row.Id,row.CompanyId,SyncOperation.Update,Payload(row),row.UpdatedAtUtc);await db.SaveChangesAsync();return(true,null);}
+    public async Task<(bool Ok,string? Error)> DeleteAsync(Guid id){await using var db=await _factory.CreateDbContextAsync();var row=await db.Expenses.FirstOrDefaultAsync(x=>x.Id==id);if(row is null||!Allows(row.CompanyId))return(false,"Expense not found.");db.Expenses.Remove(row);LocalSyncQueueWriter.Enqueue(db,"Expense",row.Id,row.CompanyId,SyncOperation.Delete,new{row.Id,row.CompanyId},DateTime.UtcNow);await db.SaveChangesAsync();return(true,null);}
+    public Task<List<string>> GetCategoriesAsync(Guid companyId)=>Task.FromResult(Allows(companyId)?Categories.ToList():[]);
+
+    private string? Validate(ExpenseModel m){if(!Allows(m.CompanyId))return "You do not have access to this company.";if(string.IsNullOrWhiteSpace(m.Category))return "Category is required.";if(m.Category.Trim().Length>100)return "Category must be 100 characters or fewer.";if(m.Amount<=0)return "Amount must be greater than zero.";if(m.ExpenseDate.Date>DateTime.Today)return "Expense date cannot be in the future.";if(m.Status is ExpenseStatus.Approved or ExpenseStatus.Paid && string.IsNullOrWhiteSpace(m.ApprovedBy))return "Approved by is required for approved or paid expenses.";return null;}
+    private bool Allows(Guid id)=>id!=Guid.Empty&&_session.CurrentCompanyId==id;
+    private static ExpenseModel Map(LocalExpenseEntity x)=>new(){LocalId=x.Id,ServerId=x.ServerId?.ToString("D"),CompanyId=x.CompanyId,Category=x.Category,Description=x.Description,Amount=x.Amount,ExpenseDate=x.ExpenseDate,Method=(PaymentMethod)x.Method,Reference=x.Reference,Notes=x.Notes,Status=(ExpenseStatus)x.Status,ApprovedBy=x.ApprovedBy,SyncStatus=ToUi(x.SyncStatus),CreatedAt=x.CreatedAtUtc,UpdatedAt=x.UpdatedAtUtc,LastSyncedAt=x.LastSyncedAtUtc};
+    private static LocalExpenseEntity ToEntity(ExpenseModel m,DateTime now)=>new(){Id=m.LocalId,CompanyId=m.CompanyId,Category=m.Category.Trim(),Description=m.Description.Trim(),Amount=m.Amount,ExpenseDate=m.ExpenseDate.Date,Method=(int)m.Method,Reference=m.Reference.Trim(),Notes=m.Notes.Trim(),Status=(int)m.Status,ApprovedBy=m.ApprovedBy.Trim(),SyncStatus=(int)RecordSyncStatus.Pending,CreatedAtUtc=now,UpdatedAtUtc=now};
+    private static void Apply(LocalExpenseEntity x,ExpenseModel m,DateTime now){x.Category=m.Category.Trim();x.Description=m.Description.Trim();x.Amount=m.Amount;x.ExpenseDate=m.ExpenseDate.Date;x.Method=(int)m.Method;x.Reference=m.Reference.Trim();x.Notes=m.Notes.Trim();x.Status=(int)m.Status;x.ApprovedBy=m.ApprovedBy.Trim();x.SyncStatus=(int)RecordSyncStatus.Pending;x.SyncError=null;x.UpdatedAtUtc=now;}
+    private static object Payload(LocalExpenseEntity x)=>new{x.Id,x.CompanyId,x.Category,x.Description,x.Amount,x.ExpenseDate,x.Method,x.Reference,x.Notes,x.Status,x.ApprovedBy};
+    private static SyncStatus ToUi(int s)=>(RecordSyncStatus)s==RecordSyncStatus.Synced?SyncStatus.Synced:(RecordSyncStatus)s==RecordSyncStatus.Failed?SyncStatus.SyncFailed:SyncStatus.PendingSync;
+}

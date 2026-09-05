@@ -7,17 +7,23 @@ using Microsoft.Maui.Controls.Shapes;
 namespace AveroNova.App.UI.Pages.Expenses;
 
 [QueryProperty(nameof(ExpenseId), "id")]
-public partial class ExpenseViewPage : ContentPage
+public partial class ExpenseViewPage : ContentPage, IHostedPage
 {
     private readonly IExpenseService _svc;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<ExpenseFormPage> _formFactory;
     private ExpenseModel? _expense;
     public string? ExpenseId { get; set; }
 
-    public ExpenseViewPage(IExpenseService svc) { InitializeComponent(); _svc = svc; }
+    public ExpenseViewPage(IExpenseService svc, IMainContentNavigator navigator, Func<ExpenseFormPage> formFactory) { InitializeComponent(); _svc = svc; _navigator=navigator; _formFactory=formFactory; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+    public async Task LoadForHostAsync()
+    {
         if (!string.IsNullOrEmpty(ExpenseId) && Guid.TryParse(ExpenseId, out var id))
         {
             _expense = await _svc.GetByIdAsync(id);
@@ -67,6 +73,8 @@ public partial class ExpenseViewPage : ContentPage
         AddDetail("Date", exp.ExpenseDate.ToString("dd MMM yyyy"));
         AddDetail("Method", exp.Method.ToString());
         AddDetail("Status", exp.StatusLabel);
+        if (!string.IsNullOrEmpty(exp.Reference)) AddDetail("Reference", exp.Reference);
+        if (!string.IsNullOrEmpty(exp.ApprovedBy)) AddDetail("Approved By", exp.ApprovedBy);
         if (!string.IsNullOrEmpty(exp.Description)) AddDetail("Description", exp.Description);
         if (!string.IsNullOrEmpty(exp.Notes)) AddDetail("Notes", exp.Notes);
         detailCard.Content = dVsl;
@@ -75,14 +83,15 @@ public partial class ExpenseViewPage : ContentPage
         Content.Children.Add(detailCard);
     }
 
-    private async void OnEditClicked(object s, EventArgs e) => await Shell.Current.GoToAsync($"{AppRoutes.ExpenseEdit}?id={_expense?.LocalId}");
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnEditClicked(object s, EventArgs e){if(_expense is null)return;var page=_formFactory();page.EditId=_expense.LocalId.ToString("D");await _navigator.NavigateAsync(page,"Edit Expense","Home / Expenses / Edit");}
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
 
     private async void OnDeleteClicked(object s, EventArgs e)
     {
         if (_expense == null) return;
         if (!await DialogHelper.ConfirmDeleteAsync("Expense", $"Delete {_expense.Category} expense?")) return;
-        await _svc.DeleteAsync(_expense.LocalId);
-        await Shell.Current.GoToAsync("..");
+        var(ok,error)=await _svc.DeleteAsync(_expense.LocalId);
+        if(!ok){await DisplayAlert("Delete failed",error??"Unable to delete expense.","OK");return;}
+        await _navigator.GoBackAsync();
     }
 }
