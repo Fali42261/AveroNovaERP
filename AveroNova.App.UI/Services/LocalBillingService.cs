@@ -24,6 +24,7 @@ public sealed class LocalBillingService : IBillingService
         _session = session;
         _connectivity = connectivity;
         _invoiceSync = new InvoiceSyncService(dbFactory, api, tokens, connectivity, logger);
+        if (_connectivity.IsOnline) _ = _invoiceSync.SyncPendingAsync();
     }
 
     public async Task<List<InvoiceModel>> GetAllAsync(Guid companyId)
