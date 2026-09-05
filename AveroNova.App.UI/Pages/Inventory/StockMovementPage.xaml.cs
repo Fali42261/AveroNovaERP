@@ -1,18 +1,21 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Inventory;
 
-public partial class StockMovementPage : ContentPage
+public partial class StockMovementPage : ContentPage, IHostedPage
 {
     private readonly IInventoryService _svc;
     private readonly ICompanyService   _company;
+    private readonly IMainContentNavigator _navigator;
 
-    public StockMovementPage(IInventoryService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public StockMovementPage(IInventoryService svc, ICompanyService company, IMainContentNavigator navigator)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator = navigator; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync() => LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
@@ -56,5 +59,5 @@ public partial class StockMovementPage : ContentPage
         return border;
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
 }

@@ -63,6 +63,7 @@ public static class MauiProgram
         // ── Singletons ────────────────────────────────────────────────────────
         builder.Services.AddSingleton<App>();
         builder.Services.AddSingleton<AppShell>();
+        builder.Services.AddSingleton<IMainContentNavigator, MainContentNavigator>();
 
         // ── Auth pages ────────────────────────────────────────────────────────
         builder.Services.AddTransient<SplashPage>();
@@ -116,6 +117,10 @@ public static class MauiProgram
 
         builder.Services.AddTransient<InventoryPage>();
         builder.Services.AddTransient<Func<InventoryPage>>(sp => () => sp.GetRequiredService<InventoryPage>());
+        builder.Services.AddTransient<StockAdjustPage>();
+        builder.Services.AddTransient<Func<StockAdjustPage>>(sp => () => sp.GetRequiredService<StockAdjustPage>());
+        builder.Services.AddTransient<StockMovementPage>();
+        builder.Services.AddTransient<Func<StockMovementPage>>(sp => () => sp.GetRequiredService<StockMovementPage>());
 
         builder.Services.AddTransient<BillingListPage>();
         builder.Services.AddTransient<Func<BillingListPage>>(sp => () => sp.GetRequiredService<BillingListPage>());
@@ -216,7 +221,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IConnectivityService, MauiConnectivityService>();
         builder.Services.AddTransient<ICustomerService, LocalCustomerService>();
         builder.Services.AddTransient<IExpenseService, MockExpenseService>();
-        builder.Services.AddTransient<IInventoryService, MockInventoryService>();
+        builder.Services.AddTransient<IInventoryService, LocalInventoryService>();
         builder.Services.AddTransient<INotificationService, MockNotificationService>();
         builder.Services.AddTransient<IPaymentService, LocalPaymentService>();
         builder.Services.AddTransient<IProductService, LocalProductService>();

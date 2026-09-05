@@ -23,6 +23,7 @@ public sealed class LocalAppDbContext : DbContext
     public DbSet<LocalLicenseEntity> Licenses => Set<LocalLicenseEntity>();
     public DbSet<LocalCustomerEntity> Customers => Set<LocalCustomerEntity>();
     public DbSet<LocalProductEntity> Products => Set<LocalProductEntity>();
+    public DbSet<LocalStockMovementEntity> StockMovements => Set<LocalStockMovementEntity>();
     public DbSet<LocalInvoiceEntity> Invoices => Set<LocalInvoiceEntity>();
     public DbSet<LocalPaymentEntity> Payments => Set<LocalPaymentEntity>();
     public DbSet<LocalSyncQueueEntity> SyncQueue => Set<LocalSyncQueueEntity>();
@@ -115,6 +116,16 @@ public sealed class LocalAppDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.CompanyId);
             e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.SKU).HasMaxLength(64);
+        });
+
+        modelBuilder.Entity<LocalStockMovementEntity>(e =>
+        {
+            e.ToTable("LocalStockMovements");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CompanyId, x.CreatedAtUtc });
+            e.HasIndex(x => new { x.CompanyId, x.ProductId });
+            e.Property(x => x.ProductName).HasMaxLength(200);
             e.Property(x => x.SKU).HasMaxLength(64);
         });
 
