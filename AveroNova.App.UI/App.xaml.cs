@@ -1,4 +1,5 @@
-﻿using AveroNova.App.UI.Services.Interfaces;
+﻿using AveroNova.App.UI.Services;
+using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI
 {
@@ -7,17 +8,20 @@ namespace AveroNova.App.UI
         private readonly AppShell _appShell;
         private readonly IConnectivityService _connectivity;
         private readonly ISyncService _sync;
+        private readonly IProcurementSyncService _procurementSync;
 
         public App(
             AppShell appShell,
             IConnectivityService connectivity,
             ISyncService sync,
-            IBillingService billingService)
+            IBillingService billingService,
+            IProcurementSyncService procurementSync)
         {
             InitializeComponent();
             _appShell = appShell;
             _connectivity = connectivity;
             _sync = sync;
+            _procurementSync = procurementSync;
             _ = billingService; // instantiate billing sync agent so pending invoices can resume on startup
         }
 
@@ -51,8 +55,9 @@ namespace AveroNova.App.UI
 
         private void TriggerSyncIfOnline()
         {
-            if (_connectivity.IsOnline)
-                _ = _sync.SyncNowAsync();
+            if (!_connectivity.IsOnline) return;
+            _ = _sync.SyncNowAsync();
+            _ = _procurementSync.SyncPendingAsync();
         }
     }
 }
