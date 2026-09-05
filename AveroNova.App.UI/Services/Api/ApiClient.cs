@@ -10,6 +10,7 @@ public interface IApiClient
     Task<ApiCallResult<T>> GetAsync<T>(string relativeUrl, string? bearerToken = null, CancellationToken cancellationToken = default);
     Task<ApiCallResult<T>> PostAsync<T>(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default);
     Task<ApiCallResult> PostAsync(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default);
+    Task<ApiCallResult<T>> PutAsync<T>(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default);
 }
 
 public class ApiCallResult
@@ -71,6 +72,9 @@ public sealed class ApiClient : IApiClient
     public Task<ApiCallResult<T>> PostAsync<T>(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default)
         => SendAsync<T>(HttpMethod.Post, relativeUrl, body, bearerToken, cancellationToken);
 
+    public Task<ApiCallResult<T>> PutAsync<T>(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default)
+        => SendAsync<T>(HttpMethod.Put, relativeUrl, body, bearerToken, cancellationToken);
+
     public async Task<ApiCallResult> PostAsync(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default)
     {
         var typed = await SendAsync<object>(HttpMethod.Post, relativeUrl, body, bearerToken, cancellationToken);
@@ -112,7 +116,6 @@ public sealed class ApiClient : IApiClient
             }
             catch
             {
-                // non-envelope payload
             }
 
             if (envelope is not null)
@@ -146,9 +149,9 @@ public sealed class ApiClient : IApiClient
 
     private static string MapStatusError(int status) => status switch
     {
-        401 => "Invalid email or password.",
+        401 => "Your session has expired. Please sign in again.",
         403 => "You do not have access.",
-        409 => "This installation is already registered. Please sign in instead.",
+        409 => "A newer server version exists. Refresh and try again.",
         429 => "Too many attempts. Please try again later.",
         _ => "Unable to complete the request. Please try again."
     };
