@@ -46,7 +46,7 @@ public sealed class ReturnSyncService : IReturnSyncService
             {
                 item.Status=(int)RecordSyncStatus.Syncing; item.LastAttemptAt=DateTime.UtcNow; await db.SaveChangesAsync(cancellationToken);
                 var op=(SyncOperation)item.Operation;
-                var route=item.EntityType=="SalesReturn"?"api/returns/sales":"api/returns/purchases";
+                var route=item.EntityType=="SalesReturn"?"api/returns/sales":"api/returns/purchase";
                 ApiCallResult result;
                 if(op==SyncOperation.Delete)
                 {
