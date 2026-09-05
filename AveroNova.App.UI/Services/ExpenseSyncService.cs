@@ -30,6 +30,7 @@ public sealed class ExpenseSyncService : IExpenseSyncService
         {
             var token=await _tokens.GetAccessTokenAsync(); if(string.IsNullOrWhiteSpace(token))return;
             await using var db=await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await LocalSyncVersionStore.EnsureSchemaAsync(db,cancellationToken);
             var items=await db.SyncQueue.Where(x=>x.EntityType=="Expense"&&(x.Status==(int)RecordSyncStatus.Pending||x.Status==(int)RecordSyncStatus.Failed)).OrderBy(x=>x.CreatedAt).ToListAsync(cancellationToken);
             foreach(var item in items)
             {
@@ -41,13 +42,18 @@ public sealed class ExpenseSyncService : IExpenseSyncService
                     ExpensePayload? payload;try{payload=JsonSerializer.Deserialize<ExpensePayload>(item.PayloadJson,JsonOptions);}catch{payload=null;}
                     if(payload is null||payload.Id==Guid.Empty||payload.CompanyId==Guid.Empty||payload.Amount<=0||string.IsNullOrWhiteSpace(payload.Category))
                     { Fail(item,"Expense sync payload is incomplete.");await db.SaveChangesAsync(cancellationToken);continue; }
+                    payload.SyncVersion=await LocalSyncVersionStore.GetExpenseAsync(db,payload.Id,cancellationToken);
                     ApiCallResult<ExpenseResponse> typed=op switch
                     { SyncOperation.Create=>await _api.PostAsync<ExpenseResponse>("api/expenses",payload,token,cancellationToken),
                       SyncOperation.Update=>await _api.PutAsync<ExpenseResponse>($"api/expenses/{payload.Id:D}",payload,token,cancellationToken),
                       _=>ApiCallResult<ExpenseResponse>.Fail(400,"Unsupported expense sync operation.") };
                     result=typed;
                     if(typed.Success&&typed.Data is not null)
-                    { var row=await db.Expenses.FirstOrDefaultAsync(x=>x.Id==payload.Id,cancellationToken);if(row is not null){row.ServerId=typed.Data.Id;row.SyncStatus=(int)RecordSyncStatus.Synced;row.LastSyncedAtUtc=DateTime.UtcNow;row.SyncError=null;} }
+                    {
+                        var row=await db.Expenses.FirstOrDefaultAsync(x=>x.Id==payload.Id,cancellationToken);
+                        if(row is not null){row.ServerId=typed.Data.Id;row.SyncStatus=(int)RecordSyncStatus.Synced;row.LastSyncedAtUtc=DateTime.UtcNow;row.SyncError=null;}
+                        await LocalSyncVersionStore.SetExpenseAsync(db,payload.Id,typed.Data.SyncVersion,cancellationToken);
+                    }
                 }
                 if(!result.Success){item.RetryCount++;item.Error=result.Error??"Expense sync failed.";item.LastAttemptAt=DateTime.UtcNow;item.Status=(int)(result.IsNetworkError||item.RetryCount<5?RecordSyncStatus.Pending:RecordSyncStatus.Failed);await db.SaveChangesAsync(cancellationToken);continue;}
                 item.Status=(int)RecordSyncStatus.Synced;item.Error=null;item.SyncedAt=DateTime.UtcNow;item.LastAttemptAt=DateTime.UtcNow;_connectivity.DecrementPending();await db.SaveChangesAsync(cancellationToken);
