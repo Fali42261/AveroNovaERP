@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<UserCompany> UserCompanies => Set<UserCompany>();
+    public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
