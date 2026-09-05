@@ -11,12 +11,14 @@ namespace AveroNova.App.UI
         public App(
             AppShell appShell,
             IConnectivityService connectivity,
-            ISyncService sync)
+            ISyncService sync,
+            IBillingService billingService)
         {
             InitializeComponent();
             _appShell = appShell;
             _connectivity = connectivity;
             _sync = sync;
+            _ = billingService; // instantiate billing sync agent so pending invoices can resume on startup
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
