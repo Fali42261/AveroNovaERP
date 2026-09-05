@@ -228,6 +228,27 @@ public class LocalPurchaseEntity
     public string? SyncError { get; set; }
 }
 
+public class LocalExpenseEntity
+{
+    public Guid Id { get; set; }
+    public Guid? ServerId { get; set; }
+    public Guid CompanyId { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public DateTime ExpenseDate { get; set; }
+    public int Method { get; set; }
+    public string Reference { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+    public int Status { get; set; }
+    public string ApprovedBy { get; set; } = string.Empty;
+    public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? LastSyncedAtUtc { get; set; }
+    public string? SyncError { get; set; }
+}
+
 public class LocalInvoiceEntity
 {
     public Guid Id { get; set; }

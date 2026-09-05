@@ -5,15 +5,19 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Expenses;
 
-public partial class ExpensesListPage : ContentPage
+public partial class ExpensesListPage : ContentPage, IHostedPage
 {
     private readonly IExpenseService _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<ExpenseFormPage> _formFactory;
+    private readonly Func<ExpenseViewPage> _viewFactory;
 
-    public ExpensesListPage(IExpenseService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public ExpensesListPage(IExpenseService svc, ICompanyService company, IMainContentNavigator navigator, Func<ExpenseFormPage> formFactory, Func<ExpenseViewPage> viewFactory)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator=navigator; _formFactory=formFactory; _viewFactory=viewFactory; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync()=>LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
@@ -48,7 +52,7 @@ public partial class ExpensesListPage : ContentPage
         badge.Content = new Label { Text = exp.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(color) };
         right.Children.Add(badge);
         var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
-        viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.ExpenseView}?id={exp.LocalId}");
+        viewBtn.Clicked += async (_, _) => {var page=_viewFactory();page.ExpenseId=exp.LocalId.ToString("D");await _navigator.NavigateAsync(page,"Expense Details","Home / Expenses / Details");};
         right.Children.Add(viewBtn);
 
         grid.Add(left,  0, 0);
@@ -57,5 +61,5 @@ public partial class ExpensesListPage : ContentPage
         return border;
     }
 
-    private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.ExpenseAdd);
+    private async void OnAddClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(),"Add Expense","Home / Expenses / Add");
 }

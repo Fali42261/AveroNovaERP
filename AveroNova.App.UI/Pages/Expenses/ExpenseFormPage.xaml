@@ -20,20 +20,25 @@
         </Border>
 
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16">
+            <VerticalStackLayout Padding="20,16" Spacing="16" MaximumWidthRequest="760">
                 <Border Style="{StaticResource AppCard}">
                     <VerticalStackLayout Spacing="14">
                         <Label Text="Expense Details" FontSize="14" FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <BoxView Style="{StaticResource Divider}"/>
                         <Label Text="Category *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryCategory" Placeholder="e.g. Office Supplies, Travel"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="CategoryPicker" Title="Select category" HorizontalTextAlignment="Center"/></Border>
                         <Label Text="Amount *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryAmount" Placeholder="0.00" Keyboard="Numeric"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryAmount" Placeholder="0.00" Keyboard="Numeric" HorizontalTextAlignment="Center"/></Border>
                         <Label Text="Date" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateExpense" Format="dd MMM yyyy"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateExpense" Format="dd MMM yyyy" HorizontalOptions="Center"/></Border>
                         <Label Text="Payment Method" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryMethod" Placeholder="e.g. Cash, Card, Bank Transfer"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="MethodPicker" HorizontalTextAlignment="Center"><Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Debit Card</x:String><x:String>Cheque</x:String><x:String>Online</x:String><x:String>Other</x:String></Picker.Items></Picker></Border>
+                        <Label Text="Status" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="StatusPicker" HorizontalTextAlignment="Center" SelectedIndexChanged="OnStatusChanged"><Picker.Items><x:String>Pending</x:String><x:String>Approved</x:String><x:String>Rejected</x:String><x:String>Paid</x:String></Picker.Items></Picker></Border>
+                        <VerticalStackLayout x:Name="ApprovedBySection" IsVisible="False" Spacing="4"><Label Text="Approved By *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryApprovedBy" Placeholder="Approver name"/></Border></VerticalStackLayout>
+                        <Label Text="Reference" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryReference" Placeholder="Receipt or transaction reference"/></Border>
                         <Label Text="Description" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}" HeightRequest="80" VerticalOptions="Start">
                             <Editor x:Name="EditorDescription" Placeholder="Additional details..." AutoSize="TextChanges"/>

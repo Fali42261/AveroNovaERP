@@ -26,6 +26,7 @@ public sealed class LocalAppDbContext : DbContext
     public DbSet<LocalStockMovementEntity> StockMovements => Set<LocalStockMovementEntity>();
     public DbSet<LocalSupplierEntity> Suppliers => Set<LocalSupplierEntity>();
     public DbSet<LocalPurchaseEntity> Purchases => Set<LocalPurchaseEntity>();
+    public DbSet<LocalExpenseEntity> Expenses => Set<LocalExpenseEntity>();
     public DbSet<LocalInvoiceEntity> Invoices => Set<LocalInvoiceEntity>();
     public DbSet<LocalPaymentEntity> Payments => Set<LocalPaymentEntity>();
     public DbSet<LocalSyncQueueEntity> SyncQueue => Set<LocalSyncQueueEntity>();
@@ -147,6 +148,15 @@ public sealed class LocalAppDbContext : DbContext
             e.HasIndex(x => new { x.CompanyId, x.PurchaseNumber }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.SupplierId });
             e.Property(x => x.PurchaseNumber).HasMaxLength(64);
+        });
+
+        modelBuilder.Entity<LocalExpenseEntity>(e =>
+        {
+            e.ToTable("LocalExpenses");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CompanyId, x.ExpenseDate });
+            e.Property(x => x.Category).HasMaxLength(100);
+            e.Property(x => x.Reference).HasMaxLength(100);
         });
 
         modelBuilder.Entity<LocalInvoiceEntity>(e =>
