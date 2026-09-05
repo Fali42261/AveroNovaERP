@@ -1,9 +1,12 @@
 using System.Text.Json;
 using AveroNova.App.UI.Data;
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Services.Api;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.Services.Security;
 using AveroNova.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AveroNova.App.UI.Services;
 
@@ -15,9 +18,12 @@ public sealed class LocalPaymentService : IPaymentService
     private readonly IConnectivityService _connectivity;
 
     public LocalPaymentService(IDbContextFactory<LocalAppDbContext> dbFactory, IAppSessionContext session,
-        IPaymentSyncService paymentSync, IConnectivityService connectivity)
+        IConnectivityService connectivity, IApiClient api, ISecureTokenStore tokens, ILogger<PaymentSyncService> logger)
     {
-        _dbFactory = dbFactory; _session = session; _paymentSync = paymentSync; _connectivity = connectivity;
+        _dbFactory = dbFactory;
+        _session = session;
+        _connectivity = connectivity;
+        _paymentSync = new PaymentSyncService(dbFactory, api, tokens, connectivity, logger);
     }
 
     public async Task<List<PaymentModel>> GetAllAsync(Guid companyId)
