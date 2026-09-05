@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- CommunityToolkit.Maui 15.0.1 requires Microsoft.Maui.Controls >= 10.0.90. -->
+    <PackageReference Update="Microsoft.Maui.Controls" Version="10.0.90" />
+  </ItemGroup>
+</Project>
