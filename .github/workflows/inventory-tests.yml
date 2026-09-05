@@ -3,6 +3,7 @@ name: Inventory database tests
 on:
   pull_request:
     branches:
+      - AveroNovaERP
       - feature/api-database-foundation
       - AuthModule
   push:

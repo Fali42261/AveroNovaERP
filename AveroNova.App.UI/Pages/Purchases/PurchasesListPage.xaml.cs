@@ -5,15 +5,20 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Purchases;
 
-public partial class PurchasesListPage : ContentPage
+public partial class PurchasesListPage : ContentPage, IHostedPage
 {
     private readonly IPurchaseService _svc;
     private readonly ICompanyService  _company;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<PurchaseFormPage> _formFactory;
+    private readonly Func<PurchaseViewPage> _viewFactory;
+    private readonly Func<SuppliersListPage> _suppliersFactory;
 
-    public PurchasesListPage(IPurchaseService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public PurchasesListPage(IPurchaseService svc, ICompanyService company, IMainContentNavigator navigator, Func<PurchaseFormPage> formFactory, Func<PurchaseViewPage> viewFactory, Func<SuppliersListPage> suppliersFactory)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator=navigator; _formFactory=formFactory; _viewFactory=viewFactory; _suppliersFactory=suppliersFactory; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync() => LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
@@ -49,7 +54,7 @@ public partial class PurchasesListPage : ContentPage
         badge.Content = new Label { Text = p.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(color) };
         right.Children.Add(badge);
         var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
-        viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PurchaseView}?id={p.LocalId}");
+        viewBtn.Clicked += async (_, _) => { var page=_viewFactory(); page.PurchaseId=p.LocalId.ToString("D"); await _navigator.NavigateAsync(page,"Purchase Details","Home / Purchases / Details"); };
         right.Children.Add(viewBtn);
 
         grid.Add(left,  0, 0);
@@ -58,5 +63,6 @@ public partial class PurchasesListPage : ContentPage
         return border;
     }
 
-    private async void OnNewClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.PurchaseNew);
+    private async void OnNewClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(),"New Purchase","Home / Purchases / New");
+    private async void OnSuppliersClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_suppliersFactory(),"Suppliers","Home / Purchases / Suppliers");
 }

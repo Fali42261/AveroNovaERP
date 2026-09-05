@@ -20,8 +20,8 @@
                         <Label Text="Purchase Details" FontSize="14" FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <BoxView Style="{StaticResource Divider}"/>
-                        <Label Text="Supplier Name *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntrySupplier" Placeholder="Supplier name"/></Border>
+                        <Label Text="Supplier *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="SupplierPicker" Title="Select supplier" HorizontalTextAlignment="Center"/></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Purchase Date" Style="{StaticResource InputLabel}"/>
@@ -36,10 +36,23 @@
                         <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRef" Placeholder="PO reference number"/></Border>
                         <Label Text="Payment Method" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}">
-                            <Picker x:Name="PaymentPicker" Title="Select...">
-                                <Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Cheque</x:String></Picker.Items>
+                            <Picker x:Name="PaymentPicker" Title="Select..." HorizontalTextAlignment="Center">
+                                <Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Debit Card</x:String><x:String>Cheque</x:String><x:String>Online</x:String><x:String>Other</x:String></Picker.Items>
                             </Picker>
                         </Border>
+                        <Label Text="Status" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="StatusPicker" HorizontalTextAlignment="Center"><Picker.Items><x:String>Draft</x:String><x:String>Ordered</x:String><x:String>Partial Received</x:String><x:String>Received</x:String><x:String>Cancelled</x:String></Picker.Items></Picker></Border>
+                        <BoxView Style="{StaticResource Divider}"/>
+                        <Label Text="Purchase Item *" FontSize="14" FontAttributes="Bold"/>
+                        <Label Text="Product" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="ProductPicker" Title="Select product" HorizontalTextAlignment="Center" SelectedIndexChanged="OnProductChanged"/></Border>
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                            <VerticalStackLayout><Label Text="Quantity" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryQuantity" Keyboard="Numeric" Text="1" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1"><Label Text="Unit Price" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryUnitPrice" Keyboard="Numeric" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="2"><Label Text="Tax %" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryTax" Keyboard="Numeric" Text="0" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
+                        </Grid>
+                        <Label Text="Paid Amount" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPaid" Keyboard="Numeric" Text="0" HorizontalTextAlignment="Center"/></Border>
                         <Label Text="Notes" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}" HeightRequest="80">
                             <Editor x:Name="EditorNotes" Placeholder="Additional notes..." AutoSize="TextChanges"/>

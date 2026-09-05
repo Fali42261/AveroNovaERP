@@ -24,6 +24,8 @@ public sealed class LocalAppDbContext : DbContext
     public DbSet<LocalCustomerEntity> Customers => Set<LocalCustomerEntity>();
     public DbSet<LocalProductEntity> Products => Set<LocalProductEntity>();
     public DbSet<LocalStockMovementEntity> StockMovements => Set<LocalStockMovementEntity>();
+    public DbSet<LocalSupplierEntity> Suppliers => Set<LocalSupplierEntity>();
+    public DbSet<LocalPurchaseEntity> Purchases => Set<LocalPurchaseEntity>();
     public DbSet<LocalInvoiceEntity> Invoices => Set<LocalInvoiceEntity>();
     public DbSet<LocalPaymentEntity> Payments => Set<LocalPaymentEntity>();
     public DbSet<LocalSyncQueueEntity> SyncQueue => Set<LocalSyncQueueEntity>();
@@ -127,6 +129,24 @@ public sealed class LocalAppDbContext : DbContext
             e.HasIndex(x => new { x.CompanyId, x.ProductId });
             e.Property(x => x.ProductName).HasMaxLength(200);
             e.Property(x => x.SKU).HasMaxLength(64);
+        });
+
+        modelBuilder.Entity<LocalSupplierEntity>(e =>
+        {
+            e.ToTable("LocalSuppliers");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CompanyId, x.Name });
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Email).HasMaxLength(150);
+        });
+
+        modelBuilder.Entity<LocalPurchaseEntity>(e =>
+        {
+            e.ToTable("LocalPurchases");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CompanyId, x.PurchaseNumber }).IsUnique();
+            e.HasIndex(x => new { x.CompanyId, x.SupplierId });
+            e.Property(x => x.PurchaseNumber).HasMaxLength(64);
         });
 
         modelBuilder.Entity<LocalInvoiceEntity>(e =>

@@ -186,6 +186,48 @@ public class LocalStockMovementEntity
     public string? SyncError { get; set; }
 }
 
+public class LocalSupplierEntity
+{
+    public Guid Id { get; set; }
+    public Guid? ServerId { get; set; }
+    public Guid CompanyId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public string TaxNumber { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? LastSyncedAtUtc { get; set; }
+    public string? SyncError { get; set; }
+}
+
+public class LocalPurchaseEntity
+{
+    public Guid Id { get; set; }
+    public Guid? ServerId { get; set; }
+    public Guid CompanyId { get; set; }
+    public string PurchaseNumber { get; set; } = string.Empty;
+    public Guid SupplierId { get; set; }
+    public string SupplierName { get; set; } = string.Empty;
+    public DateTime PurchaseDate { get; set; }
+    public DateTime DueDate { get; set; }
+    public string ItemsJson { get; set; } = "[]";
+    public int PaymentMethod { get; set; }
+    public string Reference { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+    public int Status { get; set; }
+    public decimal PaidAmount { get; set; }
+    public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? LastSyncedAtUtc { get; set; }
+    public string? SyncError { get; set; }
+}
+
 public class LocalInvoiceEntity
 {
     public Guid Id { get; set; }
