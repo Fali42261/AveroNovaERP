@@ -129,7 +129,10 @@ public partial class InvoiceFormPage : ContentPage
         if (CustomerPicker.SelectedIndex < 0) { await FailAsync("Select a customer."); return; }
         if (_lineItems.Count == 0) { await FailAsync("Add at least one line item."); return; }
         if (_lineItems.Any(x => x.ProductId == Guid.Empty || x.Quantity <= 0 || x.UnitPrice < 0)) { await FailAsync("Complete all line items with valid product, quantity and price."); return; }
-        if (DateDue.Date < DateInvoice.Date) { await FailAsync("Due date cannot be before invoice date."); return; }
+
+        var invoiceDate = DateInvoice.Date ?? DateTime.Today;
+        var dueDate = DateDue.Date ?? invoiceDate;
+        if (dueDate < invoiceDate) { await FailAsync("Due date cannot be before invoice date."); return; }
 
         var customer = _customerList[CustomerPicker.SelectedIndex];
         var isNew = _editing is null;
@@ -137,8 +140,8 @@ public partial class InvoiceFormPage : ContentPage
         inv.InvoiceNumber = LblInvoiceNumber.Text;
         inv.CustomerId = customer.LocalId;
         inv.CustomerName = customer.Name;
-        inv.InvoiceDate = DateInvoice.Date;
-        inv.DueDate = DateDue.Date;
+        inv.InvoiceDate = invoiceDate;
+        inv.DueDate = dueDate;
         inv.Items = [.. _lineItems];
         inv.DiscountPct = decimal.TryParse(EntryDiscount.Text, out var dp) ? dp : 0;
         inv.TaxPct = decimal.TryParse(EntryTax.Text, out var tp) ? tp : 0;
