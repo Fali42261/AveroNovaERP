@@ -19,14 +19,15 @@ public partial class AddExpenses : Migration
             {
                 Id = table.Column<Guid>(nullable: false),
                 CompanyId = table.Column<Guid>(nullable: false),
-                ExpenseNumber = table.Column<string>(maxLength: 100, nullable: false),
-                ExpenseDate = table.Column<DateTime>(nullable: false),
                 Category = table.Column<string>(maxLength: 100, nullable: false),
-                Payee = table.Column<string>(maxLength: 200, nullable: false),
+                Description = table.Column<string>(nullable: false),
                 Amount = table.Column<decimal>(nullable: false),
-                PaymentMethod = table.Column<int>(nullable: false),
-                Reference = table.Column<string>(maxLength: 200, nullable: false),
+                ExpenseDate = table.Column<DateTime>(nullable: false),
+                Method = table.Column<int>(nullable: false),
+                Reference = table.Column<string>(maxLength: 100, nullable: false),
                 Notes = table.Column<string>(nullable: false),
+                Status = table.Column<int>(nullable: false),
+                ApprovedBy = table.Column<string>(nullable: false),
                 CreatedAt = table.Column<DateTime>(nullable: false),
                 UpdatedAt = table.Column<DateTime>(nullable: true),
                 IsDeleted = table.Column<bool>(nullable: false),
@@ -35,11 +36,6 @@ public partial class AddExpenses : Migration
                 LastSyncedAt = table.Column<DateTime>(nullable: true)
             },
             constraints: table => table.PrimaryKey("PK_Expenses", x => x.Id));
-
-        migrationBuilder.CreateIndex(
-            name: "IX_Expenses_CompanyId_ExpenseNumber",
-            table: "Expenses",
-            columns: new[] { "CompanyId", "ExpenseNumber" });
 
         migrationBuilder.CreateIndex(
             name: "IX_Expenses_CompanyId_ExpenseDate",
