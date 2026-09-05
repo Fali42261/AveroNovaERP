@@ -6,6 +6,9 @@ namespace AveroNova.App.UI.Models;
 /// </summary>
 public class AppSettings
 {
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public Guid CompanyId { get; set; }
     public ThemeMode  Theme          { get; set; } = ThemeMode.System;
     public string     AccentColor    { get; set; } = "#2563EB";
     public bool       CompactMode    { get; set; }
@@ -19,4 +22,6 @@ public class AppSettings
     public bool       OfflineMode    { get; set; }
     public bool       RememberLogin  { get; set; }
     public Guid?      LastCompanyId  { get; set; }
+    public SyncStatus SyncStatus { get; set; } = SyncStatus.Local;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }

@@ -250,7 +250,7 @@ public static class MauiProgram
         builder.Services.AddTransient<IPurchaseService, LocalPurchaseService>();
         builder.Services.AddTransient<ISupplierService, LocalSupplierService>();
         builder.Services.AddTransient<IReturnService, LocalReturnService>();
-        builder.Services.AddTransient<ISettingsService, MockSettingsService>();
+        builder.Services.AddTransient<ISettingsService, LocalSettingsService>();
         builder.Services.AddTransient<ISubscriptionService, MockSubscriptionService>();
         builder.Services.AddSingleton<ISyncService, RegistrationSyncService>();
         builder.Services.AddTransient<IUserService, LocalUserService>();
