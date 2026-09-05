@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 namespace AveroNova.App.UI.Services.Local;
 
 /// <summary>
-/// Creates/updates the local AppDbContext SQLite schema and seeds only the
-/// reference data required by the application. Optional demo-data failures
-/// must never prevent login, registration, or password reset.
+/// Creates/updates the local AppDbContext SQLite schema. Authentication-critical
+/// schema/reference data is required; unrelated ERP schema repair is best-effort
+/// so a stale business table can never block Login, Create Account, or Reset Password.
 /// </summary>
 public sealed class LocalDatabaseInitializer
 {
@@ -65,69 +65,84 @@ public sealed class LocalDatabaseInitializer
                 return;
 
             await using var db = await _factory.CreateDbContextAsync(cancellationToken);
-            AveroNova.App.UI.Helpers.StartupLog.Write("DB schema create/ensure start");
+            var dbPath = db.Database.GetDbConnection().DataSource;
+
+            AveroNova.App.UI.Helpers.StartupLog.Write($"DB auth initialization start path={dbPath}");
             await db.Database.EnsureCreatedAsync(cancellationToken);
 
-            AveroNova.App.UI.Helpers.StartupLog.Write("DB schema ensure start");
+            // AUTH-CRITICAL SCHEMA. These failures must remain visible because authentication
+            // genuinely cannot work without these tables/columns.
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB auth schema ensure start");
+            await SqliteUserSchema.EnsureAsync(db, cancellationToken);
             await SqliteSubscriptionSchema.EnsureAsync(db, cancellationToken);
             await SqliteUserRoleSchema.EnsureAsync(db, cancellationToken);
-            await SqliteCustomerSchema.EnsureAsync(db, cancellationToken);
-            await SqliteProductSchema.EnsureAsync(db, cancellationToken);
-            await SqliteUserSchema.EnsureAsync(db, cancellationToken);
-            await SqliteInvoiceSchema.EnsureAsync(db, cancellationToken);
-            await SqlitePurchaseSchema.EnsureAsync(db, cancellationToken);
-            await SqlitePaymentSchema.EnsureAsync(db, cancellationToken);
 
-            // These catalog/reference rows are required by account creation and access control.
-            AveroNova.App.UI.Helpers.StartupLog.Write("DB required seed start");
+            // AUTH-CRITICAL REFERENCE DATA used by registration and authorization.
+            AveroNova.App.UI.Helpers.StartupLog.Write("DB auth reference seed start");
             await SeedAsync(db, cancellationToken);
             await RoleCatalogSeeder.SeedAsync(db, cancellationToken);
             await SubscriptionCatalogSeeder.SeedAsync(db, cancellationToken);
 
-            // Demo data is optional. A stale demo row/schema mismatch must not make the
-            // authentication database look unavailable to Login/Register/Reset Password.
-            try
-            {
-                AveroNova.App.UI.Helpers.StartupLog.Write("DB optional demo seed start");
-                await DemoDataSeeder.SeedAsync(db, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                var root = ex;
-                while (root.InnerException is not null)
-                    root = root.InnerException;
+            // ERP/business schema repair is intentionally best-effort. A stale Customer,
+            // Product, Invoice, Purchase or Payment table must not make the account database
+            // appear unavailable on the authentication screens.
+            await RunOptionalSchemaAsync(db, "Customer", () => SqliteCustomerSchema.EnsureAsync(db, cancellationToken));
+            await RunOptionalSchemaAsync(db, "Product", () => SqliteProductSchema.EnsureAsync(db, cancellationToken));
+            await RunOptionalSchemaAsync(db, "Invoice", () => SqliteInvoiceSchema.EnsureAsync(db, cancellationToken));
+            await RunOptionalSchemaAsync(db, "Purchase", () => SqlitePurchaseSchema.EnsureAsync(db, cancellationToken));
+            await RunOptionalSchemaAsync(db, "Payment", () => SqlitePaymentSchema.EnsureAsync(db, cancellationToken));
 
-                System.Diagnostics.Debug.WriteLine(
-                    $"[swapdigit] Optional demo seed skipped. Type={ex.GetType().FullName}; " +
-                    $"Message={ex.Message}; RootType={root.GetType().FullName}; RootMessage={root.Message}; " +
-                    $"Stack={ex.StackTrace}");
-                AveroNova.App.UI.Helpers.StartupLog.Write(
-                    $"Optional demo seed skipped: {root.GetType().Name}: {root.Message}");
-
-                // DemoDataSeeder may have tracked failed entities on this context. They are
-                // irrelevant after initialization, so clear them before the context is disposed.
-                db.ChangeTracker.Clear();
-            }
+            // Do not auto-seed transactional/demo records into a real user's company here.
+            // Account creation must persist only the records explicitly created by registration.
 
             _ready = true;
-            System.Diagnostics.Debug.WriteLine($"[swapdigit] Local SQLite ready: {db.Database.GetDbConnection().DataSource}");
+            System.Diagnostics.Debug.WriteLine($"[swapdigit] Local SQLite auth ready: {dbPath}");
+            AveroNova.App.UI.Helpers.StartupLog.Write($"DB auth initialization complete path={dbPath}");
         }
         catch (Exception ex)
         {
-            var root = ex;
-            while (root.InnerException is not null)
-                root = root.InnerException;
-
+            var root = GetRoot(ex);
             System.Diagnostics.Debug.WriteLine(
                 $"[swapdigit] Local SQLite initialization FAILED. Type={ex.GetType().FullName}; " +
                 $"Message={ex.Message}; RootType={root.GetType().FullName}; RootMessage={root.Message}; " +
                 $"Stack={ex.StackTrace}");
+            AveroNova.App.UI.Helpers.StartupLog.Write(
+                $"Local SQLite initialization FAILED: {root.GetType().Name}: {root.Message}");
             throw;
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    private static async Task RunOptionalSchemaAsync(AppDbContext db, string name, Func<Task> ensure)
+    {
+        try
+        {
+            await ensure();
+        }
+        catch (Exception ex)
+        {
+            var root = GetRoot(ex);
+            System.Diagnostics.Debug.WriteLine(
+                $"[swapdigit] Optional {name} SQLite schema repair skipped. " +
+                $"Type={root.GetType().FullName}; Message={root.Message}");
+            AveroNova.App.UI.Helpers.StartupLog.Write(
+                $"Optional {name} schema repair skipped: {root.GetType().Name}: {root.Message}");
+
+            // A failed schema helper may leave tracked entities in an unusable state.
+            // None of these entities are needed by authentication.
+            db.ChangeTracker.Clear();
+        }
+    }
+
+    private static Exception GetRoot(Exception ex)
+    {
+        var root = ex;
+        while (root.InnerException is not null)
+            root = root.InnerException;
+        return root;
     }
 
     private static async Task SeedAsync(AppDbContext db, CancellationToken cancellationToken)
