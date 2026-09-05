@@ -124,6 +124,23 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ApiUnavailable_Registration_FallsBackToLocalSqlite()
+    {
+        _api.RegisterResult = ApiCallResult<RegisterResponse>.Fail(
+            0, "Unable to connect to the server. Please try again.", network: true);
+
+        var request = CreateRegisterRequest();
+        var (ok, err) = await _auth.RegisterAsync(request);
+
+        Assert.True(ok, err);
+        Assert.True(_installation.IsRegistered);
+        Assert.Equal(1, _api.RegisterCalls);
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        Assert.Single(await db.Users.ToListAsync());
+        Assert.Equal(4, await db.SyncQueue.CountAsync());
+    }
+
+    [Fact]
     public async Task OnlineLogin_StoresTokensSecurely_AndLocalSessionInSqlite()
     {
         await SeedRegisteredInstallationAsync();
@@ -158,6 +175,50 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
         Assert.True(ok, err);
         Assert.Equal(0, _api.LoginCalls);
         Assert.True(_auth.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task ApiUnavailable_Login_FallsBackToLocalPassword()
+    {
+        await SeedRegisteredInstallationAsync();
+        await SeedLocalSessionFromLoginAsync(CreateLoginResponse("owner@test.local"));
+        await SeedLocalPasswordAsync("owner@test.local", "Password1!");
+        _api.LoginResult = ApiCallResult<LoginResponse>.Fail(
+            0, "Unable to connect to the server. Please try again.", network: true);
+
+        var (ok, err) = await _auth.LoginAsync("owner@test.local", "Password1!");
+
+        Assert.True(ok, err);
+        Assert.Equal(1, _api.LoginCalls);
+        Assert.True(_auth.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task OfflineResetPassword_ChangesLocalCredential_AndRequiresNewPassword()
+    {
+        _connectivity.SetOnline(false);
+        var request = CreateRegisterRequest();
+        Assert.True((await _auth.RegisterAsync(request)).Success);
+
+        var (resetOk, resetError) = await _auth.ResetPasswordAsync(request.Email, "NewPassword1!");
+        Assert.True(resetOk, resetError);
+        Assert.Equal("NewPassword1!", await _pendingSecrets.GetPendingPasswordAsync(request.ClientUserId!.Value));
+
+        var oldLogin = await _auth.LoginAsync(request.Email, request.Password);
+        Assert.False(oldLogin.Success);
+
+        var newLogin = await _auth.LoginAsync(request.Email, "NewPassword1!");
+        Assert.True(newLogin.Success, newLogin.Error);
+        Assert.True(_auth.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task OfflineResetPassword_RejectsUnknownLocalAccount()
+    {
+        var (ok, error) = await _auth.ResetPasswordAsync("missing@test.local", "NewPassword1!");
+
+        Assert.False(ok);
+        Assert.Equal("No local account was found for this email.", error);
     }
 
     [Fact]
