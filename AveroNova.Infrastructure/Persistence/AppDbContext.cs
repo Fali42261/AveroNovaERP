@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<SalesReturn> SalesReturns => Set<SalesReturn>();
     public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();
+    public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
