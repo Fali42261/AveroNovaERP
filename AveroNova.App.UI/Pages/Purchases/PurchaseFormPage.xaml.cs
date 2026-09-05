@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.Navigation;
 
@@ -57,13 +58,14 @@ public partial class PurchaseFormPage : ContentPage, IHostedPage
 
     private async void OnSaveClicked(object s, EventArgs e)
     {
-        if (SupplierPicker.SelectedIndex < 0) { ShowError("Select a supplier."); return; }
-        if (ProductPicker.SelectedIndex < 0) { ShowError("Select a product."); return; }
-        if (!int.TryParse(EntryQuantity.Text, out var quantity) || quantity <= 0) { ShowError("Enter a valid quantity."); return; }
-        if (!decimal.TryParse(EntryUnitPrice.Text, out var unitPrice) || unitPrice < 0) { ShowError("Enter a valid unit price."); return; }
-        if (!decimal.TryParse(EntryTax.Text, out var tax) || tax < 0 || tax > 100) { ShowError("Tax must be between 0 and 100."); return; }
-        if (!decimal.TryParse(EntryPaid.Text, out var paid) || paid < 0) { ShowError("Enter a valid paid amount."); return; }
+        if (SupplierPicker.SelectedIndex < 0) { await FailAsync("Select a supplier."); return; }
+        if (ProductPicker.SelectedIndex < 0) { await FailAsync("Select a product."); return; }
+        if (!int.TryParse(EntryQuantity.Text, out var quantity) || quantity <= 0) { await FailAsync("Enter a valid quantity."); return; }
+        if (!decimal.TryParse(EntryUnitPrice.Text, out var unitPrice) || unitPrice < 0) { await FailAsync("Enter a valid unit price."); return; }
+        if (!decimal.TryParse(EntryTax.Text, out var tax) || tax < 0 || tax > 100) { await FailAsync("Tax must be between 0 and 100."); return; }
+        if (!decimal.TryParse(EntryPaid.Text, out var paid) || paid < 0) { await FailAsync("Enter a valid paid amount."); return; }
         var cid   = _company.CurrentCompany?.LocalId ?? Guid.Empty;
+        var isNew = _editing is null;
         var model = _editing ?? new PurchaseModel { CompanyId = cid };
         var supplier = _supplierItems[SupplierPicker.SelectedIndex];
         var product = _productItems[ProductPicker.SelectedIndex];
@@ -75,16 +77,18 @@ public partial class PurchaseFormPage : ContentPage, IHostedPage
         model.Status = (PurchaseStatus)Math.Max(0, StatusPicker.SelectedIndex);
         model.Items = [new PurchaseLineItem { ProductId=product.LocalId, ProductName=product.Name, SKU=product.SKU, Quantity=quantity, UnitPrice=unitPrice, TaxPct=tax }];
         model.PaidAmount = paid;
-        model.Reference     = EntryRef.Text?.Trim() ?? "";
-        model.Notes         = EditorNotes.Text?.Trim() ?? "";
+        model.Reference = EntryRef.Text?.Trim() ?? "";
+        model.Notes = EditorNotes.Text?.Trim() ?? "";
         if (string.IsNullOrEmpty(model.PurchaseNumber)) model.PurchaseNumber = await _svc.GetNextPurchaseNumberAsync(cid);
 
-        var (ok, err) = _editing == null ? await _svc.CreateAsync(model) : await _svc.UpdateAsync(model);
-        if (ok) await _navigator.GoBackAsync();
-        else ShowError(err ?? "Save failed.");
+        var (ok, err) = isNew ? await _svc.CreateAsync(model) : await _svc.UpdateAsync(model);
+        if (!ok) { await FailAsync(err ?? "Unable to save purchase."); return; }
+        await AppToast.SuccessAsync(isNew ? "Purchase created successfully." : "Purchase updated successfully.");
+        await _navigator.GoBackAsync();
     }
 
     private void OnProductChanged(object? s, EventArgs e) { if(ProductPicker.SelectedIndex>=0 && ProductPicker.SelectedIndex<_productItems.Count) { var p=_productItems[ProductPicker.SelectedIndex]; EntryUnitPrice.Text=p.PurchasePrice.ToString("0.##"); EntryTax.Text=p.TaxPercent.ToString("0.##"); } }
     private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
+    private async Task FailAsync(string msg) { ShowError(msg); await AppToast.ErrorAsync(msg); }
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 }
