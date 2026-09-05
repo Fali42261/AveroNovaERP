@@ -12,15 +12,18 @@ using Microsoft.Extensions.Logging;
 namespace AveroNova.App.UI.Services;
 
 /// <summary>
-/// Real sync transport for pending local registration (and later ERP) queue items.
-/// Calls POST /api/auth/register for offline registration creates — not a UI mock.
+/// Offline-first sync coordinator. Registration and supported business records are
+/// persisted locally first, then pushed when connectivity is available.
 /// </summary>
 public sealed class RegistrationSyncService : ISyncService
 {
     private static readonly string[] RegistrationEntityTypes = ["User", "Company", "UserCompany", "Subscription"];
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAuthApiClient _authApi;
+    private readonly IApiClient _api;
+    private readonly ISecureTokenStore _tokens;
     private readonly IPendingRegistrationSecretStore _pendingSecrets;
     private readonly IConnectivityService _connectivity;
     private readonly IAppSessionContext _session;
@@ -32,6 +35,8 @@ public sealed class RegistrationSyncService : ISyncService
     public RegistrationSyncService(
         IDbContextFactory<LocalAppDbContext> dbFactory,
         IAuthApiClient authApi,
+        IApiClient api,
+        ISecureTokenStore tokens,
         IPendingRegistrationSecretStore pendingSecrets,
         IConnectivityService connectivity,
         IAppSessionContext session,
@@ -40,6 +45,8 @@ public sealed class RegistrationSyncService : ISyncService
     {
         _dbFactory = dbFactory;
         _authApi = authApi;
+        _api = api;
+        _tokens = tokens;
         _pendingSecrets = pendingSecrets;
         _connectivity = connectivity;
         _session = session;
@@ -69,7 +76,7 @@ public sealed class RegistrationSyncService : ISyncService
             await RefreshCountsAsync();
             if (!_connectivity.IsOnline)
             {
-                RaiseHistory(false, 0, "Offline — sync deferred until connectivity is restored.");
+                RaiseHistory(false, 0, "Offline — changes are saved locally and will sync automatically.");
                 return false;
             }
 
@@ -81,17 +88,18 @@ public sealed class RegistrationSyncService : ISyncService
 
             if (pending.Count == 0)
             {
-                RaiseHistory(true, 0, "No pending sync items.");
+                RaiseHistory(true, 0, "All changes are synced.");
                 LastSyncAt = DateTime.UtcNow;
                 return true;
             }
 
-            var registrationItems = pending
-                .Where(p => RegistrationEntityTypes.Contains(p.EntityType, StringComparer.OrdinalIgnoreCase))
-                .ToList();
-
             var succeeded = 0;
             var failed = 0;
+
+            var registrationItems = pending
+                .Where(p => RegistrationEntityTypes.Contains(p.EntityType, StringComparer.OrdinalIgnoreCase)
+                            && LooksLikeRegistrationPayload(p.PayloadJson))
+                .ToList();
 
             if (registrationItems.Count > 0)
             {
@@ -100,26 +108,39 @@ public sealed class RegistrationSyncService : ISyncService
                 else failed += registrationItems.Count;
             }
 
+            var registrationIds = registrationItems.Select(x => x.Id).ToHashSet();
+            var companyItems = pending
+                .Where(p => !registrationIds.Contains(p.Id)
+                            && string.Equals(p.EntityType, "Company", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var item in companyItems)
+            {
+                if (await SyncCompanyAsync(db, item))
+                    succeeded++;
+                else
+                    failed++;
+            }
+
             if (_licenses is not null)
             {
                 try { await _licenses.SyncOnlineIfPossibleAsync(); }
                 catch (Exception ex) { _logger.LogWarning(ex, "License sync during SyncNow failed."); }
             }
 
-            // Business-module APIs are not on the server yet. Keep Pending — never fake Synced.
             await db.SaveChangesAsync();
             await RefreshCountsAsync();
             LastSyncAt = DateTime.UtcNow;
             RaiseHistory(failed == 0, succeeded,
                 failed == 0
-                    ? $"Synced {succeeded} item(s)."
-                    : $"Synced {succeeded}, failed {failed}.");
+                    ? $"Synced {succeeded} change(s)."
+                    : $"Synced {succeeded}; {failed} change(s) remain pending/failed.");
             return failed == 0;
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SyncNow failed.");
-            RaiseHistory(false, 0, "Unable to synchronize. Please try again.");
+            RaiseHistory(false, 0, "Unable to synchronize now. Local work is safe and will retry later.");
             return false;
         }
         finally
@@ -139,13 +160,75 @@ public sealed class RegistrationSyncService : ISyncService
             {
                 SyncedAt = LastSyncAt ?? DateTime.UtcNow,
                 Success = FailedCount == 0,
-                ItemsSynced = Math.Max(0, PendingCount == 0 ? 1 : 0),
-                Module = "Registration",
+                ItemsSynced = 0,
+                Module = "Sync",
                 Message = PendingCount > 0
                     ? $"{PendingCount} pending, {FailedCount} failed."
                     : "Queue is clear."
             }
         ];
+    }
+
+    private async Task<bool> SyncCompanyAsync(LocalAppDbContext db, LocalSyncQueueEntity item)
+    {
+        var accessToken = await _tokens.GetAccessTokenAsync();
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            KeepPending(item, "Sign in is required before company changes can sync.");
+            return false;
+        }
+
+        CompanySyncPayload? payload;
+        try
+        {
+            payload = string.IsNullOrWhiteSpace(item.PayloadJson)
+                ? null
+                : JsonSerializer.Deserialize<CompanySyncPayload>(item.PayloadJson, JsonOptions);
+        }
+        catch
+        {
+            MarkFailed([item], "Invalid company sync payload.");
+            return false;
+        }
+
+        if (payload is null || payload.Id == Guid.Empty || string.IsNullOrWhiteSpace(payload.CompanyName))
+        {
+            MarkFailed([item], "Company sync payload is incomplete.");
+            return false;
+        }
+
+        item.Status = (int)RecordSyncStatus.Syncing;
+        item.LastAttemptAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        var operation = (SyncOperation)item.Operation;
+        var result = operation switch
+        {
+            SyncOperation.Create => await _api.PostAsync<CompanySyncResponse>(
+                "api/companies", payload, accessToken),
+            SyncOperation.Update => await _api.PutAsync<CompanySyncResponse>(
+                $"api/companies/{payload.Id:D}", payload, accessToken),
+            _ => ApiCallResult<CompanySyncResponse>.Fail(400, "Unsupported company sync operation.")
+        };
+
+        if (!result.Success || result.Data is null)
+        {
+            item.RetryCount++;
+            item.LastAttemptAt = DateTime.UtcNow;
+            item.Error = result.Error ?? "Company sync failed.";
+            item.Status = (int)(result.IsNetworkError || item.RetryCount < 5
+                ? RecordSyncStatus.Pending
+                : RecordSyncStatus.Failed);
+            return false;
+        }
+
+        var row = await db.Companies.FirstOrDefaultAsync(x => x.Id == payload.Id);
+        if (row is not null)
+            row.SyncVersion = Math.Max(row.SyncVersion, result.Data.SyncVersion);
+
+        MarkSynced(item);
+        _connectivity.DecrementPending();
+        return true;
     }
 
     private async Task<bool> SyncRegistrationBatchAsync(LocalAppDbContext db, List<LocalSyncQueueEntity> items)
@@ -168,7 +251,7 @@ public sealed class RegistrationSyncService : ISyncService
         OfflineRegistrationPayload? meta;
         try
         {
-            meta = JsonSerializer.Deserialize<OfflineRegistrationPayload>(payloadJson);
+            meta = JsonSerializer.Deserialize<OfflineRegistrationPayload>(payloadJson, JsonOptions);
         }
         catch
         {
@@ -214,45 +297,69 @@ public sealed class RegistrationSyncService : ISyncService
         var result = await _authApi.RegisterAsync(request);
         if (!result.Success || result.Data is null)
         {
-            // Network/server unavailable — keep Pending/Failed for retry (do not mark Synced).
-            var status = result.IsNetworkError
-                ? RecordSyncStatus.Pending
-                : RecordSyncStatus.Failed;
             foreach (var item in items)
             {
                 item.RetryCount++;
                 item.LastAttemptAt = DateTime.UtcNow;
                 item.Error = result.Error ?? "Registration sync failed.";
-                item.Status = (int)(item.RetryCount >= 5 ? RecordSyncStatus.Failed : status);
+                item.Status = (int)(result.IsNetworkError || item.RetryCount < 5
+                    ? RecordSyncStatus.Pending
+                    : RecordSyncStatus.Failed);
             }
             return false;
         }
 
-        // Prove stable IDs: server must echo the same client IDs.
         if (result.Data.UserId != meta.ClientUserId
             || result.Data.CompanyId != meta.ClientCompanyId
             || result.Data.SubscriptionId != meta.ClientSubscriptionId)
         {
-            MarkFailed(items,
-                $"Server ID mismatch. localUser={meta.ClientUserId} serverUser={result.Data.UserId}");
+            MarkFailed(items, "Server registration identity does not match local identity.");
             return false;
         }
 
-        var syncedAt = DateTime.UtcNow;
         foreach (var item in items)
         {
-            item.Status = (int)RecordSyncStatus.Synced;
-            item.Error = null;
-            item.SyncedAt = syncedAt;
-            item.LastAttemptAt = syncedAt;
+            MarkSynced(item);
+            _connectivity.DecrementPending();
         }
 
         await _pendingSecrets.ClearPendingPasswordAsync(meta.ClientUserId);
-        _ = _session; // auth context available for later ERP sync modules
+        _ = _session;
         return true;
     }
 
-    private static void MarkFailed(List<LocalSyncQueueEntity> items, string error)
+    private static bool LooksLikeRegistrationPayload(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return false;
+        try
+        {
+            var payload = JsonSerializer.Deserialize<OfflineRegistrationPayload>(json, JsonOptions);
+            return payload?.ClientUserId != Guid.Empty && payload?.ClientCompanyId != Guid.Empty;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void KeepPending(LocalSyncQueueEntity item, string error)
+    {
+        item.Error = error;
+        item.Status = (int)RecordSyncStatus.Pending;
+        item.LastAttemptAt = DateTime.UtcNow;
+    }
+
+    private static void MarkSynced(LocalSyncQueueEntity item)
+    {
+        var now = DateTime.UtcNow;
+        item.Status = (int)RecordSyncStatus.Synced;
+        item.Error = null;
+        item.SyncedAt = now;
+        item.LastAttemptAt = now;
+    }
+
+    private static void MarkFailed(IEnumerable<LocalSyncQueueEntity> items, string error)
     {
         var now = DateTime.UtcNow;
         foreach (var item in items)
@@ -283,7 +390,23 @@ public sealed class RegistrationSyncService : ISyncService
             SyncedAt = DateTime.UtcNow,
             Success = success,
             ItemsSynced = items,
-            Module = "Registration",
+            Module = "Sync",
             Message = message
         });
+
+    private sealed class CompanySyncPayload
+    {
+        public Guid Id { get; set; }
+        public string CompanyName { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? MobileNumber { get; set; }
+        public long SyncVersion { get; set; }
+    }
+
+    private sealed class CompanySyncResponse
+    {
+        public Guid Id { get; set; }
+        public long SyncVersion { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
 }
