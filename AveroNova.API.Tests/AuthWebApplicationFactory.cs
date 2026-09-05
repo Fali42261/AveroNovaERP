@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -35,7 +36,15 @@ public sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<DbContextOptions<AppDbContext>>();
             services.RemoveAll<AppDbContext>();
-            services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={_dbPath}"));
+            services.AddDbContext<AppDbContext>(options =>
+            {
+                options.UseSqlite($"Data Source={_dbPath}");
+                // Integration tests run against an isolated disposable SQLite database.
+                // The branch currently contains explicit hand-authored migrations whose model
+                // snapshot lags the runtime model; allow those migrations to execute here so
+                // auth/license behaviour can be tested independently of snapshot bookkeeping.
+                options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+            });
         });
     }
 
