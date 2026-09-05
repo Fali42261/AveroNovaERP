@@ -1,0 +1,51 @@
+name: Production Verify
+
+on:
+  push:
+    branches:
+      - production-cleanup-toast-registration
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore API
+        run: dotnet restore AveroNova.API/AveroNova.API.csproj
+      - name: Build API
+        run: dotnet build AveroNova.API/AveroNova.API.csproj -c Release --no-restore
+
+  maui-windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install MAUI workload
+        run: dotnet workload install maui --skip-manifest-update
+      - name: Restore Windows target
+        run: dotnet restore AveroNova.App.UI/AveroNova.App.UI.csproj -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0
+      - name: Build Windows target
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 --no-restore
+
+  maui-android-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install MAUI workload
+        run: dotnet workload install maui --skip-manifest-update
+      - name: Restore Android target
+        run: dotnet restore AveroNova.App.UI/AveroNova.App.UI.csproj -p:AveroNovaCiTargetFramework=net10.0-android
+      - name: Build Android target
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-android -p:AveroNovaCiTargetFramework=net10.0-android --no-restore
