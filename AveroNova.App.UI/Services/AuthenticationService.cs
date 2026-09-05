@@ -85,6 +85,12 @@ public sealed class AuthenticationService : IAuthenticationService
             return await RegisterOfflineAsync(request);
 
         var result = await _authApi.RegisterAsync(request);
+        if (result.IsNetworkError)
+        {
+            _logger.LogWarning("Registration API is unavailable; saving the account locally for later sync.");
+            return await RegisterOfflineAsync(request);
+        }
+
         if (!result.Success || result.Data is null)
             return (false, result.Error ?? "Registration failed. Please try again.");
 
@@ -128,8 +134,36 @@ public sealed class AuthenticationService : IAuthenticationService
     public Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
         => Task.FromResult<(bool, string?)>((false, "Password reset will be available in a later update."));
 
-    public Task<(bool Success, string? Error)> ResetPasswordAsync(string token, string newPassword)
-        => Task.FromResult<(bool, string?)>((false, "Password reset will be available in a later update."));
+    public async Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return (false, "Email address is required.");
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            return (false, "Password must be at least 6 characters.");
+
+        await _installation.EnsureInitializedAsync();
+
+        var normalizedEmail = email.Trim();
+        var userId = await _credentials.FindUserIdByEmailAsync(normalizedEmail);
+        if (userId is null)
+            userId = (await _sessions.FindUserByEmailAsync(normalizedEmail))?.Id;
+
+        if (userId is null)
+            return (false, "No local account was found for this email.");
+
+        await StoreLocalCredentialAsync(userId.Value, normalizedEmail, newPassword);
+
+        // An account created offline has not reached the server yet. Keep its
+        // pending registration secret aligned with the newly chosen password.
+        if (await _pendingSecrets.GetPendingPasswordAsync(userId.Value) is not null)
+            await _pendingSecrets.SetPendingPasswordAsync(userId.Value, newPassword);
+
+        await _tokens.ClearAsync();
+        await _sessions.ClearAuthSessionAsync();
+        _context.Clear();
+        _logger.LogInformation("Local password reset completed for UserId={UserId}.", userId.Value);
+        return (true, null);
+    }
 
     public Task<(bool Success, string? Error)> VerifyOtpAsync(string otp)
         => Task.FromResult<(bool, string?)>((false, "Verification codes are not used."));
@@ -210,7 +244,13 @@ public sealed class AuthenticationService : IAuthenticationService
         if (!result.Success || result.Data is null)
         {
             if (result.IsNetworkError)
-                return (false, result.Error ?? "Unable to connect to the server. Please try again.");
+            {
+                _logger.LogWarning("Login API is unavailable; attempting local authentication.");
+                var local = await LoginOfflineAsync(email, password);
+                return local.Success
+                    ? local
+                    : (false, result.Error ?? "Unable to connect to the server. Please try again.");
+            }
             return (false, result.Error ?? "Invalid email or password.");
         }
 
