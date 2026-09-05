@@ -1,5 +1,6 @@
 using AveroNova.Domain.Entities;
 using AveroNova.Domain.Enums;
+using Xunit;
 
 namespace AveroNova.API.Tests;
 
