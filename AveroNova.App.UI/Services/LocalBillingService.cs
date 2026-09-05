@@ -1,9 +1,12 @@
 using System.Text.Json;
 using AveroNova.App.UI.Data;
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Services.Api;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.App.UI.Services.Security;
 using AveroNova.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AveroNova.App.UI.Services;
 
@@ -11,16 +14,16 @@ public sealed class LocalBillingService : IBillingService
 {
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAppSessionContext _session;
-    private readonly IInvoiceSyncService _invoiceSync;
+    private readonly InvoiceSyncService _invoiceSync;
     private readonly IConnectivityService _connectivity;
 
     public LocalBillingService(IDbContextFactory<LocalAppDbContext> dbFactory, IAppSessionContext session,
-        IInvoiceSyncService invoiceSync, IConnectivityService connectivity)
+        IConnectivityService connectivity, IApiClient api, ISecureTokenStore tokens, ILogger<InvoiceSyncService> logger)
     {
         _dbFactory = dbFactory;
         _session = session;
-        _invoiceSync = invoiceSync;
         _connectivity = connectivity;
+        _invoiceSync = new InvoiceSyncService(dbFactory, api, tokens, connectivity, logger);
     }
 
     public async Task<List<InvoiceModel>> GetAllAsync(Guid companyId)
