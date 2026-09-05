@@ -13,6 +13,13 @@ namespace AveroNova.API.Controllers;
 [Authorize]
 public sealed class ExpensesController(AppDbContext db) : ControllerBase
 {
+    private const int ExpenseStatusPending = 0;
+    private const int ExpenseStatusApproved = 1;
+    private const int ExpenseStatusRejected = 2;
+    private const int ExpenseStatusPaid = 3;
+    private const int PaymentMethodCash = 0;
+    private const int PaymentMethodOther = 6;
+
     [HttpGet("company/{companyId:guid}")]
     public async Task<IActionResult> GetAll(Guid companyId, CancellationToken ct)
     {
@@ -69,7 +76,9 @@ public sealed class ExpensesController(AppDbContext db) : ControllerBase
         if(r.Category.Trim().Length>100)return "Category must be 100 characters or fewer.";
         if(r.Amount<=0)return "Expense amount must be greater than zero.";
         if(r.ExpenseDate.Date>DateTime.UtcNow.Date)return "Expense date cannot be in the future.";
-        if(r.Status is 1 or 2 && string.IsNullOrWhiteSpace(r.ApprovedBy))return "Approved by is required for approved or paid expenses.";
+        if(r.Method < PaymentMethodCash || r.Method > PaymentMethodOther)return "Expense payment method is invalid.";
+        if(r.Status < ExpenseStatusPending || r.Status > ExpenseStatusPaid)return "Expense status is invalid.";
+        if(r.Status is ExpenseStatusApproved or ExpenseStatusPaid && string.IsNullOrWhiteSpace(r.ApprovedBy))return "Approved by is required for approved or paid expenses.";
         return null;
     }
 
