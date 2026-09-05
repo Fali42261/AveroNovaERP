@@ -19,7 +19,9 @@
         </Border>
 
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16">
+            <VerticalStackLayout Padding="20,16" Spacing="16"
+                                 HorizontalOptions="Center"
+                                 MaximumWidthRequest="720">
                 <Border Style="{StaticResource AppCard}">
                     <VerticalStackLayout Spacing="14">
                         <Label Text="Adjustment Details" FontSize="14" FontAttributes="Bold"
@@ -28,7 +30,8 @@
 
                         <Label Text="Product *" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}">
-                            <Picker x:Name="ProductPicker" Title="Select product..."/>
+                            <Picker x:Name="ProductPicker" Title="Select product..."
+                                    HorizontalTextAlignment="Center"/>
                         </Border>
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
@@ -49,7 +52,8 @@
 
                         <Label Text="Reason *" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}">
-                            <Picker x:Name="ReasonPicker" Title="Select reason...">
+                            <Picker x:Name="ReasonPicker" Title="Select reason..."
+                                    HorizontalTextAlignment="Center">
                                 <Picker.Items>
                                     <x:String>Physical Count</x:String>
                                     <x:String>Damaged Goods</x:String>
