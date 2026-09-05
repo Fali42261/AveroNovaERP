@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -325,6 +325,22 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
                 "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL
             );
             """, cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "LocalSalesReturns" (
+              "Id" TEXT NOT NULL CONSTRAINT "PK_LocalSalesReturns" PRIMARY KEY, "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
+              "ReturnNumber" TEXT NOT NULL, "InvoiceId" TEXT NOT NULL, "InvoiceNumber" TEXT NOT NULL, "CustomerId" TEXT NOT NULL,
+              "CustomerName" TEXT NOT NULL, "ReturnDate" TEXT NOT NULL, "ItemsJson" TEXT NOT NULL, "Reason" TEXT NOT NULL,
+              "Notes" TEXT NOT NULL, "RefundAmount" TEXT NOT NULL, "Status" INTEGER NOT NULL, "SyncStatus" INTEGER NOT NULL,
+              "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL, "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL);
+            """, cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "LocalPurchaseReturns" (
+              "Id" TEXT NOT NULL CONSTRAINT "PK_LocalPurchaseReturns" PRIMARY KEY, "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
+              "ReturnNumber" TEXT NOT NULL, "PurchaseId" TEXT NOT NULL, "PurchaseNumber" TEXT NOT NULL, "SupplierId" TEXT NOT NULL,
+              "SupplierName" TEXT NOT NULL, "ReturnDate" TEXT NOT NULL, "ItemsJson" TEXT NOT NULL, "Reason" TEXT NOT NULL,
+              "Notes" TEXT NOT NULL, "RefundAmount" TEXT NOT NULL, "Status" INTEGER NOT NULL, "SyncStatus" INTEGER NOT NULL,
+              "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL, "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL);
+            """, cancellationToken);
 
         await _db.Database.ExecuteSqlRawAsync(
             """
@@ -370,6 +386,10 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await _db.Database.ExecuteSqlRawAsync(
             "CREATE INDEX IF NOT EXISTS \"IX_LocalExpenses_CompanyId_ExpenseDate\" ON \"LocalExpenses\" (\"CompanyId\", \"ExpenseDate\");",
             cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalSalesReturns_CompanyId_ReturnNumber\" ON \"LocalSalesReturns\" (\"CompanyId\", \"ReturnNumber\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LocalSalesReturns_CompanyId_InvoiceId\" ON \"LocalSalesReturns\" (\"CompanyId\", \"InvoiceId\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalPurchaseReturns_CompanyId_ReturnNumber\" ON \"LocalPurchaseReturns\" (\"CompanyId\", \"ReturnNumber\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LocalPurchaseReturns_CompanyId_PurchaseId\" ON \"LocalPurchaseReturns\" (\"CompanyId\", \"PurchaseId\");", cancellationToken);
     }
 
     private async Task TryAddColumnAsync(string table, string column, string definition, CancellationToken cancellationToken)

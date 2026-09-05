@@ -141,9 +141,13 @@ public static class MauiProgram
 
         builder.Services.AddTransient<SalesReturnsListPage>();
         builder.Services.AddTransient<Func<SalesReturnsListPage>>(sp => () => sp.GetRequiredService<SalesReturnsListPage>());
+        builder.Services.AddTransient<SalesReturnFormPage>();
+        builder.Services.AddTransient<Func<SalesReturnFormPage>>(sp => () => sp.GetRequiredService<SalesReturnFormPage>());
 
         builder.Services.AddTransient<PurchaseReturnsListPage>();
         builder.Services.AddTransient<Func<PurchaseReturnsListPage>>(sp => () => sp.GetRequiredService<PurchaseReturnsListPage>());
+        builder.Services.AddTransient<PurchaseReturnFormPage>();
+        builder.Services.AddTransient<Func<PurchaseReturnFormPage>>(sp => () => sp.GetRequiredService<PurchaseReturnFormPage>());
 
         builder.Services.AddTransient<ExpensesListPage>();
         builder.Services.AddTransient<Func<ExpensesListPage>>(sp => () => sp.GetRequiredService<ExpensesListPage>());
@@ -239,7 +243,7 @@ public static class MauiProgram
         builder.Services.AddTransient<IProductService, LocalProductService>();
         builder.Services.AddTransient<IPurchaseService, LocalPurchaseService>();
         builder.Services.AddTransient<ISupplierService, LocalSupplierService>();
-        builder.Services.AddTransient<IReturnService, MockReturnService>();
+        builder.Services.AddTransient<IReturnService, LocalReturnService>();
         builder.Services.AddTransient<ISettingsService, MockSettingsService>();
         builder.Services.AddTransient<ISubscriptionService, MockSubscriptionService>();
         builder.Services.AddSingleton<ISyncService, RegistrationSyncService>();

@@ -249,6 +249,32 @@ public class LocalExpenseEntity
     public string? SyncError { get; set; }
 }
 
+public class LocalSalesReturnEntity
+{
+    public Guid Id { get; set; } public Guid? ServerId { get; set; } public Guid CompanyId { get; set; }
+    public string ReturnNumber { get; set; } = string.Empty; public Guid InvoiceId { get; set; }
+    public string InvoiceNumber { get; set; } = string.Empty; public Guid CustomerId { get; set; }
+    public string CustomerName { get; set; } = string.Empty; public DateTime ReturnDate { get; set; }
+    public string ItemsJson { get; set; } = "[]"; public string Reason { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty; public decimal RefundAmount { get; set; }
+    public int Status { get; set; } public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } public DateTime UpdatedAtUtc { get; set; }
+    public DateTime? LastSyncedAtUtc { get; set; } public string? SyncError { get; set; }
+}
+
+public class LocalPurchaseReturnEntity
+{
+    public Guid Id { get; set; } public Guid? ServerId { get; set; } public Guid CompanyId { get; set; }
+    public string ReturnNumber { get; set; } = string.Empty; public Guid PurchaseId { get; set; }
+    public string PurchaseNumber { get; set; } = string.Empty; public Guid SupplierId { get; set; }
+    public string SupplierName { get; set; } = string.Empty; public DateTime ReturnDate { get; set; }
+    public string ItemsJson { get; set; } = "[]"; public string Reason { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty; public decimal RefundAmount { get; set; }
+    public int Status { get; set; } public int SyncStatus { get; set; }
+    public DateTime CreatedAtUtc { get; set; } public DateTime UpdatedAtUtc { get; set; }
+    public DateTime? LastSyncedAtUtc { get; set; } public string? SyncError { get; set; }
+}
+
 public class LocalInvoiceEntity
 {
     public Guid Id { get; set; }

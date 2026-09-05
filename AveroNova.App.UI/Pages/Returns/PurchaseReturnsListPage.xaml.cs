@@ -5,15 +5,17 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Returns;
 
-public partial class PurchaseReturnsListPage : ContentPage
+public partial class PurchaseReturnsListPage : ContentPage, IHostedPage
 {
     private readonly IReturnService  _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;private readonly Func<PurchaseReturnFormPage> _formFactory;
 
-    public PurchaseReturnsListPage(IReturnService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public PurchaseReturnsListPage(IReturnService svc, ICompanyService company, IMainContentNavigator navigator, Func<PurchaseReturnFormPage> formFactory)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator=navigator; _formFactory=formFactory; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync()=>LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
@@ -35,10 +37,11 @@ public partial class PurchaseReturnsListPage : ContentPage
         var right = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = $"${r.RefundAmount:N2}", FontSize = 15, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#DC2626") });
         right.Children.Add(new Label { Text = r.StatusLabel, FontSize = 11, TextColor = Color.FromArgb("#64748B") });
+        var actions=new HorizontalStackLayout{Spacing=6,HorizontalOptions=LayoutOptions.End};var edit=new Button{Text="Edit",Style=(Style)Resources["SmallSecondaryButton"]};edit.Clicked+=async(_,_)=>{var page=_formFactory();page.EditId=r.LocalId;await _navigator.NavigateAsync(page,"Edit Purchase Return","Home / Purchase Returns / Edit");};var del=new Button{Text="Delete",Style=(Style)Resources["SmallSecondaryButton"]};del.Clicked+=async(_,_)=>{var result=await _svc.DeletePurchaseReturnAsync(r.LocalId);if(result.Ok)await LoadAsync();else await DisplayAlert("Delete failed",result.Error??"Unable to delete return.","OK");};actions.Children.Add(edit);actions.Children.Add(del);right.Children.Add(actions);
         grid.Add(left, 0, 0); grid.Add(right, 1, 0);
         border.Content = grid;
         return border;
     }
 
-    private async void OnNewClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.PurchaseReturnNew);
+    private async void OnNewClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(),"New Purchase Return","Home / Purchase Returns / New");
 }
