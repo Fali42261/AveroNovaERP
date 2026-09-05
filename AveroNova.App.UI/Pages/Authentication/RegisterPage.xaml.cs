@@ -1,5 +1,6 @@
 using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.ViewModels;
 
@@ -415,6 +416,7 @@ public partial class RegisterPage : ContentPage
             {
                 _vm.HasGeneralSuccess = true;
                 _vm.GeneralSuccess = "Account created successfully! Redirecting to sign in...";
+                await AppToast.ShowAsync(this, "Account created successfully.", AppToastKind.Success);
                 await Task.Delay(1200);
                 await Shell.Current.GoToAsync(AppRoutes.Login);
             }
@@ -422,12 +424,14 @@ public partial class RegisterPage : ContentPage
             {
                 _vm.HasGeneralError = true;
                 _vm.GeneralError = error ?? "Registration failed. Please try again.";
+                await AppToast.ShowAsync(this, _vm.GeneralError, AppToastKind.Error);
             }
         }
         catch (Exception ex)
         {
             _vm.HasGeneralError = true;
             _vm.GeneralError = ex.Message;
+            await AppToast.ShowAsync(this, "Account could not be created. Please try again.", AppToastKind.Error);
         }
         finally
         {

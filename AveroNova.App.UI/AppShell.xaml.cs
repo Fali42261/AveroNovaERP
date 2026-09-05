@@ -15,44 +15,15 @@ using AveroNova.App.UI.Pages.Returns;
 using AveroNova.App.UI.Pages.Settings;
 using AveroNova.App.UI.Pages.Subscription;
 using AveroNova.App.UI.Pages.SyncCenter;
-using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI;
 
 public partial class AppShell : Shell
 {
-    private readonly IInstallationService _installation;
-
-    public AppShell(IInstallationService installation)
+    public AppShell()
     {
-        _installation = installation;
         InitializeComponent();
         RegisterRoutes();
-        Navigating += OnNavigating;
-    }
-
-    private void OnNavigating(object? sender, ShellNavigatingEventArgs e)
-    {
-        var target = e.Target?.Location?.OriginalString ?? string.Empty;
-        if (!target.Contains("Register", StringComparison.OrdinalIgnoreCase))
-            return;
-
-        // Status is initialized at app start; block direct Create Account navigation when registered.
-        if (_installation.IsRegistered)
-        {
-            e.Cancel();
-            MainThread.BeginInvokeOnMainThread(async () =>
-            {
-                try
-                {
-                    await GoToAsync(AppRoutes.Login);
-                }
-                catch
-                {
-                    // ignore navigation races during startup
-                }
-            });
-        }
     }
 
     private static void RegisterRoutes()

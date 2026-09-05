@@ -73,6 +73,9 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         await _installation.EnsureInitializedAsync();
 
+        if (!PasswordPolicy.IsStrong(request.Password))
+            return (false, PasswordPolicy.RequirementMessage);
+
         request.InstallationId = _installation.InstallationId;
         request.DeviceId = _installation.DeviceId;
         request.DeviceName = _device.Name;
@@ -135,8 +138,8 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         if (string.IsNullOrWhiteSpace(email))
             return (false, "Email address is required.");
-        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
-            return (false, "Password must be at least 6 characters.");
+        if (!PasswordPolicy.IsStrong(newPassword))
+            return (false, PasswordPolicy.RequirementMessage);
 
         await _installation.EnsureInitializedAsync();
 

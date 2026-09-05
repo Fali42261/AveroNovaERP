@@ -422,9 +422,9 @@ namespace AveroNova.App.UI.ViewModels
                 HasPasswordError = true;
                 isValid = false;
             }
-            else if (Password.Length < 6)
+            else if (!AveroNova.Shared.Security.PasswordPolicy.IsStrong(Password))
             {
-                PasswordError = "Password must be at least 6 characters";
+                PasswordError = AveroNova.Shared.Security.PasswordPolicy.RequirementMessage;
                 HasPasswordError = true;
                 isValid = false;
             }

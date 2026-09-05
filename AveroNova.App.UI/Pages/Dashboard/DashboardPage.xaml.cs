@@ -8,32 +8,30 @@ public partial class DashboardPage : ContentPage
 {
     private readonly IBillingService   _billing;
     private readonly IProductService   _product;
-    private readonly ICustomerService  _customer;
-    private readonly IPaymentService   _payment;
     private readonly ICompanyService   _company;
     private readonly ILicenseService   _licenses;
+    private readonly IReportingService _reporting;
 
     public DashboardPage(
         IBillingService  billing,
         IProductService  product,
-        ICustomerService customer,
-        IPaymentService  payment,
         ICompanyService  company,
-        ILicenseService  licenses)
+        ILicenseService  licenses,
+        IReportingService reporting)
     {
         InitializeComponent();
         _billing  = billing;
         _product  = product;
-        _customer = customer;
-        _payment  = payment;
         _company  = company;
         _licenses = licenses;
+        _reporting = reporting;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         LblDate.Text = DateTime.Today.ToString("dddd, dd MMMM yyyy");
+        LblFiscalYear.Text = $"FY {DateTime.Today:yyyy}";
         await LoadDataAsync();
     }
 
@@ -50,15 +48,23 @@ public partial class DashboardPage : ContentPage
         var cid       = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         var invoices  = await _billing.GetAllAsync(cid);
         var products  = await _product.GetAllAsync(cid);
-        var customers = await _customer.GetAllAsync(cid);
-        var payments  = await _payment.GetAllAsync(cid);
+        var (summary, _) = await _reporting.GetSummaryAsync(cid, ReportPeriod.CurrentMonth(DateTime.Today));
 
-        // KPI
-        LblTotalSales.Text    = "$" + invoices.Where(i => i.Status == InvoiceStatus.Paid).Sum(i => i.GrandTotal).ToString("N0");
-        LblOutstanding.Text   = "$" + invoices.Where(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled).Sum(i => i.DueAmount).ToString("N0");
-        LblCustomers.Text     = customers.Count.ToString();
-        LblProducts.Text      = products.Count.ToString();
-        LblPayments.Text      = "$" + payments.Sum(p => p.Amount).ToString("N0");
+        if (summary is not null)
+        {
+            LblTotalSales.Text = Money(summary.NetRevenue);
+            LblTotalPurchases.Text = Money(summary.NetPurchases);
+            LblOutstanding.Text = Money(summary.OutstandingReceivables);
+            LblCustomers.Text = summary.CustomerCount.ToString();
+            LblProducts.Text = summary.ProductCount.ToString();
+            LblPayments.Text = Money(summary.PaymentsReceived);
+            LblSalesCount.Text = $"{summary.InvoiceCount} invoices";
+            LblPurchaseCount.Text = $"{summary.PurchaseCount} orders";
+            LblOverdueCount.Text = $"{summary.OverdueInvoiceCount} invoices";
+            LblActiveCustomers.Text = $"{summary.ActiveCustomerCount} active";
+            LblLowStockCount.Text = $"{summary.LowStockCount} low stock";
+            LblLowStockHeaderCount.Text = $"{summary.LowStockCount} items";
+        }
 
         // Recent invoices (last 4)
         InvoiceList.Children.Clear();
@@ -83,6 +89,8 @@ public partial class DashboardPage : ContentPage
         if (!products.Any(p => p.IsLowStock))
             LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
     }
+
+    private static string Money(decimal amount) => "$" + amount.ToString("N0");
 
     private async Task LoadLicenseBannerAsync()
     {
