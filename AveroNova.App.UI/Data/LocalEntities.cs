@@ -122,6 +122,26 @@ public class LocalSubscriptionEntity
     public DateTime StartDateUtc { get; set; }
     public DateTime EndDateUtc { get; set; }
     public bool IsActive { get; set; } = true;
+    public string PlanId { get; set; } = "starter";
+    public int BillingCycle { get; set; }
+    public decimal Price { get; set; }
+    public int Status { get; set; }
+    public bool AutoRenew { get; set; } = true;
+    public int MaxUsers { get; set; } = 2;
+    public int MaxCompanies { get; set; } = 1;
+    public int MaxStorageMB { get; set; } = 500;
+    public int SyncStatus { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public class LocalSubscriptionPaymentEntity
+{
+    public Guid Id { get; set; } public Guid? ServerId { get; set; } public Guid CompanyId { get; set; }
+    public string PaymentNumber { get; set; } = string.Empty; public string PlanName { get; set; } = string.Empty;
+    public decimal Amount { get; set; } public DateTime PaymentDate { get; set; } public string Method { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty; public string Invoice { get; set; } = string.Empty;
+    public int SyncStatus { get; set; } public DateTime CreatedAtUtc { get; set; } public DateTime UpdatedAtUtc { get; set; }
+    public DateTime? LastSyncedAtUtc { get; set; } public string? SyncError { get; set; }
 }
 
 public class LocalLicenseEntity

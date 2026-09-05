@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 12;
+    public const int CurrentSchemaVersion = 13;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -117,6 +117,16 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 
         await TryAddColumnAsync("LocalSyncQueue", "SyncedAt", "TEXT NULL", cancellationToken);
         await TryAddColumnAsync("LocalSyncQueue", "PayloadJson", "TEXT NULL", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "PlanId", "TEXT NOT NULL DEFAULT 'starter'", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "BillingCycle", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "Price", "TEXT NOT NULL DEFAULT '0'", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "Status", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "AutoRenew", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "MaxUsers", "INTEGER NOT NULL DEFAULT 2", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "MaxCompanies", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "MaxStorageMB", "INTEGER NOT NULL DEFAULT 500", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "SyncStatus", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await TryAddColumnAsync("LocalSubscriptions", "UpdatedAtUtc", "TEXT NOT NULL DEFAULT '0001-01-01 00:00:00'", cancellationToken);
     }
 
     private async Task EnsureLicenseTableAsync(CancellationToken cancellationToken)
@@ -370,6 +380,13 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
               "LastCompanyId" TEXT NULL, "SyncStatus" INTEGER NOT NULL, "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL,
               "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL);
             """, cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "LocalSubscriptionPayments" (
+              "Id" TEXT NOT NULL CONSTRAINT "PK_LocalSubscriptionPayments" PRIMARY KEY, "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
+              "PaymentNumber" TEXT NOT NULL, "PlanName" TEXT NOT NULL, "Amount" TEXT NOT NULL, "PaymentDate" TEXT NOT NULL,
+              "Method" TEXT NOT NULL, "Status" TEXT NOT NULL, "Invoice" TEXT NOT NULL, "SyncStatus" INTEGER NOT NULL,
+              "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL, "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL);
+            """, cancellationToken);
 
         await _db.Database.ExecuteSqlRawAsync(
             """
@@ -422,6 +439,7 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalCompanyRoles_CompanyId_Name\" ON \"LocalCompanyRoles\" (\"CompanyId\", \"Name\");", cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalCompanyRolePermissions_Key\" ON \"LocalCompanyRolePermissions\" (\"CompanyId\", \"RoleId\", \"PermissionKey\");", cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalAppSettings_CompanyId_UserId\" ON \"LocalAppSettings\" (\"CompanyId\", \"UserId\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalSubscriptionPayments_Number\" ON \"LocalSubscriptionPayments\" (\"CompanyId\", \"PaymentNumber\");", cancellationToken);
     }
 
     private async Task TryAddColumnAsync(string table, string column, string definition, CancellationToken cancellationToken)
