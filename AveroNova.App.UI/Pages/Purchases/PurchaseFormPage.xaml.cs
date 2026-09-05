@@ -69,8 +69,8 @@ public partial class PurchaseFormPage : ContentPage, IHostedPage
         var product = _productItems[ProductPicker.SelectedIndex];
         model.SupplierId = supplier.LocalId;
         model.SupplierName = supplier.Name;
-        model.PurchaseDate = DatePurchase.Date;
-        model.DueDate = DateDue.Date;
+        model.PurchaseDate = DatePurchase.Date ?? DateTime.Today;
+        model.DueDate = DateDue.Date ?? DateTime.Today;
         model.PaymentMethod = (PaymentMethod)Math.Max(0, PaymentPicker.SelectedIndex);
         model.Status = (PurchaseStatus)Math.Max(0, StatusPicker.SelectedIndex);
         model.Items = [new PurchaseLineItem { ProductId=product.LocalId, ProductName=product.Name, SKU=product.SKU, Quantity=quantity, UnitPrice=unitPrice, TaxPct=tax }];
