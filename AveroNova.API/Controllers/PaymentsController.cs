@@ -13,6 +13,10 @@ namespace AveroNova.API.Controllers;
 [Authorize]
 public sealed class PaymentsController(AppDbContext db) : ControllerBase
 {
+    private const int CompletedStatus = 1;
+    private const int CashMethod = 0;
+    private const int OnlineMethod = 5;
+
     [HttpGet("company/{companyId:guid}")]
     public async Task<IActionResult> GetAll(Guid companyId, CancellationToken ct)
     {
@@ -26,12 +30,15 @@ public sealed class PaymentsController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> Create([FromBody] PaymentSyncRequest r, CancellationToken ct)
     {
         if (!await CanAccessCompany(r.CompanyId, ct)) return Forbid();
-        if (r.Id == Guid.Empty || r.Amount <= 0 || string.IsNullOrWhiteSpace(r.PaymentNumber))
-            return BadRequest(new { success = false, error = "Payment id, number and positive amount are required." });
+        var validation = await ValidateAsync(r, null, ct);
+        if (validation is not null) return BadRequest(new { success = false, error = validation });
 
         var existing = await db.Payments.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
         if (existing is not null) return Ok(new { success = true, data = ToResponse(existing), idempotent = true });
+        if (await db.Payments.AnyAsync(x => x.CompanyId == r.CompanyId && x.PaymentNumber == r.PaymentNumber && !x.IsDeleted, ct))
+            return Conflict(new { success = false, error = "Payment number already exists." });
 
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var now = DateTime.UtcNow;
         var row = new Payment
         {
@@ -43,8 +50,10 @@ public sealed class PaymentsController(AppDbContext db) : ControllerBase
             SyncStatus = RecordSyncStatus.Synced, LastSyncedAt = now
         };
         db.Payments.Add(row);
+        await db.SaveChangesAsync(ct);
         await RecalculateInvoiceAsync(row.InvoiceId, row.CompanyId, ct);
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Ok(new { success = true, data = ToResponse(row) });
     }
 
@@ -54,16 +63,24 @@ public sealed class PaymentsController(AppDbContext db) : ControllerBase
         var row = await db.Payments.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
         if (row is null) return NotFound(new { success = false, error = "Payment not found." });
         if (!await CanAccessCompany(row.CompanyId, ct)) return Forbid();
+        if (r.CompanyId != Guid.Empty && r.CompanyId != row.CompanyId)
+            return BadRequest(new { success = false, error = "Payment company cannot be changed." });
         if (r.SyncVersion > 0 && r.SyncVersion < row.SyncVersion)
             return Conflict(new { success = false, error = "Payment has newer server changes." });
+        var validation = await ValidateAsync(r, id, ct);
+        if (validation is not null) return BadRequest(new { success = false, error = validation });
 
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var oldInvoiceId = row.InvoiceId;
         row.ApplyUpdate(r.PaymentNumber, r.PartyId, r.PartyName ?? string.Empty, r.IsSupplier, r.InvoiceId,
             r.InvoiceNumber ?? string.Empty, r.Amount, r.Method, r.PaymentDate, r.Reference, r.Notes, r.Status);
-        row.SyncStatus = RecordSyncStatus.Synced; row.LastSyncedAt = DateTime.UtcNow;
+        row.SyncStatus = RecordSyncStatus.Synced;
+        row.LastSyncedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
         await RecalculateInvoiceAsync(oldInvoiceId, row.CompanyId, ct);
         if (r.InvoiceId != oldInvoiceId) await RecalculateInvoiceAsync(r.InvoiceId, row.CompanyId, ct);
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Ok(new { success = true, data = ToResponse(row) });
     }
 
@@ -73,11 +90,34 @@ public sealed class PaymentsController(AppDbContext db) : ControllerBase
         var row = await db.Payments.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
         if (row is null) return Ok(new { success = true });
         if (!await CanAccessCompany(row.CompanyId, ct)) return Forbid();
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var invoiceId = row.InvoiceId;
-        row.IsDeleted = true; row.MarkPendingChange(); row.SyncStatus = RecordSyncStatus.Synced; row.LastSyncedAt = DateTime.UtcNow;
+        row.IsDeleted = true;
+        row.MarkPendingChange();
+        row.SyncStatus = RecordSyncStatus.Synced;
+        row.LastSyncedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
         await RecalculateInvoiceAsync(invoiceId, row.CompanyId, ct);
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Ok(new { success = true });
+    }
+
+    private async Task<string?> ValidateAsync(PaymentSyncRequest r, Guid? excludePaymentId, CancellationToken ct)
+    {
+        if (r.Id == Guid.Empty || r.CompanyId == Guid.Empty || r.Amount <= 0 || string.IsNullOrWhiteSpace(r.PaymentNumber))
+            return "Payment id, company, number and positive amount are required.";
+        if (r.Method is not CashMethod and not OnlineMethod) return "Payment type must be Cash or Online.";
+        if (r.InvoiceId is not Guid invoiceId || invoiceId == Guid.Empty) return "Invoice is required.";
+        var invoice = await db.Invoices.AsNoTracking().FirstOrDefaultAsync(x => x.Id == invoiceId && x.CompanyId == r.CompanyId && !x.IsDeleted, ct);
+        if (invoice is null) return "Invoice not found.";
+        if (invoice.Status == 5) return "Cancelled invoice cannot receive payments.";
+        var paid = await db.Payments.Where(x => x.CompanyId == r.CompanyId && x.InvoiceId == invoiceId && !x.IsDeleted && x.Status == CompletedStatus && (!excludePaymentId.HasValue || x.Id != excludePaymentId.Value))
+            .SumAsync(x => (decimal?)x.Amount, ct) ?? 0m;
+        var total = InvoiceMath.GetGrandTotal(invoice.ItemsJson, invoice.DiscountPct, invoice.TaxPct);
+        if (paid + r.Amount > total + 0.01m) return "Payment amount cannot exceed invoice due amount.";
+        return null;
     }
 
     private async Task RecalculateInvoiceAsync(Guid? invoiceId, Guid companyId, CancellationToken ct)
@@ -85,11 +125,12 @@ public sealed class PaymentsController(AppDbContext db) : ControllerBase
         if (invoiceId is not Guid iid || iid == Guid.Empty) return;
         var invoice = await db.Invoices.FirstOrDefaultAsync(x => x.Id == iid && x.CompanyId == companyId && !x.IsDeleted, ct);
         if (invoice is null) return;
-        var totalPaid = await db.Payments.Where(x => x.CompanyId == companyId && x.InvoiceId == iid && !x.IsDeleted && x.Status == 1)
+        var totalPaid = await db.Payments.Where(x => x.CompanyId == companyId && x.InvoiceId == iid && !x.IsDeleted && x.Status == CompletedStatus)
             .SumAsync(x => (decimal?)x.Amount, ct) ?? 0m;
         invoice.PaidAmount = totalPaid;
         var grandTotal = InvoiceMath.GetGrandTotal(invoice.ItemsJson, invoice.DiscountPct, invoice.TaxPct);
-        invoice.Status = totalPaid <= 0 ? invoice.Status : totalPaid >= grandTotal ? 3 : 2;
+        if (invoice.Status != 5)
+            invoice.Status = totalPaid <= 0 ? invoice.Status : totalPaid >= grandTotal - 0.01m ? 3 : 2;
         invoice.UpdatedAt = DateTime.UtcNow;
     }
 
