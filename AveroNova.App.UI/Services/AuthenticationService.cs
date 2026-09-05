@@ -73,9 +73,6 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         await _installation.EnsureInitializedAsync();
 
-        if (_installation.IsRegistered)
-            return (false, "This installation is already registered. Please sign in instead.");
-
         request.InstallationId = _installation.InstallationId;
         request.DeviceId = _installation.DeviceId;
         request.DeviceName = _device.Name;
@@ -246,10 +243,7 @@ public sealed class AuthenticationService : IAuthenticationService
             if (result.IsNetworkError)
             {
                 _logger.LogWarning("Login API is unavailable; attempting local authentication.");
-                var local = await LoginOfflineAsync(email, password);
-                return local.Success
-                    ? local
-                    : (false, result.Error ?? "Unable to connect to the server. Please try again.");
+                return await LoginOfflineAsync(email, password);
             }
             return (false, result.Error ?? "Invalid email or password.");
         }

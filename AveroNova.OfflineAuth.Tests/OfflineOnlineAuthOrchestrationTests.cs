@@ -80,18 +80,13 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task OnlineRegistration_MarksInstallationRegistered_AndBlocksRepeat()
+    public async Task OnlineRegistration_MarksInstallationRegistered_WithoutHidingCreateAccount()
     {
         _api.RegisterResult = ApiCallResult<RegisterResponse>.Ok(CreateRegisterResponse(), 200);
         var (ok, err) = await _auth.RegisterAsync(CreateRegisterRequest());
         Assert.True(ok, err);
         Assert.True(_installation.IsRegistered);
-        Assert.False(_installation.CanCreateAccount);
-
-        var (again, againErr) = await _auth.RegisterAsync(CreateRegisterRequest());
-        Assert.False(again);
-        Assert.Contains("already registered", againErr, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, _api.RegisterCalls);
+        Assert.True(_installation.CanCreateAccount);
     }
 
     [Fact]
@@ -191,6 +186,21 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
         Assert.True(ok, err);
         Assert.Equal(1, _api.LoginCalls);
         Assert.True(_auth.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task ApiUnavailable_LoginWithoutLocalAccount_ShowsOfflineRecoveryMessage()
+    {
+        _api.LoginResult = ApiCallResult<LoginResponse>.Fail(
+            0, "Unable to connect to the server. Please try again.", network: true);
+
+        var (ok, error) = await _auth.LoginAsync("missing@test.local", "Password1!");
+
+        Assert.False(ok);
+        Assert.NotNull(error);
+        Assert.DoesNotContain("connect to the server", error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No local account", error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Create an account", error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

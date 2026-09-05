@@ -25,7 +25,7 @@ public partial class LoginPage : ContentPage
         base.OnAppearing();
         ApplyLayout();
         await _installation.EnsureInitializedAsync();
-        CreateAccountRow.IsVisible = _installation.CanCreateAccount;
+        CreateAccountRow.IsVisible = true;
         HideFieldErrors();
     }
 
@@ -137,16 +137,7 @@ public partial class LoginPage : ContentPage
     }
 
     private async void OnRegisterTapped(object? sender, TappedEventArgs e)
-    {
-        await _installation.EnsureInitializedAsync();
-        if (!_installation.CanCreateAccount)
-        {
-            await Shell.Current.GoToAsync(AppRoutes.Login);
-            return;
-        }
-
-        await Shell.Current.GoToAsync(AppRoutes.Register);
-    }
+        => await Shell.Current.GoToAsync(AppRoutes.Register);
 
     private async void OnResetPasswordTapped(object? sender, TappedEventArgs e)
         => await Shell.Current.GoToAsync(AppRoutes.ResetPassword);

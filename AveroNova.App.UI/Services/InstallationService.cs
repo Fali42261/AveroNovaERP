@@ -36,7 +36,9 @@ public sealed class InstallationService : IInstallationService
 
     public LocalInstallationStatus Status => _cached?.Status ?? LocalInstallationStatus.NotRegistered;
 
-    public bool CanCreateAccount => !IsRegistered;
+    // A registered installation can still host another local/company account.
+    // Server-side validation remains responsible for rejecting duplicate identities.
+    public bool CanCreateAccount => true;
 
     public async Task EnsureInitializedAsync(CancellationToken cancellationToken = default)
     {
