@@ -88,6 +88,11 @@ public sealed class RegistrationSyncService : ISyncService
                 if (await SyncCustomerAsync(db, item)) succeeded++; else failed++;
             }
 
+            foreach (var item in pending.Where(p => p.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (await SyncProductAsync(db, item)) succeeded++; else failed++;
+            }
+
             if (_licenses is not null)
             {
                 try { await _licenses.SyncOnlineIfPossibleAsync(); }
@@ -116,6 +121,57 @@ public sealed class RegistrationSyncService : ISyncService
         await RefreshCountsAsync();
         return [new SyncHistoryModel { SyncedAt = LastSyncAt ?? DateTime.UtcNow, Success = FailedCount == 0, ItemsSynced = 0,
             Module = "Sync", Message = PendingCount > 0 ? $"{PendingCount} pending, {FailedCount} failed." : "Queue is clear." }];
+    }
+
+    private async Task<bool> SyncProductAsync(LocalAppDbContext db, LocalSyncQueueEntity item)
+    {
+        var token = await _tokens.GetAccessTokenAsync();
+        if (string.IsNullOrWhiteSpace(token)) { KeepPending(item, "Sign in is required before product changes can sync."); return false; }
+
+        item.Status = (int)RecordSyncStatus.Syncing; item.LastAttemptAt = DateTime.UtcNow; await db.SaveChangesAsync();
+        var op = (SyncOperation)item.Operation;
+        ApiCallResult result;
+
+        if (op == SyncOperation.Delete)
+        {
+            result = await _api.DeleteAsync($"api/products/{item.EntityId:D}", token);
+        }
+        else
+        {
+            ProductSyncPayload? payload;
+            try { payload = string.IsNullOrWhiteSpace(item.PayloadJson) ? null : JsonSerializer.Deserialize<ProductSyncPayload>(item.PayloadJson, JsonOptions); }
+            catch { MarkFailed([item], "Invalid product sync payload."); return false; }
+            if (payload is null || payload.Id == Guid.Empty || payload.CompanyId == Guid.Empty || string.IsNullOrWhiteSpace(payload.Name))
+            { MarkFailed([item], "Product sync payload is incomplete."); return false; }
+
+            ApiCallResult<ProductSyncResponse> typed = op switch
+            {
+                SyncOperation.Create => await _api.PostAsync<ProductSyncResponse>("api/products", payload, token),
+                SyncOperation.Update => await _api.PutAsync<ProductSyncResponse>($"api/products/{payload.Id:D}", payload, token),
+                _ => ApiCallResult<ProductSyncResponse>.Fail(400, "Unsupported product sync operation.")
+            };
+            result = typed;
+            if (typed.Success && typed.Data is not null)
+            {
+                var row = await db.Products.FirstOrDefaultAsync(x => x.Id == payload.Id);
+                if (row is not null)
+                {
+                    row.ServerId = typed.Data.Id;
+                    row.SyncStatus = (int)RecordSyncStatus.Synced;
+                    row.LastSyncedAtUtc = DateTime.UtcNow;
+                    row.SyncError = null;
+                }
+            }
+        }
+
+        if (!result.Success)
+        {
+            item.RetryCount++; item.LastAttemptAt = DateTime.UtcNow; item.Error = result.Error ?? "Product sync failed.";
+            item.Status = (int)(result.IsNetworkError || item.RetryCount < 5 ? RecordSyncStatus.Pending : RecordSyncStatus.Failed);
+            return false;
+        }
+
+        MarkSynced(item); _connectivity.DecrementPending(); return true;
     }
 
     private async Task<bool> SyncCustomerAsync(LocalAppDbContext db, LocalSyncQueueEntity item)
@@ -241,4 +297,6 @@ public sealed class RegistrationSyncService : ISyncService
     private sealed class CompanySyncResponse { public Guid Id { get; set; } public long SyncVersion { get; set; } public DateTime? UpdatedAt { get; set; } }
     private sealed class CustomerSyncPayload { public Guid Id { get; set; } public Guid CompanyId { get; set; } public string Name { get; set; } = string.Empty; public string? Email { get; set; } public string? Phone { get; set; } public string? Address { get; set; } public string? City { get; set; } public string? Country { get; set; } public string? TaxNumber { get; set; } public string? Notes { get; set; } public int Status { get; set; } public decimal OutstandingBalance { get; set; } public decimal TotalPurchases { get; set; } public long SyncVersion { get; set; } }
     private sealed class CustomerSyncResponse { public Guid Id { get; set; } public long SyncVersion { get; set; } public DateTime? UpdatedAt { get; set; } }
+    private sealed class ProductSyncPayload { public Guid Id { get; set; } public Guid CompanyId { get; set; } public string Name { get; set; } = string.Empty; public string? Sku { get; set; } public string? Barcode { get; set; } public string? Category { get; set; } public string? Brand { get; set; } public string? Unit { get; set; } public decimal PurchasePrice { get; set; } public decimal SellingPrice { get; set; } public decimal TaxPercent { get; set; } public int Stock { get; set; } public int MinimumStock { get; set; } public string? Description { get; set; } public int Status { get; set; } public long SyncVersion { get; set; } }
+    private sealed class ProductSyncResponse { public Guid Id { get; set; } public long SyncVersion { get; set; } public DateTime? UpdatedAt { get; set; } }
 }
