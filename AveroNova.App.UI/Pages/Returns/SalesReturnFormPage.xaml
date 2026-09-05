@@ -14,26 +14,25 @@
             </Grid>
         </Border>
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20,16" Spacing="16">
+            <VerticalStackLayout Padding="20,16" Spacing="16" MaximumWidthRequest="760">
                 <Border Style="{StaticResource AppCard}">
                     <VerticalStackLayout Spacing="14">
                         <Label Text="Return Details" FontSize="14" FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <BoxView Style="{StaticResource Divider}"/>
-                        <Label Text="Invoice Number *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryInvoice" Placeholder="INV-2026-001"/></Border>
-                        <Label Text="Customer Name *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryCustomer" Placeholder="Customer name"/></Border>
+                        <Label Text="Invoice *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="InvoicePicker" Title="Select invoice" HorizontalTextAlignment="Center"/></Border>
                         <Label Text="Return Date" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateReturn" Format="dd MMM yyyy"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateReturn" Format="dd MMM yyyy" HorizontalOptions="Center"/></Border>
                         <Label Text="Refund Amount *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRefund" Placeholder="0.00" Keyboard="Numeric"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRefund" Placeholder="0.00" Keyboard="Numeric" HorizontalTextAlignment="Center"/></Border>
                         <Label Text="Reason *" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}">
-                            <Picker x:Name="ReasonPicker" Title="Select reason...">
+                            <Picker x:Name="ReasonPicker" Title="Select reason..." HorizontalTextAlignment="Center">
                                 <Picker.Items><x:String>Defective Item</x:String><x:String>Wrong Item</x:String><x:String>Damaged Delivery</x:String><x:String>Customer Changed Mind</x:String><x:String>Other</x:String></Picker.Items>
                             </Picker>
                         </Border>
+                        <Label Text="Status" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="StatusPicker" HorizontalTextAlignment="Center"><Picker.Items><x:String>Pending</x:String><x:String>Approved</x:String><x:String>Rejected</x:String><x:String>Completed</x:String></Picker.Items></Picker></Border>
                         <Label Text="Notes" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}" HeightRequest="80">
                             <Editor x:Name="EditorNotes" Placeholder="Additional notes..." AutoSize="TextChanges"/>
