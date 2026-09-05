@@ -216,7 +216,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IConnectivityService, MauiConnectivityService>();
         builder.Services.AddTransient<ICustomerService, LocalCustomerService>();
         builder.Services.AddTransient<IExpenseService, MockExpenseService>();
-        builder.Services.AddTransient<IInventoryService, MockInventoryService>();
+        builder.Services.AddTransient<IInventoryService, LocalInventoryService>();
         builder.Services.AddTransient<INotificationService, MockNotificationService>();
         builder.Services.AddTransient<IPaymentService, LocalPaymentService>();
         builder.Services.AddTransient<IProductService, LocalProductService>();
