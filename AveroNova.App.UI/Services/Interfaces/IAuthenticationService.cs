@@ -19,7 +19,7 @@ public interface IAuthenticationService
     Task<(bool Success, string? Error)> RegisterAsync(RegisterRequest request);
     Task<(bool Success, string? Error)> RegisterAsync(string name, string email, string password);
     Task<(bool Success, string? Error)> ForgotPasswordAsync(string email);
-    Task<(bool Success, string? Error)> ResetPasswordAsync(string token, string newPassword);
+    Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword);
     Task<(bool Success, string? Error)> VerifyOtpAsync(string otp);
     Task<(bool Success, string? Error)> RefreshTokenAsync();
     Task LogoutAsync();
