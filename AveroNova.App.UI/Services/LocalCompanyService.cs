@@ -12,17 +12,23 @@ public sealed class LocalCompanyService : ICompanyService
     private readonly IAppSessionContext _session;
     private readonly ILocalAuthSessionStore _sessions;
     private readonly IInstallationService _installation;
+    private readonly IConnectivityService _connectivity;
+    private readonly ISyncService _sync;
 
     public LocalCompanyService(
         IDbContextFactory<LocalAppDbContext> dbFactory,
         IAppSessionContext session,
         ILocalAuthSessionStore sessions,
-        IInstallationService installation)
+        IInstallationService installation,
+        IConnectivityService connectivity,
+        ISyncService sync)
     {
         _dbFactory = dbFactory;
         _session = session;
         _sessions = sessions;
         _installation = installation;
+        _connectivity = connectivity;
+        _sync = sync;
     }
 
     public CompanyModel? CurrentCompany
@@ -51,14 +57,16 @@ public sealed class LocalCompanyService : ICompanyService
         await using var db = await _dbFactory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
         company.LocalId = company.LocalId == Guid.Empty ? Guid.NewGuid() : company.LocalId;
-        db.Companies.Add(new LocalCompanyEntity
+        var row = new LocalCompanyEntity
         {
             Id = company.LocalId,
             CompanyName = company.Name.Trim(),
             Email = company.Email.Trim(),
             MobileNumber = company.Phone.Trim(),
-            IsActive = true
-        });
+            IsActive = true,
+            SyncVersion = 1
+        };
+        db.Companies.Add(row);
         db.UserCompanies.Add(new LocalUserCompanyEntity
         {
             Id = Guid.NewGuid(),
@@ -68,8 +76,10 @@ public sealed class LocalCompanyService : ICompanyService
             IsOwner = true,
             IsActive = true
         });
-        LocalSyncQueueWriter.Enqueue(db, "Company", company.LocalId, company.LocalId, SyncOperation.Create, new { company.Name, company.Email }, now);
+        LocalSyncQueueWriter.Enqueue(db, "Company", row.Id, row.Id, SyncOperation.Create, Payload(row), now);
         await db.SaveChangesAsync();
+        _connectivity.IncrementPending();
+        TriggerSyncIfOnline();
         return (true, null);
     }
 
@@ -86,8 +96,11 @@ public sealed class LocalCompanyService : ICompanyService
         row.CompanyName = company.Name.Trim();
         row.Email = company.Email.Trim();
         row.MobileNumber = company.Phone.Trim();
-        LocalSyncQueueWriter.Enqueue(db, "Company", row.Id, row.Id, SyncOperation.Update, new { row.CompanyName, row.Email }, DateTime.UtcNow);
+        row.SyncVersion = Math.Max(1, row.SyncVersion + 1);
+        LocalSyncQueueWriter.Enqueue(db, "Company", row.Id, row.Id, SyncOperation.Update, Payload(row), DateTime.UtcNow);
         await db.SaveChangesAsync();
+        _connectivity.IncrementPending();
+        TriggerSyncIfOnline();
         return (true, null);
     }
 
@@ -112,8 +125,23 @@ public sealed class LocalCompanyService : ICompanyService
             snapshot.Session.ServerSessionId);
     }
 
+    private void TriggerSyncIfOnline()
+    {
+        if (_connectivity.IsOnline)
+            _ = _sync.SyncNowAsync();
+    }
+
     private bool Owns(Guid companyId)
         => _session.CurrentUserId is Guid && _session.CurrentCompanyId == companyId;
+
+    private static object Payload(LocalCompanyEntity row) => new
+    {
+        id = row.Id,
+        companyName = row.CompanyName,
+        email = row.Email,
+        mobileNumber = row.MobileNumber,
+        syncVersion = row.SyncVersion
+    };
 
     private static CompanyModel Map(Guid id, string name, string email, string phone, bool isCurrent)
         => new()
