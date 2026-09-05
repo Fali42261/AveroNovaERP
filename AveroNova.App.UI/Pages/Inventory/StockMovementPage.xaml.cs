@@ -23,7 +23,11 @@ public partial class StockMovementPage : ContentPage, IHostedPage
         var cid   = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         var items = await _svc.GetMovementsAsync(cid);
         MovementList.Children.Clear();
-        if (items.Count == 0) { MovementList.Children.Add(new Label { Text = "No stock movements recorded.", FontSize = 14, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center, Margin = new Thickness(0, 40) }); return; }
+        if (items.Count == 0)
+        {
+            MovementList.Children.Add(new Label { Text = "No stock movements recorded.", FontSize = 14, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center, Margin = new Thickness(0, 40) });
+            return;
+        }
         foreach (var m in items) MovementList.Children.Add(BuildRow(m));
     }
 
@@ -37,13 +41,34 @@ public partial class StockMovementPage : ContentPage, IHostedPage
             _                            => ("#EFF6FF", "#2563EB")
         };
 
-        var border = new Border { BackgroundColor = Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White, Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(14, 12) };
+        var border = new Border
+        {
+            BackgroundColor = Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1E293B") : Colors.White,
+            Stroke = Color.FromArgb("#E2E8F0"),
+            StrokeThickness = 1,
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) },
+            Padding = new Thickness(14, 12)
+        };
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), ColumnSpacing = 12 };
 
         var left = new VerticalStackLayout { Spacing = 3 };
         left.Children.Add(new Label { Text = m.ProductName, FontSize = 14, FontAttributes = FontAttributes.Bold });
         left.Children.Add(new Label { Text = $"SKU: {m.SKU}  •  Ref: {m.Reference}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
         left.Children.Add(new Label { Text = m.Notes, FontSize = 11, TextColor = Color.FromArgb("#94A3B8") });
+
+        var syncText = m.SyncStatus switch
+        {
+            SyncStatus.Synced => "Synced",
+            SyncStatus.SyncFailed => "Sync failed",
+            _ => "Pending sync"
+        };
+        var syncColor = m.SyncStatus switch
+        {
+            SyncStatus.Synced => "#059669",
+            SyncStatus.SyncFailed => "#DC2626",
+            _ => "#D97706"
+        };
+        left.Children.Add(new Label { Text = syncText, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(syncColor) });
 
         var right = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.End };
         var typeBadge = new Border { BackgroundColor = Color.FromArgb(typeBg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(8, 3) };
