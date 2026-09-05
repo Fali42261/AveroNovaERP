@@ -12,7 +12,6 @@ using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Api;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.Services.License;
-using AveroNova.App.UI.Services.Mock;
 using AveroNova.App.UI.Services.Security;
 using AveroNova.App.UI.Data;
 using Microsoft.EntityFrameworkCore;
@@ -234,7 +233,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ILocalCredentialStore, MauiLocalCredentialStore>();
         builder.Services.AddSingleton<ILicenseService, LicenseService>();
 
-        // ── Auth + Mock business services ─────────────────────────────────────
+        // ── Auth + production business services ───────────────────────────────
 
         builder.Services.AddSingleton<IClientDeviceInfo, MauiClientDeviceInfo>();
         builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
@@ -244,7 +243,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ICustomerService, LocalCustomerService>();
         builder.Services.AddTransient<IExpenseService, LocalExpenseService>();
         builder.Services.AddTransient<IInventoryService, LocalInventoryService>();
-        builder.Services.AddTransient<INotificationService, MockNotificationService>();
+        builder.Services.AddSingleton<INotificationService, LocalNotificationService>();
         builder.Services.AddTransient<IPaymentService, LocalPaymentService>();
         builder.Services.AddTransient<IProductService, LocalProductService>();
         builder.Services.AddTransient<IPurchaseService, LocalPurchaseService>();
