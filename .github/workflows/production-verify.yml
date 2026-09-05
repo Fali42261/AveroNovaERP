@@ -44,9 +44,9 @@ jobs:
       - name: Install MAUI workload
         run: dotnet workload install maui --skip-manifest-update
       - name: Restore Windows target
-        run: dotnet restore AveroNova.App.UI/AveroNova.App.UI.csproj -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0
+        run: dotnet restore AveroNova.App.UI/AveroNova.App.UI.csproj -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -r win-x64
       - name: Build Windows target
-        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 --no-restore
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -r win-x64 --no-restore
 
   maui-android-build:
     runs-on: windows-latest
