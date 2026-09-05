@@ -9,20 +9,23 @@ namespace AveroNova.App.UI
         private readonly IConnectivityService _connectivity;
         private readonly ISyncService _sync;
         private readonly IProcurementSyncService _procurementSync;
+        private readonly IReturnSyncService _returnSync;
 
         public App(
             AppShell appShell,
             IConnectivityService connectivity,
             ISyncService sync,
             IBillingService billingService,
-            IProcurementSyncService procurementSync)
+            IProcurementSyncService procurementSync,
+            IReturnSyncService returnSync)
         {
             InitializeComponent();
             _appShell = appShell;
             _connectivity = connectivity;
             _sync = sync;
             _procurementSync = procurementSync;
-            _ = billingService; // instantiate billing sync agent so pending invoices can resume on startup
+            _returnSync = returnSync;
+            _ = billingService;
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
@@ -58,6 +61,7 @@ namespace AveroNova.App.UI
             if (!_connectivity.IsOnline) return;
             _ = _sync.SyncNowAsync();
             _ = _procurementSync.SyncPendingAsync();
+            _ = _returnSync.SyncPendingAsync();
         }
     }
 }
