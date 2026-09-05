@@ -13,7 +13,7 @@ public partial class PaymentsListPage : ContentPage
     public PaymentsListPage(IPaymentService svc, ICompanyService company)
     { InitializeComponent(); _svc = svc; _company = company; }
 
-    protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
@@ -33,7 +33,8 @@ public partial class PaymentsListPage : ContentPage
         var left = new VerticalStackLayout { Spacing = 4 };
         left.Children.Add(new Label { Text = p.PaymentNumber, FontSize = 14, FontAttributes = FontAttributes.Bold });
         left.Children.Add(new Label { Text = p.PartyName, FontSize = 13, TextColor = Color.FromArgb("#64748B") });
-        left.Children.Add(new Label { Text = $"{p.PaymentDate:dd MMM yyyy}  •  {p.MethodLabel}", FontSize = 11, TextColor = Color.FromArgb("#94A3B8") });
+        left.Children.Add(new Label { Text = $"Invoice: {p.InvoiceNumber}", FontSize = 11, TextColor = Color.FromArgb("#64748B") });
+        left.Children.Add(new Label { Text = $"{p.PaymentDate:dd MMM yyyy}  •  {p.MethodLabel}  •  {SyncLabel(p.SyncStatus)}", FontSize = 11, TextColor = p.SyncStatus == SyncStatus.SyncFailed ? Color.FromArgb("#DC2626") : Color.FromArgb("#94A3B8") });
 
         var right = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = $"${p.Amount:N2}", FontSize = 16, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#059669"), HorizontalOptions = LayoutOptions.End });
@@ -41,11 +42,18 @@ public partial class PaymentsListPage : ContentPage
         viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PaymentView}?id={p.LocalId}");
         right.Children.Add(viewBtn);
 
-        grid.Add(left,  0, 0);
+        grid.Add(left, 0, 0);
         grid.Add(right, 1, 0);
         border.Content = grid;
         return border;
     }
+
+    private static string SyncLabel(SyncStatus status) => status switch
+    {
+        SyncStatus.Synced => "Synced",
+        SyncStatus.SyncFailed => "Sync failed",
+        _ => "Pending sync"
+    };
 
     private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.PaymentAdd);
 }
