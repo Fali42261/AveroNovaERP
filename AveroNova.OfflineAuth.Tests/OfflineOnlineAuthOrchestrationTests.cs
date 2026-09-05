@@ -406,13 +406,15 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ApiUnavailable_DoesNotCrash_ReturnsFriendlyError()
+    public async Task ApiUnavailable_DoesNotCrash_ReturnsOfflineRecoveryError()
     {
         await SeedRegisteredInstallationAsync();
         _api.LoginResult = ApiCallResult<LoginResponse>.Fail(0, "Unable to connect to the server. Please try again.", network: true);
         var (ok, err) = await _auth.LoginAsync("owner@test.local", "Password1!");
         Assert.False(ok);
-        Assert.Contains("Unable to connect", err, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(err);
+        Assert.DoesNotContain("Unable to connect", err, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No local account", err, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
