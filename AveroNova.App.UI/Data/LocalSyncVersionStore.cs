@@ -6,21 +6,15 @@ namespace AveroNova.App.UI.Data;
 internal static class LocalSyncVersionStore
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
-    private static bool _schemaReady;
 
     public static async Task EnsureSchemaAsync(LocalAppDbContext db, CancellationToken cancellationToken = default)
     {
-        if (_schemaReady) return;
-
         await Gate.WaitAsync(cancellationToken);
         try
         {
-            if (_schemaReady) return;
-
             await EnsureColumnAsync(db, "LocalExpenses", cancellationToken);
             await EnsureColumnAsync(db, "LocalSalesReturns", cancellationToken);
             await EnsureColumnAsync(db, "LocalPurchaseReturns", cancellationToken);
-            _schemaReady = true;
         }
         finally
         {
@@ -95,7 +89,7 @@ internal static class LocalSyncVersionStore
             command.CommandText = $"SELECT \"SyncVersion\" FROM \"{table}\" WHERE \"Id\" = $id LIMIT 1;";
             var parameter = command.CreateParameter();
             parameter.ParameterName = "$id";
-            parameter.Value = id.ToString("D");
+            parameter.Value = id;
             command.Parameters.Add(parameter);
             var value = await command.ExecuteScalarAsync(cancellationToken);
             return value is null || value is DBNull ? 1L : Math.Max(1L, Convert.ToInt64(value));
@@ -119,7 +113,7 @@ internal static class LocalSyncVersionStore
             command.CommandText = $"UPDATE \"{table}\" SET \"SyncVersion\" = $version WHERE \"Id\" = $id;";
             var idParameter = command.CreateParameter();
             idParameter.ParameterName = "$id";
-            idParameter.Value = id.ToString("D");
+            idParameter.Value = id;
             command.Parameters.Add(idParameter);
             var versionParameter = command.CreateParameter();
             versionParameter.ParameterName = "$version";
