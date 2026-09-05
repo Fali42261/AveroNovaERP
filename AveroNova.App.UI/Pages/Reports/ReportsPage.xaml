@@ -26,11 +26,11 @@
                     <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="12">
                         <VerticalStackLayout Spacing="5">
                             <Label Text="From" Style="{StaticResource InputLabel}"/>
-                            <DatePicker x:Name="FromDate" HorizontalTextAlignment="Center"/>
+                            <DatePicker x:Name="FromDate" HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1" Spacing="5">
                             <Label Text="To" Style="{StaticResource InputLabel}"/>
-                            <DatePicker x:Name="ToDate" HorizontalTextAlignment="Center"/>
+                            <DatePicker x:Name="ToDate" HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                         <Button Grid.Column="2" Text="Apply" Style="{StaticResource PrimaryButton}"
                                 VerticalOptions="End" Clicked="OnApplyClicked"/>

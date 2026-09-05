@@ -35,7 +35,9 @@ public partial class ReportsPage : ContentPage
     {
         ErrorBanner.IsVisible = false;
         var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
-        var (summary, error) = await _reporting.GetSummaryAsync(companyId, new ReportPeriod(FromDate.Date, ToDate.Date));
+        var from = FromDate.Date ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var to = ToDate.Date ?? DateTime.Today;
+        var (summary, error) = await _reporting.GetSummaryAsync(companyId, new ReportPeriod(from, to));
         if (summary is null)
         {
             LblError.Text = error ?? "Report could not be loaded.";
@@ -72,7 +74,7 @@ public partial class ReportsPage : ContentPage
         text.Children.Add(new Label { Text = detail, FontSize = 11, TextColor = Color.FromArgb("#64748B") });
         row.Add(text, 0, 0);
         row.Add(new Label { Text = Money(amount), FontSize = 13, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center }, 1, 0);
-        ReportsList.Children.Add(new Border { Style = (Style)Application.Current!.Resources["AppCard"], Content = row });
+        ReportsList.Children.Add(new Border { Style = (Style)Microsoft.Maui.Controls.Application.Current!.Resources["AppCard"], Content = row });
     }
 
     private static string Money(decimal amount) => "$" + amount.ToString("N2");
