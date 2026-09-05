@@ -56,6 +56,8 @@
     <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IInventoryService.cs" Link="Linked\Services\Interfaces\IInventoryService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IBillingService.cs" Link="Linked\Services\Interfaces\IBillingService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IPaymentService.cs" Link="Linked\Services\Interfaces\IPaymentService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IPurchaseService.cs" Link="Linked\Services\Interfaces\IPurchaseService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ISupplierService.cs" Link="Linked\Services\Interfaces\ISupplierService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ICompanyService.cs" Link="Linked\Services\Interfaces\ICompanyService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Security\ILocalCredentialStore.cs" Link="Linked\Services\Security\ILocalCredentialStore.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\License\LicenseApiClient.cs" Link="Linked\Services\License\LicenseApiClient.cs" />
@@ -66,6 +68,8 @@
     <Compile Include="..\AveroNova.App.UI\Services\LocalInventoryService.cs" Link="Linked\Services\LocalInventoryService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalBillingService.cs" Link="Linked\Services\LocalBillingService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalPaymentService.cs" Link="Linked\Services\LocalPaymentService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalPurchaseService.cs" Link="Linked\Services\LocalPurchaseService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalSupplierService.cs" Link="Linked\Services\LocalSupplierService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalCompanyService.cs" Link="Linked\Services\LocalCompanyService.cs" />
     <Compile Include="..\AveroNova.App.UI\Navigation\MenuCatalog.cs" Link="Linked\Navigation\MenuCatalog.cs" />
     <Compile Include="..\AveroNova.App.UI\Models\CustomerModel.cs" Link="Linked\Models\CustomerModel.cs" />
@@ -73,6 +77,8 @@
     <Compile Include="..\AveroNova.App.UI\Models\InventoryModel.cs" Link="Linked\Models\InventoryModel.cs" />
     <Compile Include="..\AveroNova.App.UI\Models\InvoiceModel.cs" Link="Linked\Models\InvoiceModel.cs" />
     <Compile Include="..\AveroNova.App.UI\Models\PaymentModel.cs" Link="Linked\Models\PaymentModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\PurchaseModel.cs" Link="Linked\Models\PurchaseModel.cs" />
+    <Compile Include="..\AveroNova.App.UI\Models\SupplierModel.cs" Link="Linked\Models\SupplierModel.cs" />
     <Compile Include="..\AveroNova.App.UI\Models\CompanyModel.cs" Link="Linked\Models\CompanyModel.cs" />
   </ItemGroup>
 

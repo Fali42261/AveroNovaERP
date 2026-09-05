@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -286,6 +286,34 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 
         await _db.Database.ExecuteSqlRawAsync(
             """
+            CREATE TABLE IF NOT EXISTS "LocalSuppliers" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_LocalSuppliers" PRIMARY KEY,
+                "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
+                "Name" TEXT NOT NULL, "Email" TEXT NOT NULL, "Phone" TEXT NOT NULL,
+                "Address" TEXT NOT NULL, "TaxNumber" TEXT NOT NULL, "Notes" TEXT NOT NULL,
+                "IsActive" INTEGER NOT NULL, "SyncStatus" INTEGER NOT NULL,
+                "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL,
+                "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL
+            );
+            """, cancellationToken);
+
+        await _db.Database.ExecuteSqlRawAsync(
+            """
+            CREATE TABLE IF NOT EXISTS "LocalPurchases" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_LocalPurchases" PRIMARY KEY,
+                "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
+                "PurchaseNumber" TEXT NOT NULL, "SupplierId" TEXT NOT NULL,
+                "SupplierName" TEXT NOT NULL, "PurchaseDate" TEXT NOT NULL, "DueDate" TEXT NOT NULL,
+                "ItemsJson" TEXT NOT NULL, "PaymentMethod" INTEGER NOT NULL,
+                "Reference" TEXT NOT NULL, "Notes" TEXT NOT NULL, "Status" INTEGER NOT NULL,
+                "PaidAmount" TEXT NOT NULL, "SyncStatus" INTEGER NOT NULL,
+                "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL,
+                "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL
+            );
+            """, cancellationToken);
+
+        await _db.Database.ExecuteSqlRawAsync(
+            """
             CREATE INDEX IF NOT EXISTS "IX_LocalCustomers_CompanyId" ON "LocalCustomers" ("CompanyId");
             """,
             cancellationToken);
@@ -315,6 +343,15 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
             CREATE INDEX IF NOT EXISTS "IX_LocalStockMovements_CompanyId_ProductId"
             ON "LocalStockMovements" ("CompanyId", "ProductId");
             """,
+            cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            "CREATE INDEX IF NOT EXISTS \"IX_LocalSuppliers_CompanyId_Name\" ON \"LocalSuppliers\" (\"CompanyId\", \"Name\");",
+            cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            "CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalPurchases_CompanyId_PurchaseNumber\" ON \"LocalPurchases\" (\"CompanyId\", \"PurchaseNumber\");",
+            cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            "CREATE INDEX IF NOT EXISTS \"IX_LocalPurchases_CompanyId_SupplierId\" ON \"LocalPurchases\" (\"CompanyId\", \"SupplierId\");",
             cancellationToken);
     }
 
