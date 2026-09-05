@@ -1,7 +1,4 @@
-using AveroNova.App.UI.Controls.Cards;
-using AveroNova.App.UI.Controls.Forms;
 using AveroNova.App.UI.Layout;
-using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.ViewModels;
@@ -11,823 +8,495 @@ namespace AveroNova.App.UI.Pages.Authentication;
 public partial class RegisterPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
-    private readonly IToastService _toasts;
+    private readonly IInstallationService _installation;
     private readonly RegisterViewModel _vm;
+    private bool _layoutBusy;
+    private ScreenSize? _appliedSize;
+    private int _appliedColumns = -1;
+    private int _lastStep = -1;
 
-    public RegisterPage(IAuthenticationService auth, RegisterViewModel vm, IToastService toasts)
+    public RegisterPage(IAuthenticationService auth, IInstallationService installation, RegisterViewModel vm)
     {
         InitializeComponent();
         _auth = auth;
+        _installation = installation;
         _vm = vm;
-        _toasts = toasts;
         BindingContext = _vm;
-        SizeChanged += (_, _) =>
+        SizeChanged += (_, _) => ApplyLayout();
+        _vm.PropertyChanged += (_, e) =>
         {
-            if (!_equalizingReviewHeights && !_equalizingPlanHeights)
-                ApplyFieldLayout();
+            if (e.PropertyName == nameof(RegisterViewModel.CurrentStep))
+            {
+                UpdateStepUi();
+                ApplyLayout();
+            }
+            else if (e.PropertyName == nameof(RegisterViewModel.PlanOptions))
+            {
+                ApplyLayout();
+            }
         };
     }
 
-    private readonly HashSet<string> _step1TouchedFields = [];
-    private readonly HashSet<string> _step2TouchedFields = [];
-    private bool _step1InteractionReady;
-    private bool _step2InteractionReady;
-    private bool _step1UnfocusedAttached;
-    private bool _step2UnfocusedAttached;
-    private bool _equalizingReviewHeights;
-    private bool _equalizingPlanHeights;
-
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        _vm.StepChanged -= OnStepChanged;
-        _vm.StepChanged += OnStepChanged;
-        NavigationPage.SetHasBackButton(this, false);
-        Shell.SetNavBarIsVisible(this, false);
-        _step1InteractionReady = false;
-        _step2InteractionReady = false;
-        _vm.PrepareStep1Display();
-        AttachStep1FieldValidation();
-        AttachStep2FieldValidation();
+        await _installation.EnsureInitializedAsync();
+        if (_installation.IsRegistered)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Login);
+            return;
+        }
+
+        UpdateStepUi();
+        ApplyLayout();
+        if (_vm.CurrentStep < 1 || _vm.CurrentStep > 4)
+            _vm.CurrentStep = 1;
+        await _vm.LoadPlansAsync();
+        UpdateStepUi();
+        ApplyLayout();
+    }
+
+    private void UpdateStepUi()
+    {
+        PersonalGrid.IsVisible = _vm.IsStep1;
+        CompanyGrid.IsVisible = _vm.IsStep2;
+        SubscriptionHost.IsVisible = _vm.IsStep3;
+        ReviewHost.IsVisible = _vm.IsStep4;
+        BtnBack.IsVisible = _vm.CanGoBack;
+        LoginLink.IsVisible = _vm.ShowLoginLink;
         UpdateProgress();
-        ApplyFieldLayout();
-        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(400), () =>
-        {
-            _step1InteractionReady = true;
-            _step2InteractionReady = true;
-        });
     }
 
-    protected override void OnDisappearing()
+    private void ApplyLayout()
     {
-        _vm.StepChanged -= OnStepChanged;
-        base.OnDisappearing();
-    }
-
-    private void AttachStep1FieldValidation()
-    {
-        if (_step1UnfocusedAttached)
+        if (_layoutBusy || Width <= 0)
             return;
 
-        _step1UnfocusedAttached = true;
-        AttachStep1Field(FullNameField, "FullName");
-        AttachStep1Field(EmailField, "Email");
-        AttachStep1Field(MobileField, "Mobile");
-        AttachStep1Field(PasswordField, "Password");
-        AttachStep1Field(ConfirmField, "ConfirmPassword");
+        _layoutBusy = true;
+        try
+        {
+            var size = ResponsiveBreakpoints.FromWidth(Width);
+            var compact = size == ScreenSize.Compact;
+
+            ContentHost.Padding = size switch
+            {
+                ScreenSize.Compact => new Thickness(20, 24),
+                ScreenSize.Medium => new Thickness(32, 28),
+                _ => new Thickness(40, 36)
+            };
+
+            AuthCard.HorizontalOptions = LayoutOptions.Center;
+            AuthCard.Padding = compact ? new Thickness(4, 8) : new Thickness(32);
+
+            if (compact)
+            {
+                AuthCard.StrokeThickness = 0;
+                AuthCard.BackgroundColor = Colors.Transparent;
+            }
+            else
+            {
+                AuthCard.ClearValue(Border.StrokeThicknessProperty);
+                AuthCard.ClearValue(Border.BackgroundColorProperty);
+            }
+
+            var available = Math.Max(280, Width - ContentHost.Padding.HorizontalThickness);
+            var max = compact
+                ? ResponsiveBreakpoints.FormMaxCompact
+                : ResponsiveBreakpoints.FormMaxWidth(size);
+            var cardWidth = Math.Min(available, max);
+            if (Math.Abs(AuthCard.WidthRequest - cardWidth) >= 1)
+            {
+                AuthCard.WidthRequest = cardWidth;
+                AuthCard.MaximumWidthRequest = cardWidth;
+            }
+
+            var innerWidth = Math.Max(240, cardWidth - AuthCard.Padding.HorizontalThickness);
+            var columns = ResponsiveBreakpoints.FormColumnCount(innerWidth, 3);
+            if (compact)
+                columns = 1;
+
+            if (_appliedColumns != columns || _appliedSize != size || _lastStep != _vm.CurrentStep)
+            {
+                _appliedColumns = columns;
+                _appliedSize = size;
+                _lastStep = _vm.CurrentStep;
+                LayoutPersonal(columns);
+                LayoutCompany(columns);
+            }
+
+            LayoutPlans(compact);
+            LayoutReview(compact);
+            LayoutActions(compact);
+        }
+        finally
+        {
+            _layoutBusy = false;
+        }
     }
 
-    private void AttachStep1Field(Microsoft.Maui.Controls.Layout host, string field)
+    private void LayoutPersonal(int columns)
     {
-        var entry = FindEntry(host);
-        if (entry is null)
+        View[][] rows =
+        [
+            [FieldFullName, FieldEmail, FieldMobile],
+            [FieldCity, FieldState, FieldCountry],
+            [FieldPin, FieldPassword, FieldConfirmPassword],
+            [FieldAddress]
+        ];
+        ApplyFieldGrid(PersonalGrid, rows, columns);
+    }
+
+    private void LayoutCompany(int columns)
+    {
+        View[][] rows =
+        [
+            [FieldCompanyName, FieldOwnerName, FieldGst],
+            [FieldPan, FieldCompanyEmail, FieldCompanyMobile],
+            [FieldCompanyCountry, FieldCompanyState, FieldCompanyCity],
+            [FieldCompanyPin],
+            [FieldCompanyAddress]
+        ];
+        ApplyFieldGrid(CompanyGrid, rows, columns);
+    }
+
+    private void LayoutPlans(bool compact)
+    {
+        var children = PlansGrid.Children.OfType<View>().ToList();
+        if (children.Count == 0)
             return;
 
-        entry.Focused += (_, _) =>
+        foreach (var child in children)
+            child.HeightRequest = -1;
+
+        PlansGrid.ColumnDefinitions.Clear();
+        PlansGrid.RowDefinitions.Clear();
+
+        if (compact)
         {
-            if (_step1InteractionReady)
-                _step1TouchedFields.Add(field);
-        };
-        entry.Unfocused += (_, _) =>
+            PlansGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            for (var i = 0; i < children.Count; i++)
+            {
+                PlansGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                Grid.SetRow(children[i], i);
+                Grid.SetColumn(children[i], 0);
+                Grid.SetColumnSpan(children[i], 1);
+                children[i].HorizontalOptions = LayoutOptions.Fill;
+                children[i].VerticalOptions = LayoutOptions.Fill;
+                children[i].WidthRequest = -1;
+                children[i].MaximumWidthRequest = double.PositiveInfinity;
+            }
+            return;
+        }
+
+        var cols = Math.Min(3, Math.Max(1, children.Count));
+        for (var c = 0; c < cols; c++)
+            PlansGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        PlansGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+        for (var i = 0; i < children.Count; i++)
         {
-            if (_step1InteractionReady && _step1TouchedFields.Contains(field))
-                _vm.ValidateStep1FieldAfterInteraction(field);
-        };
+            Grid.SetRow(children[i], 0);
+            Grid.SetColumn(children[i], i);
+            Grid.SetColumnSpan(children[i], 1);
+            children[i].HorizontalOptions = LayoutOptions.Fill;
+            children[i].VerticalOptions = LayoutOptions.Fill;
+            children[i].WidthRequest = -1;
+            children[i].MaximumWidthRequest = double.PositiveInfinity;
+        }
+
+        Dispatcher.Dispatch(() => Dispatcher.Dispatch(() => EqualizeHeights(children)));
     }
 
-    private void AttachStep2FieldValidation()
+    private void LayoutReview(bool compact)
     {
-        if (_step2UnfocusedAttached)
+        View[] cards = [ReviewPersonal, ReviewCompany, ReviewSubscription, ReviewAdditional];
+        foreach (var card in cards)
+            card.HeightRequest = -1;
+
+        ReviewHost.ColumnDefinitions.Clear();
+        ReviewHost.RowDefinitions.Clear();
+
+        if (compact)
+        {
+            ReviewHost.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            for (var i = 0; i < cards.Length; i++)
+            {
+                ReviewHost.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                Grid.SetRow(cards[i], i);
+                Grid.SetColumn(cards[i], 0);
+                Grid.SetColumnSpan(cards[i], 1);
+                cards[i].HorizontalOptions = LayoutOptions.Fill;
+                cards[i].VerticalOptions = LayoutOptions.Fill;
+            }
+            return;
+        }
+
+        for (var c = 0; c < 4; c++)
+            ReviewHost.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        ReviewHost.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+        for (var i = 0; i < cards.Length; i++)
+        {
+            Grid.SetRow(cards[i], 0);
+            Grid.SetColumn(cards[i], i);
+            Grid.SetColumnSpan(cards[i], 1);
+            cards[i].HorizontalOptions = LayoutOptions.Fill;
+            cards[i].VerticalOptions = LayoutOptions.Fill;
+        }
+
+        Dispatcher.Dispatch(() => Dispatcher.Dispatch(() => EqualizeHeights(cards)));
+    }
+
+    private static void EqualizeHeights(IReadOnlyList<View> views)
+    {
+        double max = 0;
+        foreach (var view in views)
+            max = Math.Max(max, view.Height);
+
+        if (max <= 1)
             return;
 
-        _step2UnfocusedAttached = true;
-        AttachStep2Field(CompanyNameField, "CompanyName");
-        AttachStep2Field(OwnerNameField, "OwnerName");
-        AttachStep2Field(CompanyEmailField, "CompanyEmail");
-        AttachStep2Field(MobileNumberField, "MobileNumber");
+        foreach (var view in views)
+        {
+            if (Math.Abs(view.HeightRequest - max) >= 1)
+                view.HeightRequest = max;
+        }
     }
 
-    private void AttachStep2Field(Microsoft.Maui.Controls.Layout host, string field)
+    private void LayoutActions(bool compact)
     {
-        var entry = FindEntry(host);
-        if (entry is null)
-            return;
-
-        entry.Focused += (_, _) =>
-        {
-            if (_step2InteractionReady)
-                _step2TouchedFields.Add(field);
-        };
-        entry.Unfocused += (_, _) =>
-        {
-            if (_step2InteractionReady && _step2TouchedFields.Contains(field))
-                _vm.ValidateStep2FieldAfterInteraction(field);
-        };
+        BtnBack.IsVisible = _vm.CanGoBack;
+        ActionsHost.HorizontalOptions = LayoutOptions.End;
+        BtnBack.HorizontalOptions = LayoutOptions.Fill;
+        BtnPrimary.HorizontalOptions = LayoutOptions.Fill;
+        BtnBack.WidthRequest = compact ? 104 : 120;
+        BtnPrimary.WidthRequest = compact ? 132 : 168;
     }
 
-    private static Entry? FindEntry(IView view)
+    private static void ApplyFieldGrid(Grid grid, View[][] rows, int columns)
     {
-        switch (view)
+        columns = Math.Clamp(columns, 1, 3);
+        grid.ColumnDefinitions.Clear();
+        grid.RowDefinitions.Clear();
+
+        if (columns == 1)
         {
-            case Entry entry:
-                return entry;
-            case Border { Content: IView content }:
-                return FindEntry(content);
-            case ContentView { Content: IView inner }:
-                return FindEntry(inner);
-            case Microsoft.Maui.Controls.Layout layout:
-                foreach (var child in layout.Children)
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            var r = 0;
+            foreach (var row in rows)
+            {
+                foreach (var view in row)
                 {
-                    if (child is IView childView)
-                    {
-                        var found = FindEntry(childView);
-                        if (found is not null)
-                            return found;
-                    }
+                    grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                    Grid.SetRow(view, r);
+                    Grid.SetColumn(view, 0);
+                    Grid.SetColumnSpan(view, 1);
+                    r++;
                 }
-                break;
+            }
+            return;
         }
 
-        return null;
-    }
+        for (var c = 0; c < columns; c++)
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
 
-    private void OnStepChanged(object? sender, EventArgs e)
-    {
-        if (_vm.CurrentStep == 2)
+        var gridRow = 0;
+        foreach (var row in rows)
         {
-            _step2InteractionReady = false;
-            _vm.PrepareStep2Display();
-            AttachStep2FieldValidation();
-            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(400), () => _step2InteractionReady = true);
-        }
+            if (row.Length == 1)
+            {
+                grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                Grid.SetRow(row[0], gridRow);
+                Grid.SetColumn(row[0], 0);
+                Grid.SetColumnSpan(row[0], columns);
+                gridRow++;
+                continue;
+            }
 
-        UpdateProgress();
-        ApplyFieldLayout();
-        if (_vm.CurrentStep == 3)
-            Dispatcher.Dispatch(ArrangePlanCards);
-        if (_vm.CurrentStep == 4)
-            Dispatcher.Dispatch(ArrangeReviewCards);
-        _ = PageScroll.ScrollToAsync(0, 0, false);
+            var chunks = (int)Math.Ceiling(row.Length / (double)columns);
+            for (var chunk = 0; chunk < chunks; chunk++)
+            {
+                grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                for (var c = 0; c < columns; c++)
+                {
+                    var index = chunk * columns + c;
+                    if (index >= row.Length)
+                        break;
+                    var view = row[index];
+                    Grid.SetRow(view, gridRow);
+                    Grid.SetColumn(view, c);
+                    Grid.SetColumnSpan(view, 1);
+                }
+                gridRow++;
+            }
+        }
     }
 
     private void UpdateProgress()
     {
-        PaintStep(StepDot1, StepNum1, 1);
-        PaintStep(StepDot2, StepNum2, 2);
-        PaintStep(StepDot3, StepNum3, 3);
-        PaintStep(StepDot4, StepNum4, 4);
-        PaintLine(StepLine1, 1);
-        PaintLine(StepLine2, 2);
-        PaintLine(StepLine3, 3);
+        PaintStep(1, Badge1, Badge1Label, Prog1Label);
+        PaintStep(2, Badge2, Badge2Label, Prog2Label);
+        PaintStep(3, Badge3, Badge3Label, Prog3Label);
+        PaintStep(4, Badge4, Badge4Label, Prog4Label);
     }
 
-    private void PaintStep(Border dot, Label number, int step)
+    private void PaintStep(int step, Border badge, Label badgeLabel, Label caption)
     {
         var current = _vm.CurrentStep;
-        var primary = (Color)Microsoft.Maui.Controls.Application.Current!.Resources["PrimaryColor"];
-        var white = (Color)Microsoft.Maui.Controls.Application.Current.Resources["White"];
-        var gray = (Color)Microsoft.Maui.Controls.Application.Current.Resources["Gray200"];
-        var muted = (Color)Microsoft.Maui.Controls.Application.Current.Resources["TextSecondary"];
+        Color primary = Color.FromArgb("#2563EB");
+        Color complete = Color.FromArgb("#059669");
+        Color idle = Color.FromArgb("#E5E7EB");
+        Color textIdle = Color.FromArgb("#64748B");
 
-        // Keep the step digit. Replacing it with U+2713 rendered as an unexpected "Q"
-        // because OpenSansRegular does not contain that glyph.
-        number.Text = step.ToString();
-
-        if (step <= current)
+        if (step == current)
         {
-            dot.BackgroundColor = primary;
-            number.TextColor = white;
+            badge.BackgroundColor = primary;
+            badgeLabel.TextColor = Colors.White;
+            caption.FontAttributes = FontAttributes.Bold;
+            caption.TextColor = primary;
+        }
+        else if (step < current)
+        {
+            badge.BackgroundColor = complete;
+            badgeLabel.TextColor = Colors.White;
+            caption.FontAttributes = FontAttributes.None;
+            caption.TextColor = complete;
         }
         else
         {
-            dot.BackgroundColor = gray;
-            number.TextColor = muted;
+            badge.BackgroundColor = idle;
+            badgeLabel.TextColor = textIdle;
+            caption.FontAttributes = FontAttributes.None;
+            caption.TextColor = textIdle;
         }
     }
 
-    private void PaintLine(BoxView line, int fromStep)
+    private async void OnPrimaryClicked(object? sender, EventArgs e)
     {
-        var primary = (Color)Microsoft.Maui.Controls.Application.Current!.Resources["PrimaryColor"];
-        var gray = (Color)Microsoft.Maui.Controls.Application.Current.Resources["Gray200"];
-        line.Color = fromStep < _vm.CurrentStep ? primary : gray;
-    }
-
-    private void ApplyFieldLayout()
-    {
-        var width = Width;
-        if (width <= 0)
+        if (_vm.CurrentStep < 4)
+        {
+            var step = _vm.CurrentStep;
+            _vm.NextCommand.Execute(null);
+            if (_vm.CurrentStep == step)
+                await FocusFirstInvalidFieldAsync();
             return;
-
-        var size = ResponsiveBreakpoints.FromWidth(width);
-        var compact = size == ScreenSize.Compact;
-        var usable = Math.Max(320, width - ResponsiveBreakpoints.PageGutter);
-        var formWidth = Math.Min(usable, ResponsiveBreakpoints.FormMaxWidth(size));
-        if ((_vm.CurrentStep == 3 || _vm.CurrentStep == 4) && !compact)
-            formWidth = usable;
-
-        FormHost.WidthRequest = formWidth;
-        FormHost.MaximumWidthRequest = formWidth;
-        FormHost.HorizontalOptions = LayoutOptions.Center;
-        FormHost.VerticalOptions = LayoutOptions.Start;
-        FormHost.Padding = compact
-            ? new Thickness(20, 24, 20, 180)
-            : new Thickness(24, 32, 24, 48);
-
-        var compactProgress = width < 700;
-        StepLabel1.IsVisible = !compactProgress;
-        StepLabel2.IsVisible = !compactProgress;
-        StepLabel3.IsVisible = !compactProgress;
-        StepLabel4.IsVisible = !compactProgress;
-        StepDot1.WidthRequest = StepDot1.HeightRequest = compactProgress ? 28 : 32;
-        StepDot2.WidthRequest = StepDot2.HeightRequest = compactProgress ? 28 : 32;
-        StepDot3.WidthRequest = StepDot3.HeightRequest = compactProgress ? 28 : 32;
-        StepDot4.WidthRequest = StepDot4.HeightRequest = compactProgress ? 28 : 32;
-
-        var columns = ResponsiveBreakpoints.FormColumnCount(formWidth, maxColumns: 3);
-
-        PlaceFlow(
-            Step1Grid,
-            columns,
-            FullNameField, EmailField, MobileField,
-            PersonalPinField, PasswordField, ConfirmField,
-            PersonalAddressField, PersonalCityField, PersonalStateField,
-            PersonalCountryField);
-        PlaceCompanyFields(columns);
-        ArrangePlanCards();
-        ArrangeReviewCards();
-        ApplyReviewFieldLayout();
-        AlignActionButtons();
-    }
-
-    private void AlignActionButtons()
-    {
-        var compact = Width > 0 && ResponsiveBreakpoints.FromWidth(Width) == ScreenSize.Compact;
-        var stackButtons = compact && Width > 0 && Width < ResponsiveBreakpoints.FormMaxCompact;
-        var buttonHeight = ResourceDouble("ButtonHeight", 48);
-        var backMin = ResourceDouble("WizardButtonMinWidth", 140);
-        var primaryMin = ResourceDouble("WizardPrimaryButtonMinWidth", 180);
-
-        ActionGrid.HorizontalOptions = LayoutOptions.Fill;
-        ActionButtonsHost.ColumnSpacing = compact ? 8 : 12;
-        ActionButtonsHost.RowSpacing = 8;
-
-        ApplyWizardButtonSize(BackButton, buttonHeight, backMin);
-        ApplyWizardButtonSize(PrimaryActionButton, buttonHeight, primaryMin);
-
-        if (stackButtons)
-        {
-            ActionButtonsHost.HorizontalOptions = LayoutOptions.Fill;
-            ActionButtonsHost.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Star)
-            };
-            ActionButtonsHost.RowDefinitions = new RowDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Auto),
-                new(GridLength.Auto)
-            };
-            Place(BackButton, 0, 0);
-            Place(ActionSpinner, 0, 1);
-            Place(PrimaryActionButton, 0, 2);
-            BackButton.HorizontalOptions = LayoutOptions.Fill;
-            PrimaryActionButton.HorizontalOptions = LayoutOptions.Fill;
-            ActionSpinner.HorizontalOptions = LayoutOptions.Center;
-        }
-        else
-        {
-            ActionButtonsHost.HorizontalOptions = LayoutOptions.End;
-            ActionButtonsHost.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Auto),
-                new(GridLength.Auto)
-            };
-            ActionButtonsHost.RowDefinitions = new RowDefinitionCollection
-            {
-                new(GridLength.Auto)
-            };
-            Place(BackButton, 0, 0);
-            Place(ActionSpinner, 1, 0);
-            Place(PrimaryActionButton, 2, 0);
-            BackButton.HorizontalOptions = LayoutOptions.Start;
-            PrimaryActionButton.HorizontalOptions = LayoutOptions.Start;
-            ActionSpinner.HorizontalOptions = LayoutOptions.Center;
         }
 
-        ActionSpinner.VerticalOptions = LayoutOptions.Center;
-        BackButton.VerticalOptions = LayoutOptions.Center;
-        PrimaryActionButton.VerticalOptions = LayoutOptions.Center;
-    }
-
-    private static void ApplyWizardButtonSize(Button button, double height, double minWidth)
-    {
-        button.HeightRequest = height;
-        button.MinimumHeightRequest = height;
-        button.MinimumWidthRequest = minWidth;
-        button.Padding = new Thickness(20, 0);
-        button.FontSize = 14;
-        button.FontAttributes = FontAttributes.Bold;
-        button.CornerRadius = 10;
-        button.LineBreakMode = LineBreakMode.NoWrap;
-    }
-
-    private void ArrangeReviewCards()
-    {
-        var cards = VisibleReviewCards();
-        if (!cards.Contains(AdditionalReviewCard))
-            Place(AdditionalReviewCard, 0, 0);
-
-        var size = Width > 0 ? ResponsiveBreakpoints.FromWidth(Width) : ScreenSize.Expanded;
-        var columns = Math.Min(cards.Count, size switch
+        if (!_vm.ValidateForm())
         {
-            ScreenSize.Compact => 1,
-            ScreenSize.Medium => 2,
-            _ => 4
-        });
-        columns = Math.Max(1, columns);
-        var rows = Math.Max(1, (int)Math.Ceiling(cards.Count / (double)columns));
-
-        SetColumns(ReviewCardsGrid, columns);
-        SetRows(ReviewCardsGrid, rows);
-        ReviewCardsGrid.ColumnSpacing = columns == 1 ? 0 : 12;
-        ReviewCardsGrid.RowSpacing = 12;
-        ReviewCardsGrid.HorizontalOptions = LayoutOptions.Fill;
-
-        for (var i = 0; i < cards.Count; i++)
-        {
-            var card = cards[i];
-            card.HeightRequest = -1;
-            card.HorizontalOptions = LayoutOptions.Fill;
-            card.VerticalOptions = LayoutOptions.Fill;
-            Place(card, i % columns, i / columns);
+            await FocusFirstInvalidFieldAsync();
+            return;
         }
 
-        if (columns > 1)
-            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(32), EqualizeReviewCardHeights);
-    }
+        _vm.IsBusy = true;
+        _vm.HasGeneralError = false;
+        _vm.GeneralError = string.Empty;
+        _vm.HasGeneralSuccess = false;
+        _vm.GeneralSuccess = string.Empty;
 
-    private List<View> VisibleReviewCards()
-    {
-        var cards = new List<View> { PersonalReviewCard, CompanyReviewCard, PlanReviewCard };
-        if (_vm.HasAdditionalReviewDetails)
-            cards.Add(AdditionalReviewCard);
-        return cards;
-    }
-
-    private void EqualizeReviewCardHeights()
-    {
-        if (_vm.CurrentStep != 4 || Width <= 0)
-            return;
-
-        var size = ResponsiveBreakpoints.FromWidth(Width);
-        if (size == ScreenSize.Compact)
-            return;
-
-        var cards = VisibleReviewCards();
-        if (cards.Count < 2)
-            return;
-
-        _equalizingReviewHeights = true;
         try
         {
-            var byRow = cards.GroupBy(Grid.GetRow);
-            foreach (var row in byRow)
+            var (success, error) = await _auth.RegisterAsync(new AveroNova.Application.DTOs.Auth.RegisterRequest
             {
-                var max = row.Max(card => Math.Max(card.Bounds.Height, card.Height));
-                if (max <= 1)
-                    continue;
+                FullName = _vm.FullName.Trim(),
+                Email = _vm.Email.Trim(),
+                MobileNumber = _vm.Mobile.Trim(),
+                Password = _vm.Password,
+                ConfirmPassword = _vm.ConfirmPassword,
+                CompanyName = _vm.CompanyName.Trim(),
+                OwnerName = string.IsNullOrWhiteSpace(_vm.OwnerName) ? null : _vm.OwnerName.Trim(),
+                CompanyEmail = _vm.CompanyEmail.Trim(),
+                CompanyMobile = _vm.CompanyMobile.Trim(),
+                GstNumber = _vm.GSTNumber?.Trim(),
+                PanNumber = _vm.PanNumber?.Trim(),
+                CompanyAddress = _vm.CompanyAddress?.Trim(),
+                CompanyCity = _vm.CompanyCity?.Trim(),
+                CompanyState = _vm.CompanyState?.Trim(),
+                CompanyCountry = _vm.CompanyCountry?.Trim(),
+                CompanyPinCode = _vm.CompanyPinCode?.Trim(),
+                Plan = _vm.SelectedPlanOption?.Name ?? "Starter"
+            });
 
-                foreach (var card in row)
-                {
-                    if (Math.Abs(card.HeightRequest - max) > 0.5)
-                        card.HeightRequest = max;
-                }
+            if (success)
+            {
+                _vm.HasGeneralSuccess = true;
+                _vm.GeneralSuccess = "Account created successfully! Redirecting to sign in...";
+                await Task.Delay(1200);
+                await Shell.Current.GoToAsync(AppRoutes.Login);
             }
+            else
+            {
+                _vm.HasGeneralError = true;
+                _vm.GeneralError = error ?? "Registration failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _vm.HasGeneralError = true;
+            _vm.GeneralError = ex.Message;
         }
         finally
         {
-            _equalizingReviewHeights = false;
+            _vm.IsBusy = false;
         }
     }
 
-    private void ApplyReviewFieldLayout()
+    private async Task FocusFirstInvalidFieldAsync()
     {
-        var size = Width > 0 ? ResponsiveBreakpoints.FromWidth(Width) : ScreenSize.Expanded;
-        var inline = size != ScreenSize.Compact;
-        var columns = VisibleReviewCards().Count;
-        if (Width > 0)
+        View? host = _vm.CurrentStep switch
         {
-            columns = Math.Min(columns, size switch
-            {
-                ScreenSize.Compact => 1,
-                ScreenSize.Medium => 2,
-                _ => 4
-            });
-        }
-
-        var labelWidth = columns >= 3
-            ? ResourceDouble("ReviewLabelColumnWidthNarrow", 118)
-            : ResourceDouble("ReviewLabelColumnWidth", ReviewFieldRow.DefaultLabelColumnWidth);
-
-        foreach (var row in FindDescendants<ReviewFieldRow>(ReviewCardsGrid))
-        {
-            row.IsInline = inline;
-            row.LabelColumnWidth = labelWidth;
-        }
-    }
-
-    private static IEnumerable<T> FindDescendants<T>(IView? root) where T : class, IView
-    {
-        if (root is null)
-            yield break;
-
-        if (root is T match)
-            yield return match;
-
-        switch (root)
-        {
-            case ContentView { Content: IView inner }:
-                foreach (var child in FindDescendants<T>(inner))
-                    yield return child;
-                break;
-            case Border { Content: IView content }:
-                foreach (var child in FindDescendants<T>(content))
-                    yield return child;
-                break;
-            case Microsoft.Maui.Controls.Layout layout:
-                foreach (var child in layout.Children.OfType<IView>())
-                {
-                    foreach (var found in FindDescendants<T>(child))
-                        yield return found;
-                }
-                break;
-        }
-    }
-
-    private static double ResourceDouble(string key, double fallback)
-    {
-        if (Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) != true)
-            return fallback;
-
-        return value switch
-        {
-            double d => d,
-            float f => f,
-            int i => i,
-            _ => fallback
-        };
-    }
-
-    private void ArrangePlanCards()
-    {
-        var cards = PlanCardsGrid.Children.OfType<View>().ToList();
-        if (cards.Count == 0)
-        {
-            Dispatcher.Dispatch(() =>
-            {
-                var delayed = PlanCardsGrid.Children.OfType<View>().ToList();
-                if (delayed.Count > 0)
-                    PlacePlanCards(delayed);
-            });
-            return;
-        }
-
-        PlacePlanCards(cards);
-    }
-
-    private void PlacePlanCards(IReadOnlyList<View> cards)
-    {
-        var width = Width > 0 ? Width : FormHost.Width;
-        var columns = ResponsiveBreakpoints.FromWidth(width) switch
-        {
-            ScreenSize.Compact => 1,
-            ScreenSize.Medium => 2,
-            _ => 4
+            1 when _vm.HasFullNameError => FieldFullName,
+            1 when _vm.HasEmailError => FieldEmail,
+            1 when _vm.HasMobileError => FieldMobile,
+            1 when _vm.HasPasswordError => FieldPassword,
+            1 when _vm.HasConfirmPasswordError => FieldConfirmPassword,
+            2 when _vm.HasCompanyNameError => FieldCompanyName,
+            2 when _vm.HasOwnerNameError => FieldOwnerName,
+            2 when _vm.HasCompanyEmailError => FieldCompanyEmail,
+            2 when _vm.HasCompanyMobileError => FieldCompanyMobile,
+            _ => null
         };
 
-        SetColumns(PlanCardsGrid, columns);
-        SetRows(PlanCardsGrid, Math.Max(1, (int)Math.Ceiling(cards.Count / (double)columns)));
-        PlanCardsGrid.ColumnSpacing = 12;
-        PlanCardsGrid.RowSpacing = 12;
-        var compact = columns == 1;
-        var maxFeatures = 0;
-        foreach (var card in cards)
-            maxFeatures = Math.Max(maxFeatures, FindPlanCard(card)?.FeatureCount ?? 0);
-
-        _equalizingPlanHeights = true;
-        for (var i = 0; i < cards.Count; i++)
-        {
-            var card = cards[i];
-            card.HeightRequest = -1;
-            card.HorizontalOptions = LayoutOptions.Fill;
-            card.VerticalOptions = LayoutOptions.Fill;
-            FindPlanCard(card)?.ApplyBenefitsLayout(compact, maxFeatures);
-            Place(card, i % columns, i / columns);
-        }
-
-        if (!compact)
-        {
-            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(48), () =>
-            {
-                if (Handler is null)
-                {
-                    _equalizingPlanHeights = false;
-                    return;
-                }
-
-                EqualizePlanCardHeights(cards);
-            });
+        if (host == null)
             return;
-        }
 
-        _equalizingPlanHeights = false;
+        var input = FindFocusableInput(host);
+        input?.Focus();
+        await PageScroll.ScrollToAsync(host, ScrollToPosition.MakeVisible, true);
     }
 
-    private void EqualizePlanCardHeights(IReadOnlyList<View> cards)
+    private static View? FindFocusableInput(View root)
     {
-        if (_vm.CurrentStep != 3 || Width <= 0 || cards.Count == 0)
+        if (root is Entry or Editor)
+            return root;
+
+        if (root is Border border && border.Content is View borderContent)
+            return FindFocusableInput(borderContent);
+
+        if (root is Microsoft.Maui.Controls.Layout layout)
         {
-            _equalizingPlanHeights = false;
-            return;
-        }
-
-        if (ResponsiveBreakpoints.FromWidth(Width) == ScreenSize.Compact)
-        {
-            _equalizingPlanHeights = false;
-            return;
-        }
-
-        _equalizingPlanHeights = true;
-        try
-        {
-            var max = 0.0;
-            foreach (var card in cards)
-                max = Math.Max(max, Math.Max(card.Bounds.Height, card.Height));
-
-            if (max <= 1)
-                return;
-
-            foreach (var card in cards)
+            foreach (var child in layout.Children)
             {
-                if (Math.Abs(card.HeightRequest - max) > 1)
-                    card.HeightRequest = max;
+                if (child is View view)
+                {
+                    var found = FindFocusableInput(view);
+                    if (found != null)
+                        return found;
+                }
             }
         }
-        finally
-        {
-            _equalizingPlanHeights = false;
-        }
-    }
-
-    private static SubscriptionPlanCard? FindPlanCard(View view)
-    {
-        if (view is SubscriptionPlanCard card)
-            return card;
-
-        foreach (var found in FindDescendants<SubscriptionPlanCard>(view))
-            return found;
 
         return null;
     }
 
-    private void PlaceCompanyFields(int columns)
+    private void OnBackClicked(object? sender, EventArgs e)
     {
-        View[] fields =
-        [
-            CompanyNameField, OwnerNameField, GSTNumberField,
-            PANNumberField, CompanyEmailField, MobileNumberField,
-            CountryField, StateField, CityField,
-            PinCodeField, AddressField
-        ];
-
-        SetColumns(Step2Grid, columns);
-
-        var index = 0;
-        var maxRow = 0;
-        foreach (var field in fields)
-        {
-            var column = index % columns;
-            var row = index / columns;
-            var span = 1;
-
-            if (ReferenceEquals(field, AddressField) && columns > 1 && column < columns - 1)
-                span = columns - column;
-
-            Place(field, column, row, span);
-            maxRow = Math.Max(maxRow, row);
-            index += span;
-        }
-
-        SetRows(Step2Grid, maxRow + 1);
+        if (_vm.CurrentStep > 1)
+            _vm.BackCommand.Execute(null);
     }
-
-    private static void PlaceFlow(Grid grid, int columns, params View[] fields)
-    {
-        SetColumns(grid, columns);
-        for (var i = 0; i < fields.Length; i++)
-            Place(fields[i], i % columns, i / columns);
-        SetRows(grid, Math.Max(1, (int)Math.Ceiling(fields.Length / (double)columns)));
-    }
-
-    private static void SetRows(Grid grid, int count)
-    {
-        var rows = new RowDefinitionCollection();
-        for (var i = 0; i < count; i++)
-            rows.Add(new RowDefinition(GridLength.Auto));
-        grid.RowDefinitions = rows;
-    }
-
-    private static void SetColumns(Grid grid, int count)
-    {
-        var columns = new ColumnDefinitionCollection();
-        for (var i = 0; i < count; i++)
-            columns.Add(new ColumnDefinition(GridLength.Star));
-        grid.ColumnDefinitions = columns;
-    }
-
-    private static void Place(View view, int column, int row, int columnSpan = 1)
-    {
-        Grid.SetColumn(view, column);
-        Grid.SetRow(view, row);
-        Grid.SetColumnSpan(view, columnSpan);
-        Grid.SetRowSpan(view, 1);
-    }
-
-    private void OnPlanCardTapped(object? sender, TappedEventArgs e)
-        => SelectPlanFrom(sender);
-
-    private void OnSelectPlanClicked(object? sender, EventArgs e)
-        => SelectPlanFrom(sender);
-
-    private void SelectPlanFrom(object? sender)
-    {
-        if (sender is BindableObject bindable && bindable.BindingContext is RegisterPlanOption plan)
-            _vm.SelectPlanCommand.Execute(plan.Id);
-    }
-
-    private bool _actionInFlight;
-    private bool _accountCreated;
 
     private async void OnLoginTapped(object? sender, TappedEventArgs e)
     {
-        if (!CanStartAction())
-            return;
-
-        await RunActionAsync(async () => await NavigateToLoginScreenAsync());
-    }
-
-    private static async Task NavigateToLoginScreenAsync()
-    {
-        try
-        {
-            if (Shell.Current.Navigation.NavigationStack.Count > 1)
-                await Shell.Current.GoToAsync("..", false);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Pop Register failed: {ex.Message}");
-        }
-
-        var location = Shell.Current.CurrentState?.Location?.OriginalString ?? string.Empty;
-        var onLogin = location.Contains("Login", StringComparison.OrdinalIgnoreCase)
-                      && !location.Contains("Register", StringComparison.OrdinalIgnoreCase);
-        if (!onLogin)
-            await Shell.Current.GoToAsync(AppRoutes.Login, false);
-    }
-
-    private async void OnBackClicked(object? sender, EventArgs e)
-    {
-        if (!CanStartAction() || !_vm.IsBackVisible)
-            return;
-
-        await RunActionAsync(() =>
-        {
-            _vm.BackCommand.Execute(null);
-            return Task.CompletedTask;
-        });
-    }
-
-    private async void OnPrimaryActionClicked(object? sender, EventArgs e)
-    {
-        if (!CanStartAction())
-            return;
-
-        if (_vm.CurrentStep < 4)
-        {
-            await RunActionAsync(() =>
-            {
-                _vm.NextCommand.Execute(null);
-                return Task.CompletedTask;
-            });
-            return;
-        }
-
-        await CreateAccountAsync();
-    }
-
-    private bool CanStartAction()
-        => !_actionInFlight && !_accountCreated && !_vm.IsBusy && !_vm.IsNavigating;
-
-    private async Task RunActionAsync(Func<Task> action)
-    {
-        _actionInFlight = true;
-        _vm.IsNavigating = true;
-        SetActionSpinner(true);
-        try
-        {
-            await action();
-            await Task.Delay(120);
-        }
-        finally
-        {
-            SetActionSpinner(false);
-            _vm.IsNavigating = false;
-            _actionInFlight = false;
-        }
-    }
-
-    private void SetActionSpinner(bool running)
-    {
-        ActionSpinner.IsVisible = running;
-        ActionSpinner.IsRunning = running;
-    }
-
-    private async Task CreateAccountAsync()
-    {
-        if (_accountCreated)
-            return;
-
-        if (!_vm.Validate())
-        {
-            _vm.HasGeneralError = true;
-            _vm.GeneralError = "Please complete the required information before creating your account.";
-            return;
-        }
-
-        _actionInFlight = true;
-        _vm.IsBusy = true;
-        SetActionSpinner(true);
-        _vm.HasGeneralError = false;
-        _vm.GeneralError = string.Empty;
-        _vm.HasSuccessMessage = false;
-
-        try
-        {
-            var result = await _auth.RegisterAccountAsync(new RegistrationRequest
-            {
-                FullName = _vm.FullName.Trim(),
-                Email = _vm.Email.Trim(),
-                Mobile = _vm.Mobile.Trim(),
-                Password = _vm.Password,
-                CompanyName = _vm.CompanyName.Trim(),
-                OwnerName = _vm.OwnerName.Trim(),
-                GSTNumber = _vm.GSTNumber.Trim(),
-                PANNumber = _vm.PANNumber.Trim(),
-                CompanyEmail = _vm.CompanyEmail.Trim(),
-                CompanyMobile = string.IsNullOrWhiteSpace(_vm.MobileNumber)
-                    ? _vm.Mobile.Trim()
-                    : _vm.MobileNumber.Trim(),
-                Country = _vm.Country.Trim(),
-                State = _vm.State.Trim(),
-                City = _vm.City.Trim(),
-                PinCode = _vm.PinCode.Trim(),
-                Address = _vm.Address.Trim(),
-                PlanId = _vm.SelectedPlanId,
-                PlanName = _vm.SelectedPlanName
-            });
-
-            if (!result.Success || !result.LocalAccountCreated)
-            {
-                _vm.HasGeneralError = true;
-                _vm.GeneralError = result.Error ?? "Account could not be created. Please try again.";
-                return;
-            }
-
-            _accountCreated = true;
-            _toasts.ShowSuccess(
-                "Account Completed Successfully",
-                "Local account created successfully.\nServer sync is pending and will complete when internet is available.",
-                TimeSpan.FromSeconds(2));
-            await Task.Delay(TimeSpan.FromSeconds(2));
-            await _auth.LogoutAsync();
-            await NavigateToLoginScreenAsync();
-            _vm.Reset();
-        }
-        catch (Exception ex)
-        {
-            _vm.HasGeneralError = true;
-            _vm.GeneralError = $"Account could not be created. {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] CreateAccount failed: {ex}");
-        }
-        finally
-        {
-            if (!_accountCreated)
-            {
-                _vm.IsBusy = false;
-                SetActionSpinner(false);
-                _actionInFlight = false;
-            }
-        }
+        await Shell.Current.GoToAsync("..");
     }
 }

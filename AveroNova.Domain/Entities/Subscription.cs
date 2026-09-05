@@ -1,49 +1,45 @@
 ﻿using AveroNova.Domain.Enums;
 
-namespace AveroNova.Domain.Entities
+namespace AveroNova.Domain.Entities;
+
+public class Subscription : BaseEntity
 {
-    public class Subscription : BaseEntity
+    public Guid CompanyId { get; set; }
+    public Guid PlanId { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public bool IsTrial { get; set; }
+    public int CreditLimit { get; set; }
+    public int CreditsUsed { get; set; }
+    public SubscriptionStatus Status { get; set; }
+
+    public int RemainingCredits =>
+        CreditLimit < 0 ? int.MaxValue : Math.Max(0, CreditLimit - CreditsUsed);
+
+    public Plan Plan { get; set; } = null!;
+    public Company Company { get; set; } = null!;
+
+    public static Subscription StartFromPlan(
+        Guid companyId,
+        Plan plan,
+        DateTime startDateUtc,
+        bool isTrial)
     {
-        public Guid CompanyId { get; set; }
+        ArgumentNullException.ThrowIfNull(plan);
 
-        public Guid? PlanId { get; set; }
-
-        public string PlanName { get; set; } = string.Empty;
-
-        public decimal Price { get; set; }
-
-        public int DurationInDays { get; set; }
-
-        public DateTime StartDate { get; set; }
-
-        /// <summary>
-        /// Subscription end date. Existing column name is ExpiryDate.
-        /// </summary>
-        public DateTime ExpiryDate { get; set; }
-
-        public DateTime? TrialStartDate { get; set; }
-
-        public DateTime? TrialEndDate { get; set; }
-
-        public bool IsTrial { get; set; }
-
-        public bool IsActive { get; set; }
-
-        public bool AutoRenew { get; set; }
-
-        public bool IsSubscription { get; set; }
-
-        public SubscriptionType SubscriptionType { get; set; }
-
-        public SubscriptionStatus Status { get; set; }
-
-        /// <summary>
-        /// Legacy duration code. Plan identity is PlanId → SubscriptionPlans.
-        /// </summary>
-        public SubscriptionDuration Plan { get; set; }
-
-        public Company Company { get; set; } = null!;
-
-        public SubscriptionPlan? SubscriptionPlan { get; set; }
+        return new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            PlanId = plan.Id,
+            StartDate = startDateUtc,
+            EndDate = plan.CalculatePeriodEndDate(startDateUtc),
+            IsTrial = isTrial,
+            CreditLimit = plan.CreditLimit,
+            CreditsUsed = 0,
+            Status = SubscriptionStatus.Active,
+            CreatedAt = startDateUtc,
+            SyncStatus = RecordSyncStatus.Pending
+        };
     }
 }

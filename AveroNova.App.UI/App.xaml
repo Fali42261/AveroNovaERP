@@ -10,7 +10,6 @@
 
             <!-- Global Converters -->
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
-            <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
 
             <ResourceDictionary.MergedDictionaries>
 

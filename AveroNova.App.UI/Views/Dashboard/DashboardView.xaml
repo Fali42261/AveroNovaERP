@@ -2,6 +2,643 @@
 <ContentView
     x:Class="AveroNova.App.UI.Views.Dashboard.DashboardView"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <!-- Live dashboard UI is Pages/Dashboard/DashboardPage. This view is kept for DI compatibility. -->
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:AveroNova.App.UI.ViewModels"
+    x:DataType="viewmodels:DashboardViewModel">
+
+    <ScrollView
+        VerticalScrollBarVisibility="Default"
+        HorizontalScrollBarVisibility="Never">
+
+        <VerticalStackLayout
+            Padding="24,20,24,32"
+            Spacing="24">
+
+
+            <!-- ================================================================ -->
+            <!-- WELCOME BANNER                                                    -->
+            <!-- ================================================================ -->
+            <Border
+                Padding="24,20"
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16">
+
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    ColumnSpacing="20">
+
+                    <VerticalStackLayout Spacing="8" VerticalOptions="Center">
+
+                        <!-- System Active Badge -->
+                        <Border
+                            BackgroundColor="#ECFDF5"
+                            Stroke="#A7F3D0"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="10,4"
+                            HorizontalOptions="Start">
+                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                <BoxView
+                                    WidthRequest="8" HeightRequest="8"
+                                    CornerRadius="4" BackgroundColor="#10B981"
+                                    VerticalOptions="Center" />
+                                <Label
+                                    Text="System Active &#x2022; Enterprise Suite"
+                                    FontSize="11" FontAttributes="Bold"
+                                    TextColor="#059669" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <Label
+                            Text="{Binding WelcomeMessage}"
+                            FontSize="24" FontAttributes="Bold"
+                            TextColor="{StaticResource TextPrimary}" />
+
+                        <Label
+                            Text="Unified overview of your organization's companies, team accounts, sales, and warehouse inventory."
+                            FontSize="13" TextColor="{StaticResource TextSecondary}"
+                            LineBreakMode="WordWrap" />
+
+                    </VerticalStackLayout>
+
+                    <!-- Org Chip -->
+                    <Border
+                        Grid.Column="1"
+                        BackgroundColor="{StaticResource BackgroundColor}"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="16,12"
+                        VerticalOptions="Center"
+                        HorizontalOptions="End">
+                        <VerticalStackLayout Spacing="3">
+                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                <Label Text="&#x1F3DB;" FontSize="14" VerticalOptions="Center" />
+                                <Label Text="AveroNova Global"
+                                       FontSize="13" FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                            <Label
+                                Text="FY 2026 &#x2022; Real-Time Data"
+                                FontSize="11" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </Grid>
+
+            </Border>
+
+
+            <!-- ================================================================ -->
+            <!-- SECTION: KPI CARDS                                               -->
+            <!-- ================================================================ -->
+            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                <Label
+                    Text="Key Performance Indicators"
+                    FontSize="16" FontAttributes="Bold"
+                    TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                <Border
+                    Grid.Column="1"
+                    BackgroundColor="#EFF6FF" Stroke="#BFDBFE"
+                    StrokeThickness="1" StrokeShape="RoundRectangle 8"
+                    Padding="10,3" VerticalOptions="Center">
+                    <Label Text="Live Metrics" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" />
+                </Border>
+            </Grid>
+
+            <FlexLayout
+                Wrap="Wrap" Direction="Row"
+                JustifyContent="Start" AlignItems="Stretch" AlignContent="Start">
+
+                <!-- Companies -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                    Margin="0,0,14,14" Padding="20,18"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="TOTAL COMPANIES" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" />
+                                <Label Text="Organizations" FontSize="11" TextColor="{StaticResource Gray400}" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" WidthRequest="42" HeightRequest="42"
+                                    BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                <Label Text="&#x1F3E2;" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                        <Label Text="{Binding CompanyCount}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" Margin="0,4,0,4" />
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+                        <HorizontalStackLayout Spacing="8">
+                            <Border BackgroundColor="#EFF6FF" Stroke="#BFDBFE" StrokeThickness="1" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Active" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" />
+                            </Border>
+                            <Label Text="Registered entities" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Users -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                    Margin="0,0,14,14" Padding="20,18"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="TOTAL USERS" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" />
+                                <Label Text="Team Accounts" FontSize="11" TextColor="{StaticResource Gray400}" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" WidthRequest="42" HeightRequest="42"
+                                    BackgroundColor="#ECFDF5" Stroke="#A7F3D0" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                <Label Text="&#x1F465;" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                        <Label Text="{Binding UserCount}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" Margin="0,4,0,4" />
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+                        <HorizontalStackLayout Spacing="8">
+                            <Border BackgroundColor="#ECFDF5" Stroke="#A7F3D0" StrokeThickness="1" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Accounts" FontSize="10" FontAttributes="Bold" TextColor="#059669" />
+                            </Border>
+                            <Label Text="Team logins &amp; roles" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Sales -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                    Margin="0,0,14,14" Padding="20,18"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="TOTAL SALES" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" />
+                                <Label Text="Transactions" FontSize="11" TextColor="{StaticResource Gray400}" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" WidthRequest="42" HeightRequest="42"
+                                    BackgroundColor="#F5F3FF" Stroke="#DDD6FE" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                <Label Text="&#x1F4B3;" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                        <Label Text="{Binding SalesCount}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" Margin="0,4,0,4" />
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+                        <HorizontalStackLayout Spacing="8">
+                            <Border BackgroundColor="#F5F3FF" Stroke="#DDD6FE" StrokeThickness="1" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Revenue" FontSize="10" FontAttributes="Bold" TextColor="#7C3AED" />
+                            </Border>
+                            <Label Text="Invoices &amp; orders" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Inventory -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="220" MinimumWidthRequest="200"
+                    Margin="0,0,14,14" Padding="20,18"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="INVENTORY ITEMS" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" />
+                                <Label Text="Catalog Stock" FontSize="11" TextColor="{StaticResource Gray400}" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" WidthRequest="42" HeightRequest="42"
+                                    BackgroundColor="#FFFBEB" Stroke="#FDE68A" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                <Label Text="&#x1F4E6;" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                        <Label Text="{Binding InventoryCount}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" Margin="0,4,0,4" />
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+                        <HorizontalStackLayout Spacing="8">
+                            <Border BackgroundColor="#FFFBEB" Stroke="#FDE68A" StrokeThickness="1" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Products" FontSize="10" FontAttributes="Bold" TextColor="#D97706" />
+                            </Border>
+                            <Label Text="Catalog items tracked" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+            </FlexLayout>
+
+
+            <!-- ================================================================ -->
+            <!-- SECTION: FINANCIAL SUMMARY                                       -->
+            <!-- ================================================================ -->
+            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                <Label Text="Financial Summary" FontSize="16" FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                <Label Grid.Column="1" Text="FY 2026" FontSize="12" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+            </Grid>
+
+            <FlexLayout
+                Wrap="Wrap" Direction="Row"
+                JustifyContent="Start" AlignItems="Stretch" AlignContent="Start">
+
+                <!-- Revenue -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="200" MinimumWidthRequest="180"
+                    Margin="0,0,14,14" Padding="20,16"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="6">
+                        <HorizontalStackLayout Spacing="8">
+                            <BoxView WidthRequest="4" HeightRequest="36" CornerRadius="2" BackgroundColor="{StaticResource PrimaryColor}" VerticalOptions="Center" />
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Total Revenue" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding TotalRevenue}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding RevenueTrend}" FontSize="11" TextColor="#059669" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Purchase -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="200" MinimumWidthRequest="180"
+                    Margin="0,0,14,14" Padding="20,16"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="6">
+                        <HorizontalStackLayout Spacing="8">
+                            <BoxView WidthRequest="4" HeightRequest="36" CornerRadius="2" BackgroundColor="#7C3AED" VerticalOptions="Center" />
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Total Purchase" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding TotalPurchase}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding PurchaseTrend}" FontSize="11" TextColor="#059669" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Outstanding -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="200" MinimumWidthRequest="180"
+                    Margin="0,0,14,14" Padding="20,16"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="6">
+                        <HorizontalStackLayout Spacing="8">
+                            <BoxView WidthRequest="4" HeightRequest="36" CornerRadius="2" BackgroundColor="{StaticResource WarningColor}" VerticalOptions="Center" />
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Outstanding" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding TotalOutstanding}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                        <Label Text="Receivables due" FontSize="11" TextColor="{StaticResource WarningColor}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Customers -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="200" MinimumWidthRequest="180"
+                    Margin="0,0,14,14" Padding="20,16"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="6">
+                        <HorizontalStackLayout Spacing="8">
+                            <BoxView WidthRequest="4" HeightRequest="36" CornerRadius="2" BackgroundColor="{StaticResource SuccessColor}" VerticalOptions="Center" />
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Customers" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding TotalCustomers}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding CustomersTrend}" FontSize="11" TextColor="#059669" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </FlexLayout>
+
+
+            <!-- ================================================================ -->
+            <!-- SECTION: QUICK OPERATIONS                                        -->
+            <!-- ================================================================ -->
+            <Border
+                Padding="22,18"
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16">
+
+                <VerticalStackLayout Spacing="16">
+
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="ERP Quick Operations" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Common administrative and operational tasks" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+
+                    <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Stretch" AlignContent="Start">
+
+                        <!-- Company Details -->
+                        <Border FlexLayout.Grow="1" FlexLayout.Basis="160" MinimumWidthRequest="140"
+                                Margin="0,0,10,10" Padding="14,12"
+                                BackgroundColor="{StaticResource BackgroundColor}"
+                                Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Border WidthRequest="32" HeightRequest="32" BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+                                    <Label Text="&#x1F3E2;" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Company Details" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="Manage profiles" FontSize="10" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- User Access -->
+                        <Border FlexLayout.Grow="1" FlexLayout.Basis="160" MinimumWidthRequest="140"
+                                Margin="0,0,10,10" Padding="14,12"
+                                BackgroundColor="{StaticResource BackgroundColor}"
+                                Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Border WidthRequest="32" HeightRequest="32" BackgroundColor="#ECFDF5" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+                                    <Label Text="&#x1F464;" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                    <Label Text="User Access" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="Roles &amp; security" FontSize="10" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Product Inventory -->
+                        <Border FlexLayout.Grow="1" FlexLayout.Basis="160" MinimumWidthRequest="140"
+                                Margin="0,0,10,10" Padding="14,12"
+                                BackgroundColor="{StaticResource BackgroundColor}"
+                                Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Border WidthRequest="32" HeightRequest="32" BackgroundColor="#FFFBEB" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+                                    <Label Text="&#x1F3F7;" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Product Inventory" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="Catalog &amp; stock" FontSize="10" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Invoices & Orders -->
+                        <Border FlexLayout.Grow="1" FlexLayout.Basis="160" MinimumWidthRequest="140"
+                                Margin="0,0,10,10" Padding="14,12"
+                                BackgroundColor="{StaticResource BackgroundColor}"
+                                Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Border WidthRequest="32" HeightRequest="32" BackgroundColor="#F5F3FF" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+                                    <Label Text="&#x1F4C4;" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" TextColor="#7C3AED" />
+                                </Border>
+                                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Invoices &amp; Orders" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="Sales transactions" FontSize="10" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Reports -->
+                        <Border FlexLayout.Grow="1" FlexLayout.Basis="160" MinimumWidthRequest="140"
+                                Margin="0,0,10,10" Padding="14,12"
+                                BackgroundColor="{StaticResource BackgroundColor}"
+                                Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Border WidthRequest="32" HeightRequest="32" BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+                                    <Label Text="&#x1F4CA;" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Reports" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="Analytics &amp; insights" FontSize="10" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Settings -->
+                        <Border FlexLayout.Grow="1" FlexLayout.Basis="160" MinimumWidthRequest="140"
+                                Margin="0,0,10,10" Padding="14,12"
+                                BackgroundColor="{StaticResource BackgroundColor}"
+                                Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Border WidthRequest="32" HeightRequest="32" BackgroundColor="{StaticResource Gray100}" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+                                    <Label Text="&#x2699;" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource Gray600}" />
+                                </Border>
+                                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Settings" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="System config" FontSize="10" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                    </FlexLayout>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+
+            <!-- ================================================================ -->
+            <!-- SECTION: RECENT TRANSACTIONS                                     -->
+            <!-- ================================================================ -->
+            <Border
+                Padding="22,18"
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16">
+
+                <VerticalStackLayout Spacing="16">
+
+                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Recent Transactions" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Latest invoices and purchase orders" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Border
+                            Grid.Column="1"
+                            BackgroundColor="#EFF6FF" Stroke="#BFDBFE" StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8" Padding="10,3" VerticalOptions="Center">
+                            <Label Text="View All" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Table Header -->
+                    <Grid ColumnDefinitions="*,*,Auto,80" ColumnSpacing="12" Padding="4,0">
+                        <Label Text="REFERENCE" Grid.Column="0" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" />
+                        <Label Text="PARTY" Grid.Column="1" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" />
+                        <Label Text="AMOUNT" Grid.Column="2" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" HorizontalOptions="End" />
+                        <Label Text="STATUS" Grid.Column="3" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" CharacterSpacing="0.5" HorizontalOptions="Center" />
+                    </Grid>
+
+                    <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderColor}" />
+
+                    <!-- Transaction Rows -->
+                    <CollectionView
+                        ItemsSource="{Binding RecentTransactions}"
+                        SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:RecentTransaction">
+                                <Grid
+                                    ColumnDefinitions="*,*,Auto,80"
+                                    ColumnSpacing="12"
+                                    Padding="4,10">
+
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="{Binding Reference}"
+                                        FontSize="12" FontAttributes="Bold"
+                                        TextColor="{StaticResource PrimaryColor}"
+                                        VerticalOptions="Center" />
+
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding Party}"
+                                        FontSize="12"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        VerticalOptions="Center"
+                                        LineBreakMode="TailTruncation" />
+
+                                    <Label
+                                        Grid.Column="2"
+                                        Text="{Binding Amount}"
+                                        FontSize="12" FontAttributes="Bold"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        HorizontalOptions="End"
+                                        VerticalOptions="Center" />
+
+                                    <Border
+                                        Grid.Column="3"
+                                        BackgroundColor="{Binding BadgeBg}"
+                                        Stroke="{Binding BadgeBorder}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 6"
+                                        Padding="8,3"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center">
+                                        <Label
+                                            Text="{Binding Status}"
+                                            FontSize="10" FontAttributes="Bold"
+                                            TextColor="{Binding StatusColor}"
+                                            HorizontalOptions="Center" />
+                                    </Border>
+
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+
+            <!-- ================================================================ -->
+            <!-- SECTION: SYSTEM HEALTH + MODULE STATUS                           -->
+            <!-- ================================================================ -->
+            <FlexLayout
+                Wrap="Wrap" Direction="Row"
+                JustifyContent="Start" AlignItems="Stretch" AlignContent="Start">
+
+                <!-- System Health -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="320" MinimumWidthRequest="280"
+                    Margin="0,0,14,14" Padding="22,18"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+                    <VerticalStackLayout Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="System &amp; Data Health" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Infrastructure &amp; connectivity" FontSize="11" TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="&#x1F6E1;" FontSize="18" VerticalOptions="Center" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <BoxView WidthRequest="8" HeightRequest="8" CornerRadius="4" BackgroundColor="{StaticResource SuccessColor}" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Local SQLite Persistence" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="Synchronized" FontSize="11" FontAttributes="Bold" TextColor="#059669" VerticalOptions="Center" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <BoxView WidthRequest="8" HeightRequest="8" CornerRadius="4" BackgroundColor="{StaticResource SuccessColor}" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Authentication &amp; Session" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="Secure" FontSize="11" FontAttributes="Bold" TextColor="#059669" VerticalOptions="Center" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <BoxView WidthRequest="8" HeightRequest="8" CornerRadius="4" BackgroundColor="{StaticResource InfoColor}" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Database Migrations" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="Up to Date" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" VerticalOptions="Center" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Module Status -->
+                <Border
+                    FlexLayout.Grow="1" FlexLayout.Basis="320" MinimumWidthRequest="280"
+                    Margin="0,0,14,14" Padding="22,18"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    Stroke="{StaticResource BorderColor}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+                    <VerticalStackLayout Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="ERP Module Status" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Readiness &amp; operational state" FontSize="11" TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="&#x1F4CA;" FontSize="18" VerticalOptions="Center" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Gray100}" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Company Management" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Border Grid.Column="1" BackgroundColor="#ECFDF5" Stroke="#A7F3D0" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Ready" FontSize="10" FontAttributes="Bold" TextColor="#059669" />
+                            </Border>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Sales &amp; Invoicing Engine" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Border Grid.Column="1" BackgroundColor="#EFF6FF" Stroke="#BFDBFE" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Ready" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource PrimaryColor}" />
+                            </Border>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Warehouse Inventory" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Border Grid.Column="1" BackgroundColor="#FFFBEB" Stroke="#FDE68A" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="Ready" FontSize="10" FontAttributes="Bold" TextColor="#D97706" />
+                            </Border>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Reports &amp; Analytics" FontSize="12" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Border Grid.Column="1" BackgroundColor="{StaticResource Gray100}" Stroke="{StaticResource BorderColor}" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="In Progress" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            </Border>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+            </FlexLayout>
+
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
 </ContentView>

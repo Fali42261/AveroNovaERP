@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AveroNova.App.UI.Pages.License.LicenseActivationPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource SidebarBackground}">
+
+    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="28" Spacing="20"
+                         MaximumWidthRequest="440">
+
+        <Border WidthRequest="72" HeightRequest="72" BackgroundColor="#1557B0" StrokeThickness="0"
+                StrokeShape="RoundRectangle 18" HorizontalOptions="Center">
+            <Label Text="AN" FontSize="22" FontAttributes="Bold"
+                   TextColor="{StaticResource Primary400}"
+                   HorizontalOptions="Center" VerticalOptions="Center"/>
+        </Border>
+
+        <Label Text="License required" FontSize="24" FontAttributes="Bold"
+               TextColor="{StaticResource White}" HorizontalOptions="Center"/>
+
+        <Label x:Name="MessageLabel"
+               Text="The trial or license on this device is not currently active."
+               FontSize="14" LineBreakMode="WordWrap"
+               TextColor="{StaticResource SidebarText}" HorizontalTextAlignment="Center"/>
+
+        <Button x:Name="RetryButton" Text="Retry" Clicked="OnRetryClicked"
+                Style="{StaticResource PrimaryButton}" HeightRequest="44"/>
+    </VerticalStackLayout>
+</ContentPage>

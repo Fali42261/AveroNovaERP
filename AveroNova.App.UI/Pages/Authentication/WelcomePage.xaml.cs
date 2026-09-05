@@ -1,25 +1,40 @@
 using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Authentication;
 
 public partial class WelcomePage : ContentPage
 {
+    private readonly IInstallationService _installation;
     private bool _layoutBusy;
     private bool? _appliedTwoColumn;
     private ScreenSize? _appliedSize;
     private double _appliedMinHeight = double.NaN;
 
-    public WelcomePage()
+    public WelcomePage(IInstallationService installation)
     {
         InitializeComponent();
+        _installation = installation;
         SizeChanged += OnPageSizeChanged;
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
         ApplyLayout();
+        await _installation.EnsureInitializedAsync();
+
+        // Registered installs should not land here — redirect to Login.
+        if (_installation.IsRegistered)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Login);
+            return;
+        }
+
+        var canCreate = _installation.CanCreateAccount;
+        OrDivider.IsVisible = canCreate;
+        BtnCreateAccount.IsVisible = canCreate;
     }
 
     private void OnPageSizeChanged(object? sender, EventArgs e) => ApplyLayout();
@@ -52,8 +67,6 @@ public partial class WelcomePage : ContentPage
         if (Height <= 0)
             return;
 
-        // Binding min-height to Height on every SizeChanged re-enters layout
-        // (scrollbar / viewport oscillation) and freezes the Windows UI thread.
         if (!double.IsNaN(_appliedMinHeight) && Math.Abs(_appliedMinHeight - Height) < 32)
             return;
 
@@ -139,38 +152,18 @@ public partial class WelcomePage : ContentPage
         AuthContent.MaximumWidthRequest = twoColumn ? 440 : ResponsiveBreakpoints.FormMaxCompact;
     }
 
-    private bool _navBusy;
-
     private async void OnLoginClicked(object? sender, EventArgs e)
-        => await NavigateBusyAsync(BtnSignIn, "Please wait...", AppRoutes.Login);
+        => await Shell.Current.GoToAsync(AppRoutes.Login);
 
     private async void OnRegisterClicked(object? sender, EventArgs e)
-        => await NavigateBusyAsync(BtnCreateAccount, "Please wait...", AppRoutes.Register);
-
-    private async Task NavigateBusyAsync(Button button, string busyText, string route)
     {
-        if (_navBusy)
+        await _installation.EnsureInitializedAsync();
+        if (!_installation.CanCreateAccount)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Login);
             return;
+        }
 
-        _navBusy = true;
-        var original = button.Text;
-        button.Text = busyText;
-        BtnSignIn.IsEnabled = false;
-        BtnCreateAccount.IsEnabled = false;
-        WelcomeSpinner.IsVisible = true;
-        WelcomeSpinner.IsRunning = true;
-        try
-        {
-            await Shell.Current.GoToAsync(route);
-        }
-        finally
-        {
-            WelcomeSpinner.IsVisible = false;
-            WelcomeSpinner.IsRunning = false;
-            button.Text = original;
-            BtnSignIn.IsEnabled = true;
-            BtnCreateAccount.IsEnabled = true;
-            _navBusy = false;
-        }
+        await Shell.Current.GoToAsync(AppRoutes.Register);
     }
 }

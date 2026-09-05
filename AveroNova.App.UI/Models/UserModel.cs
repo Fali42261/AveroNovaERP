@@ -1,12 +1,15 @@
 namespace AveroNova.App.UI.Models;
 
+// ═══════════════════════════════════════════════════════════════
+//  AVERONOVA ERP — USER MODEL
+// ═══════════════════════════════════════════════════════════════
+
 public class UserModel : BaseModel
 {
     public string   Name           { get; set; } = string.Empty;
     public string   Email          { get; set; } = string.Empty;
     public string   Phone          { get; set; } = string.Empty;
     public string   Role           { get; set; } = string.Empty;
-    public IReadOnlyList<string> RoleNames { get; set; } = [];
     public string   AvatarInitials { get; set; } = string.Empty;
     public string?  AvatarUrl      { get; set; }
     public Guid?    CompanyId      { get; set; }
@@ -15,17 +18,8 @@ public class UserModel : BaseModel
     public DateTime? LastLoginAt   { get; set; }
     public string Notes { get; set; } = string.Empty;
     public Guid? RoleId { get; set; }
-    public bool IsOwner { get; set; }
-    public string? Password { get; set; }
 
-    public string CreatedDateLabel => CreatedAt == default
-        ? "—"
-        : CreatedAt.ToLocalTime().ToString("dd MMM yyyy");
-
-    public string UpdatedDateLabel => UpdatedAt == default
-        ? "—"
-        : UpdatedAt.ToLocalTime().ToString("dd MMM yyyy");
-
+    // Computed
     public string StatusLabel => Status switch
     {
         UserStatus.Active    => "Active",

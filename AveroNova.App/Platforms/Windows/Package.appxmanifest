@@ -11,8 +11,8 @@
   <mp:PhoneIdentity PhoneProductId="CADAFA61-04CD-4CCA-8B4B-9A968F3823FD" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>$placeholder$</DisplayName>
-    <PublisherDisplayName>User Name</PublisherDisplayName>
+    <DisplayName>AveroNova</DisplayName>
+    <PublisherDisplayName>AveroNova</PublisherDisplayName>
     <Logo>$placeholder$.png</Logo>
   </Properties>
 
@@ -28,8 +28,8 @@
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="$placeholder$"
-        Description="$placeholder$"
+        DisplayName="AveroNova"
+        Description="AveroNova"
         Square150x150Logo="$placeholder$.png"
         Square44x44Logo="$placeholder$.png"
         BackgroundColor="transparent">

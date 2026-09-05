@@ -14,8 +14,7 @@
         x:Name="PageScroll"
         Orientation="Vertical"
         HorizontalScrollBarVisibility="Never"
-        VerticalScrollBarVisibility="Default"
-        Padding="0,0,0,8">
+        VerticalScrollBarVisibility="Default">
 
         <Grid
             x:Name="ContentHost"
@@ -36,7 +35,7 @@
                             StrokeThickness="0"
                             StrokeShape="RoundRectangle 14"
                             HorizontalOptions="Center">
-                        <Label Text="SW" FontSize="28" FontAttributes="Bold"
+                        <Label Text="A" FontSize="28" FontAttributes="Bold"
                                TextColor="{StaticResource White}"
                                HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
@@ -47,7 +46,7 @@
                            HorizontalTextAlignment="Center"
                            LineBreakMode="WordWrap"
                            Margin="0,20,0,4" />
-                    <Label Text="Sign in to your swapdigit account."
+                    <Label Text="Sign in to your AveroNova ERP account."
                            Style="{StaticResource SecondaryText}"
                            HorizontalOptions="Center"
                            HorizontalTextAlignment="Center"
@@ -69,12 +68,14 @@
                     <Label Text="Email" Style="{StaticResource InputLabel}" />
                     <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
                         <Entry x:Name="EntryEmail"
-                               Placeholder="Enter your user email"
+                               Placeholder="you@company.com"
+                               PlaceholderColor="{StaticResource Gray400}"
                                Keyboard="Email"
                                ReturnType="Next"
                                BackgroundColor="Transparent"
+                               TextColor="{StaticResource TextPrimary}"
                                ClearButtonVisibility="Never"
-                               SemanticProperties.Description="User email"
+                               SemanticProperties.Description="Email address"
                                Completed="OnEmailCompleted" />
                     </Border>
                     <Label x:Name="LblEmailError"
@@ -88,9 +89,11 @@
                     <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
                         <Entry x:Name="EntryPassword"
                                Placeholder="Enter password"
+                               PlaceholderColor="{StaticResource Gray400}"
                                IsPassword="True"
                                ReturnType="Done"
                                BackgroundColor="Transparent"
+                               TextColor="{StaticResource TextPrimary}"
                                ClearButtonVisibility="Never"
                                SemanticProperties.Description="Password"
                                Completed="OnPasswordCompleted" />
@@ -148,6 +151,7 @@
                                        Margin="0,16,0,0" />
 
                     <FlexLayout
+                        x:Name="CreateAccountRow"
                         JustifyContent="Center"
                         AlignItems="Center"
                         Wrap="Wrap"

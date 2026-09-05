@@ -1,29 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-//using Microsoft.Maui.Storage;
+﻿namespace AveroNova.Shared.Helpers;
 
-namespace AveroNova.Shared.Helpers
+/// <summary>
+/// Server development SQLite path helper (API only).
+/// MAUI uses a separate local file (AveroNovaLocal.db) under AppDataDirectory.
+/// </summary>
+public static class DatabasePath
 {
-    public static class DatabasePath
+    public const string DevelopmentDatabaseFolderName = "Database";
+    public const string DevelopmentDatabaseFileName = "AveroNovaDev.db";
+
+    public static string GetDatabasePath(string contentRootPath)
     {
-        //public static string GetDatabasePath()
-        //{
-        //    var folder = Path.Combine(AppContext.BaseDirectory, "Data");
-
-        //    Directory.CreateDirectory(folder);
-
-        //    return Path.Combine(folder, "AveroNova.db");
-        //}
-
-        public static string GetDatabasePath(string contentRootPath)
-        {
-            var folder = Path.Combine(contentRootPath, "Data");
-
-            Directory.CreateDirectory(folder);
-
-            return Path.Combine(folder, "AveroNova.db");
-        }
-
+        var folder = Path.Combine(contentRootPath, DevelopmentDatabaseFolderName);
+        Directory.CreateDirectory(folder);
+        return Path.Combine(folder, DevelopmentDatabaseFileName);
     }
 }

@@ -15,13 +15,10 @@ public interface ICompanyService
 {
     CompanyModel?       CurrentCompany { get; }
 
-    event EventHandler? CurrentCompanyChanged;
-
     Task<List<CompanyModel>> GetAllAsync();
-    Task<CompanyModel?>      GetCurrentAsync();
     Task<CompanyModel?>      GetByIdAsync(Guid id);
     Task<(bool Ok, string? Error)> CreateAsync(CompanyModel company);
     Task<(bool Ok, string? Error)> UpdateAsync(CompanyModel company);
     Task<(bool Ok, string? Error)> DeleteAsync(Guid id);
-    Task<(bool Ok, string? Error)> SwitchCompanyAsync(Guid id);
+    Task                           SwitchCompanyAsync(Guid id);
 }

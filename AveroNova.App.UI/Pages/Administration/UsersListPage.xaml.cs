@@ -1,323 +1,342 @@
-using System.Collections.Specialized;
-using AveroNova.App.UI.Layout;
+using AveroNova.App.UI.Controls.Common;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
-using AveroNova.App.UI.ViewModels;
+using AveroNova.App.UI.Resources;
+using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Administration;
 
 public partial class UsersListPage : ContentPage
 {
-    private readonly UsersViewModel _vm;
-    private bool _isCompact;
-    private bool _isExpanded;
+    private readonly IUserService _svc;
+    private readonly ICompanyService _company;
 
-    public UsersListPage(UsersViewModel vm)
+    private List<UserModel> _all = [];
+
+    public UsersListPage(
+        IUserService svc,
+        ICompanyService company)
     {
         InitializeComponent();
-        _vm = vm;
-        BindingContext = vm;
-        if (Content != null)
-            Content.BindingContext = vm;
 
-        ErrorState.RetryClicked += async (_, _) => await _vm.LoadAsync();
-        EmptyState.ActionClicked += (_, _) => _vm.AddCommand.Execute(null);
-
-        _vm.AddRequested += (_, _) => _ = Shell.Current.GoToAsync(AppRoutes.UserAdd);
-        _vm.ViewRequested += (_, user) => _ = Shell.Current.GoToAsync($"{AppRoutes.UserView}?id={user.LocalId}");
-        _vm.EditRequested += (_, user) => _ = Shell.Current.GoToAsync($"{AppRoutes.UserEdit}?id={user.LocalId}");
-        _vm.Items.CollectionChanged += OnItemsChanged;
-        _vm.PropertyChanged += OnVmPropertyChanged;
-        Root.SizeChanged += OnRootSizeChanged;
-    }
-
-    public async Task ReloadAsync()
-    {
-        await _vm.LoadAsync();
-        OnRootSizeChanged(Root, EventArgs.Empty);
+        _svc = svc;
+        _company = company;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.LoadAsync();
+
+        await LoadAsync();
     }
 
-    private async void OnRefreshing(object? sender, EventArgs e)
+    private async void OnRefreshing(
+        object sender,
+        EventArgs e)
     {
-        await _vm.LoadAsync(showLoading: false);
-        if (sender is RefreshView refresh)
-            refresh.IsRefreshing = false;
+        await LoadAsync();
+
+        Refresher.IsRefreshing = false;
     }
 
-    private void OnRootSizeChanged(object? sender, EventArgs e)
+    private async void OnRefreshClicked(
+        object sender,
+        EventArgs e)
     {
-        if (Root.Width <= 0)
-            return;
-
-        var size = ResponsiveBreakpoints.FromWidth(Root.Width);
-        var compact = size == ScreenSize.Compact;
-        var expanded = size == ScreenSize.Expanded;
-        _vm.IsCompact = compact;
-
-        if (compact)
-        {
-            Grid.SetColumn(RoleFilterHost, 0);
-            Grid.SetRow(RoleFilterHost, 1);
-            RoleFilterHost.WidthRequest = -1;
-            Grid.SetColumn(StatusFilterHost, 0);
-            Grid.SetRow(StatusFilterHost, 2);
-            StatusFilterHost.WidthRequest = -1;
-        }
-        else
-        {
-            Grid.SetColumn(RoleFilterHost, 1);
-            Grid.SetRow(RoleFilterHost, 0);
-            RoleFilterHost.WidthRequest = 160;
-            Grid.SetColumn(StatusFilterHost, 2);
-            Grid.SetRow(StatusFilterHost, 0);
-            StatusFilterHost.WidthRequest = 140;
-        }
-
-        if (compact != _isCompact || expanded != _isExpanded)
-        {
-            _isCompact = compact;
-            _isExpanded = expanded;
-            RenderList();
-        }
+        await LoadAsync();
     }
 
-    private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        => MainThread.BeginInvokeOnMainThread(RenderList);
-
-    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private async Task LoadAsync()
     {
-        if (e.PropertyName is nameof(UsersViewModel.CanUpdate)
-            or nameof(UsersViewModel.CanDelete)
-            or nameof(UsersViewModel.IsDeleting)
-            or nameof(UsersViewModel.ShowList)
-            or nameof(UsersViewModel.IsCompact))
-        {
-            MainThread.BeginInvokeOnMainThread(RenderList);
-        }
-    }
+        var companyId = _company.CurrentCompany?.LocalId;
 
-    private void RenderList()
-    {
-        ListHost.Children.Clear();
-        if (!_vm.ShowList)
-            return;
-
-        if (_isCompact)
+        if (!companyId.HasValue)
         {
-            foreach (var user in _vm.Items)
-                ListHost.Children.Add(BuildCard(user));
+            _all = [];
+            RenderList(_all);
             return;
         }
 
-        ListHost.Children.Add(BuildTableHeader());
-        foreach (var user in _vm.Items)
-            ListHost.Children.Add(BuildTableRow(user));
+        _all = await _svc.GetAllAsync(companyId.Value);
+
+        RenderList(_all);
     }
 
-    private View BuildTableHeader()
+    private void OnSearchChanged(
+        object sender,
+        TextChangedEventArgs e)
     {
-        var grid = CreateRowGrid();
-        var column = 0;
-        AddHeader(grid, "Name", column++);
-        AddHeader(grid, "Email", column++);
-        AddHeader(grid, "Mobile", column++);
-        AddHeader(grid, "Role", column++);
-        AddHeader(grid, "Status", column++);
-        AddHeader(grid, "Created Date", column++);
-        AddHeader(grid, "Actions", column);
-        return RowBorder(grid, header: true);
-    }
+        var query = e.NewTextValue?.Trim() ?? string.Empty;
 
-    private View BuildTableRow(UserModel user)
-    {
-        var grid = CreateRowGrid();
-        var column = 0;
-        AddCell(grid, user.Name, column++, bold: true);
-        AddCell(grid, Display(user.Email), column++);
-        AddCell(grid, Display(user.Phone), column++);
-        AddCell(grid, Display(user.Role), column++);
-        grid.Add(BuildStatusBadge(user), column++);
-        AddCell(grid, user.CreatedDateLabel, column++);
-        grid.Add(BuildActions(user), column);
-        return RowBorder(grid);
-    }
-
-    private View BuildCard(UserModel user)
-    {
-        var info = new VerticalStackLayout { Spacing = 4 };
-        info.Children.Add(new Label
+        if (string.IsNullOrWhiteSpace(query))
         {
-            Text = user.Name,
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 14,
-            TextColor = Res("TextPrimary", Colors.Black)
-        });
-        info.Children.Add(Labeled("Email", Display(user.Email)));
-        info.Children.Add(Labeled("Role", Display(user.Role)));
-        info.Children.Add(BuildStatusBadge(user));
-        info.Children.Add(BuildActions(user));
-        return RowBorder(info);
+            RenderList(_all);
+            return;
+        }
+
+        // Local filtering.
+        // No SearchAsync() is required because IUserService
+        // currently exposes GetAllAsync(companyId) only.
+        var shown = _all
+            .Where(u =>
+                u.Name.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                u.Email.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                u.Phone.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                u.Role.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                u.CompanyName.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        RenderList(shown);
     }
 
-    private Grid CreateRowGrid()
+    private void RenderList(List<UserModel> items)
     {
-        var defs = new ColumnDefinitionCollection
+        LblCount.Text =
+            $"{items.Count} user{(items.Count == 1 ? "" : "s")}";
+
+        UserList.Children.Clear();
+
+        if (items.Count == 0)
         {
-            new(new GridLength(1.2, GridUnitType.Star)),
-            new(new GridLength(1.4, GridUnitType.Star)),
-            new(GridLength.Star),
-            new(GridLength.Star),
-            new(new GridLength(0.7, GridUnitType.Star)),
-            new(new GridLength(0.9, GridUnitType.Star)),
-            new(new GridLength(1.4, GridUnitType.Star))
+            UserList.Children.Add(
+                new Label
+                {
+                    Text = "No users found.",
+                    FontSize = 14,
+                    TextColor = Color.FromArgb("#64748B"),
+                    HorizontalOptions = LayoutOptions.Center,
+                    Margin = new Thickness(0, 40)
+                });
+
+            return;
+        }
+
+        foreach (var user in items)
+        {
+            UserList.Children.Add(BuildRow(user));
+        }
+    }
+
+    private View BuildRow(UserModel user)
+    {
+        bool isActive =
+            user.Status == UserStatus.Active;
+
+        var border = new Border
+        {
+            BackgroundColor =
+                Microsoft.Maui.Controls.Application.Current?
+                    .RequestedTheme == AppTheme.Dark
+                    ? Color.FromArgb("#1E293B")
+                    :Color.FromArgb("#FFFFFF"),
+
+            Stroke = Color.FromArgb("#E2E8F0"),
+            StrokeThickness = 1,
+
+            StrokeShape = new RoundRectangle
+            {
+                CornerRadius = new CornerRadius(12)
+            },
+
+            Padding = new Thickness(14, 12)
         };
-        return new Grid
+
+        var grid = new Grid
         {
-            ColumnDefinitions = defs,
-            ColumnSpacing = 8,
+            ColumnDefinitions =
+                new ColumnDefinitionCollection(
+                    new ColumnDefinition(GridLength.Auto),
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto)),
+
+            ColumnSpacing = 12
+        };
+
+        // ---------------------------------------------------------
+        // Avatar
+        // ---------------------------------------------------------
+
+        var avatar = new Border
+        {
+            WidthRequest = 42,
+            HeightRequest = 42,
+            BackgroundColor = Color.FromArgb("#EFF6FF"),
+            StrokeThickness = 0,
+
+            StrokeShape = new RoundRectangle
+            {
+                CornerRadius = new CornerRadius(21)
+            },
+
             VerticalOptions = LayoutOptions.Center
         };
-    }
 
-    private View BuildActions(UserModel user)
-    {
-        var row = new HorizontalStackLayout
+        avatar.Content = new Label
+        {
+            Text = user.AvatarInitials,
+            FontSize = 16,
+            FontAttributes = FontAttributes.Bold,
+            TextColor = Color.FromArgb("#2563EB"),
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        // ---------------------------------------------------------
+        // User information
+        // ---------------------------------------------------------
+
+        var info = new VerticalStackLayout
+        {
+            Spacing = 2,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        info.Children.Add(
+            new Label
+            {
+                Text = user.Name,
+                FontSize = 14,
+                FontAttributes = FontAttributes.Bold
+            });
+
+        info.Children.Add(
+            new Label
+            {
+                Text = user.Email,
+                FontSize = 12,
+                TextColor = Color.FromArgb("#64748B")
+            });
+
+        info.Children.Add(
+            new Label
+            {
+                Text = user.Role,
+                FontSize = 11,
+                TextColor = Color.FromArgb("#94A3B8")
+            });
+
+        // ---------------------------------------------------------
+        // Right side
+        // ---------------------------------------------------------
+
+        var right = new VerticalStackLayout
         {
             Spacing = 6,
-            HorizontalOptions = LayoutOptions.Start
+            VerticalOptions = LayoutOptions.Center,
+            HorizontalOptions = LayoutOptions.End
         };
 
-        if (user.IsOwner)
+        var statusBadge = new Border
         {
-            row.Children.Add(new Label
+            BackgroundColor = isActive
+                ? Color.FromArgb("#ECFDF5")
+                : Color.FromArgb("#FEF2F2"),
+
+            StrokeThickness = 0,
+
+            StrokeShape = new RoundRectangle
             {
-                Text = "Protected",
-                FontSize = 12,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Res("TextSecondary", Colors.Gray),
-                VerticalOptions = LayoutOptions.Center
-            });
-            var viewOwner = new Button { Text = "View", Style = TryStyle("SmallSecondaryButton") };
-            viewOwner.Clicked += (_, _) => _vm.ViewCommand.Execute(user);
-            row.Children.Add(viewOwner);
-            return row;
-        }
+                CornerRadius = new CornerRadius(999)
+            },
 
-        var viewBtn = new Button { Text = "View", Style = TryStyle("SmallSecondaryButton") };
-        viewBtn.Clicked += (_, _) => _vm.ViewCommand.Execute(user);
-        row.Children.Add(viewBtn);
-
-        if (_vm.CanEditUser(user))
-        {
-            var editBtn = new Button { Text = "Edit", Style = TryStyle("SmallButton") };
-            editBtn.Clicked += (_, _) => _vm.EditCommand.Execute(user);
-            row.Children.Add(editBtn);
-        }
-
-        if (_vm.CanDeleteUser(user))
-        {
-            var deleteBtn = new Button
-            {
-                Text = _vm.IsDeleting ? "Deleting..." : "Delete",
-                Style = TryStyle("DangerButton"),
-                HeightRequest = 36,
-                FontSize = 12,
-                IsEnabled = _vm.CanRunDelete
-            };
-            deleteBtn.Clicked += (_, _) => _ = _vm.DeleteCommand.ExecuteAsync(user);
-            row.Children.Add(deleteBtn);
-        }
-
-        return row;
-    }
-
-    private View BuildStatusBadge(UserModel user)
-    {
-        var active = user.Status == UserStatus.Active;
-        return new Border
-        {
-            Style = TryStyle("BadgeBase"),
-            BackgroundColor = Res(active ? "SuccessBg" : "ErrorBg", Colors.Transparent),
-            HorizontalOptions = LayoutOptions.Start,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) },
-            Content = new Label
-            {
-                Text = user.IsOwner ? "Owner" : user.StatusLabel,
-                FontSize = 10,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Res(active ? "SuccessText" : "ErrorText", Colors.Black)
-            }
-        };
-    }
-
-    private static View RowBorder(View content, bool header = false)
-        => new Border
-        {
-            Style = TryStyle("ListRow"),
-            Padding = header ? new Thickness(16, 10) : new Thickness(16, 12),
-            Content = content
+            Padding = new Thickness(7, 2)
         };
 
-    private static void AddHeader(Grid grid, string text, int column)
-    {
-        grid.Add(new Label
+        statusBadge.Content = new Label
         {
-            Text = text,
-            FontSize = 11,
+            Text = user.StatusLabel,
+            FontSize = 10,
             FontAttributes = FontAttributes.Bold,
-            TextColor = Res("TextSecondary", Colors.Gray)
-        }, column, 0);
-    }
 
-    private static void AddCell(Grid grid, string text, int column, bool bold = false)
-    {
-        grid.Add(new Label
-        {
-            Text = text,
-            FontSize = 12,
-            FontAttributes = bold ? FontAttributes.Bold : FontAttributes.None,
-            LineBreakMode = LineBreakMode.TailTruncation,
-            TextColor = Res("TextPrimary", Colors.Black)
-        }, column, 0);
-    }
-
-    private static Label Labeled(string label, string value)
-        => new()
-        {
-            Text = $"{label}: {value}",
-            FontSize = 12,
-            TextColor = Res("TextSecondary", Colors.Gray)
+            TextColor = isActive
+                ? Color.FromArgb("#059669")
+                : Color.FromArgb("#DC2626")
         };
 
-    private static string Display(string? value)
-        => string.IsNullOrWhiteSpace(value) ? "—" : value.Trim();
+        right.Children.Add(statusBadge);
 
-    private static Color Res(string key, Color fallback)
-    {
-        if (Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
-            && value is Color color)
+        // ---------------------------------------------------------
+        // Actions
+        // ---------------------------------------------------------
+
+        var actionsRow = new HorizontalStackLayout
         {
-            return color;
-        }
+            Spacing = 6,
+            HorizontalOptions = LayoutOptions.End
+        };
 
-        return fallback;
+        var viewButton = new Button
+        {
+            Text = "View",
+            Style = (Style)Resources["SmallSecondaryButton"]
+        };
+
+        viewButton.Clicked += async (_, _) =>
+        {
+            await Shell.Current.GoToAsync(
+                $"{AppRoutes.UserView}?id={user.LocalId}");
+        };
+
+        var editButton = new Button
+        {
+            Text = "Edit",
+            Style = (Style)Resources["SmallButton"]
+        };
+
+        editButton.Clicked += async (_, _) =>
+        {
+            await Shell.Current.GoToAsync(
+                $"{AppRoutes.UserEdit}?id={user.LocalId}");
+        };
+
+        actionsRow.Children.Add(viewButton);
+        actionsRow.Children.Add(editButton);
+
+        right.Children.Add(actionsRow);
+
+        // ---------------------------------------------------------
+        // Grid
+        // ---------------------------------------------------------
+
+        grid.Add(avatar, 0, 0);
+        grid.Add(info, 1, 0);
+        grid.Add(right, 2, 0);
+
+        border.Content = grid;
+
+        return border;
     }
 
-    private static Style? TryStyle(string key)
+    private async void OnAddClicked(
+        object sender,
+        EventArgs e)
     {
-        if (Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(key, out var value) == true
-            && value is Style style)
-        {
-            return style;
-        }
+        await Shell.Current.GoToAsync(
+            AppRoutes.UserAdd);
+    }
 
-        return null;
+    private async void OnFilterClicked(
+        object sender,
+        EventArgs e)
+    {
+        await DisplayAlert(
+            "Filter",
+            "Filter options coming soon.",
+            "OK");
     }
 }

@@ -12,6 +12,9 @@ public class SubscriptionPlanModel
     public bool     IsCurrentPlan  { get; set; }
     public int      MaxUsers       { get; set; }
     public int      MaxCompanies   { get; set; }
+    public bool     IsAvailable    { get; set; } = true;
+    public int      TrialDays      { get; set; }
+    public string   CurrencyCode   { get; set; } = "INR";
 
 }
 
@@ -30,7 +33,7 @@ public class SubscriptionModel : BaseModel
     public Guid CompanyId { get; set; }
 
     public bool IsExpired =>
-        Status == SubscriptionStatus.Expired || ExpiryDate.Date < DateTime.UtcNow.Date;
+        ExpiryDate < DateTime.Today;
 
     public bool IsActive =>
         Status == SubscriptionStatus.Active && !IsExpired;
@@ -49,7 +52,6 @@ public class SubscriptionModel : BaseModel
     public int MaxUsers { get; set; }
     public int MaxCompanies { get; set; }
     public int MaxStorageMB { get; set; } = 500;
-    public List<string> EnabledModules { get; set; } = [];
 }
 
 public class SubscriptionPaymentModel : BaseModel

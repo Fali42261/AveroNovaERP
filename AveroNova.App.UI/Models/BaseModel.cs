@@ -34,9 +34,6 @@ public abstract class BaseModel : INotifyPropertyChanged
     /// <summary>UTC last-modified timestamp (local device time).</summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Soft-delete flag. Deleted records stay in SQLite for history and future sync.</summary>
-    public bool IsDeleted { get; set; }
-
     /// <summary>
     /// Sync state of this record.
     /// Drives offline-first UI indicators and sync queue logic.

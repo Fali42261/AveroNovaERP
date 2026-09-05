@@ -5,21 +5,19 @@ namespace AveroNova.App.UI;
 
 public partial class MainPage : ContentPage
 {
-    private readonly IToastService _toasts;
+    private readonly ILicenseService _licenses;
 
-    public MainPage(MainLayoutView layout, IToastService toasts)
+    public MainPage(MainLayoutView layout, ILicenseService licenses)
     {
-        AveroNova.App.UI.Helpers.StartupLog.Write("MainPage ctor start");
         InitializeComponent();
-        AveroNova.App.UI.Helpers.StartupLog.Write("MainPage InitializeComponent done");
-        _toasts = toasts;
+        _licenses = licenses;
         LayoutHost.Content = layout;
-        AveroNova.App.UI.Helpers.StartupLog.Write("MainPage layout assigned");
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        _toasts.AttachTo(this);
+        await _licenses.ValidateOnlineIfPossibleAsync();
+        await _licenses.SyncOnlineIfPossibleAsync();
     }
 }

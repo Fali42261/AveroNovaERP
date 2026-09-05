@@ -7,7 +7,6 @@ public interface ISettingsService
     AppSettings Get();
     void        Save(AppSettings settings);
     void        SetTheme(ThemeMode mode);
-    void        ApplyCurrentTheme();
     void        SetLanguage(string code);
     void        SetCurrency(string code, string symbol);
 }

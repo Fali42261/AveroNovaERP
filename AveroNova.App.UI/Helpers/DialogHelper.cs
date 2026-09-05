@@ -13,26 +13,21 @@ public static class DialogHelper
     public static Task<bool> ConfirmDeleteAsync(string entityName, string? detail = null)
     {
         string message = string.IsNullOrEmpty(detail)
-            ? "Are you sure you want to delete this record?"
+            ? $"Are you sure you want to delete this {entityName}? This action cannot be undone."
             : detail;
 
-        return ConfirmAsync($"Delete {entityName}?", message, "Delete", "Cancel");
+        return Microsoft.Maui.Controls.Application.Current!.MainPage!.DisplayAlert(
+            $"Delete {entityName}?", message, "Delete", "Cancel");
     }
 
     /// <summary>Generic confirmation dialog.</summary>
     public static Task<bool> ConfirmAsync(string title, string message,
         string accept = "Confirm", string cancel = "Cancel")
-    {
-        AppThemeSync.SyncFromCurrentApp();
-        return Microsoft.Maui.Controls.Application.Current!.MainPage!.DisplayAlert(title, message, accept, cancel);
-    }
+        => Microsoft.Maui.Controls.Application.Current!.MainPage!.DisplayAlert(title, message, accept, cancel);
 
     /// <summary>Shows an informational alert.</summary>
     public static Task AlertAsync(string title, string message, string ok = "OK")
-    {
-        AppThemeSync.SyncFromCurrentApp();
-        return Microsoft.Maui.Controls.Application.Current!.MainPage!.DisplayAlert(title, message, ok);
-    }
+        => Microsoft.Maui.Controls.Application.Current!.MainPage!.DisplayAlert(title, message, ok);
 
     /// <summary>Shows a success toast-style alert.</summary>
     public static Task SuccessAsync(string message)

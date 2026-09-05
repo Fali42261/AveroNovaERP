@@ -1,22 +1,24 @@
-using AveroNova.Application.Navigation;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Pages.Administration;
 using AveroNova.App.UI.Pages.Billing;
 using AveroNova.App.UI.Pages.Company;
 using AveroNova.App.UI.Pages.Customers;
 using AveroNova.App.UI.Pages.Dashboard;
+using AveroNova.App.UI.Pages.Expenses;
+using AveroNova.App.UI.Pages.Help;
 using AveroNova.App.UI.Pages.Inventory;
 using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Pages.Products;
-using AveroNova.App.UI.Pages.Profile;
 using AveroNova.App.UI.Pages.Purchases;
 using AveroNova.App.UI.Pages.Reports;
+using AveroNova.App.UI.Pages.Returns;
 using AveroNova.App.UI.Pages.Settings;
+using AveroNova.App.UI.Pages.License;
+using AveroNova.App.UI.Pages.SyncCenter;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
-using AveroNova.App.UI.SubscriptionAccess;
-using AveroNova.Domain.Constants;
+using Microsoft.Maui.Controls;
 using AveroNova.App.UI.Models;
-using AveroNova.App.UI.Layout;
 
 namespace AveroNova.App.UI.Views.Layout;
 
@@ -25,62 +27,69 @@ public partial class MainLayoutView : ContentView
     private readonly IConnectivityService _connectivity;
     private readonly IAuthenticationService _auth;
     private readonly ICompanyService _company;
-    private readonly ISettingsService _settings;
-    private readonly CurrentAccessService _access;
-    private readonly TrialReminderPresenter _trialReminder;
+    private readonly ILicenseService _licenses;
+    private readonly IAppSessionContext _session;
+    private readonly IMainContentNavigator _contentNavigator;
+
+    private Button? _activeNavButton;
 
     private readonly Func<DashboardPage> _dashboardFactory;
-    private readonly Func<CompanyPage> _companyFactory;
+    private readonly Func<CompanyListPage> _companyFactory;
     private readonly Func<CustomersListPage> _customersFactory;
     private readonly Func<ProductsListPage> _productsFactory;
     private readonly Func<InventoryPage> _inventoryFactory;
     private readonly Func<BillingListPage> _billingFactory;
     private readonly Func<PurchasesListPage> _purchasesFactory;
     private readonly Func<PaymentsListPage> _paymentsFactory;
+    private readonly Func<SalesReturnsListPage> _salesReturnsFactory;
+    private readonly Func<PurchaseReturnsListPage> _purchaseReturnsFactory;
+    private readonly Func<ExpensesListPage> _expensesFactory;
     private readonly Func<ReportsPage> _reportsFactory;
-    private readonly Func<UsersRolesPage> _usersRolesFactory;
+    private readonly Func<UsersListPage> _usersFactory;
+    private readonly Func<RolesListPage> _rolesFactory;
+    private readonly Func<PermissionsPage> _permissionsFactory;
+    private readonly Func<LicensePage> _licenseFactory;
+    private readonly Func<SyncCenterPage> _syncCenterFactory;
     private readonly Func<SettingsPage> _settingsFactory;
-    private readonly Func<UserProfilePage> _profileFactory;
-
-    private IReadOnlyList<NavigationMenuNode> _menus = [];
-    private readonly Dictionary<string, EmbeddedMenuPage> _embeddedPages = new(StringComparer.OrdinalIgnoreCase);
-    private string? _selectedMenuKey;
-    private View? _pageContent;
-    private bool _accessStarted;
-    private bool _isDesktop = true;
-    private bool _sidebarCollapsed;
-    private int _navigationSerial;
+    private readonly Func<HelpAboutPage> _helpFactory;
 
     public MainLayoutView(
         IConnectivityService connectivity,
         IAuthenticationService auth,
         ICompanyService company,
-        ISettingsService settings,
-        CurrentAccessService access,
-        TrialReminderPresenter trialReminder,
+        ILicenseService licenses,
+        IAppSessionContext session,
+        IMainContentNavigator contentNavigator,
         Func<DashboardPage> dashboardFactory,
-        Func<CompanyPage> companyFactory,
+        Func<CompanyListPage> companyFactory,
         Func<CustomersListPage> customersFactory,
         Func<ProductsListPage> productsFactory,
         Func<InventoryPage> inventoryFactory,
         Func<BillingListPage> billingFactory,
         Func<PurchasesListPage> purchasesFactory,
         Func<PaymentsListPage> paymentsFactory,
+        Func<SalesReturnsListPage> salesReturnsFactory,
+        Func<PurchaseReturnsListPage> purchaseReturnsFactory,
+        Func<ExpensesListPage> expensesFactory,
         Func<ReportsPage> reportsFactory,
-        Func<UsersRolesPage> usersRolesFactory,
+        Func<UsersListPage> usersFactory,
+        Func<RolesListPage> rolesFactory,
+        Func<PermissionsPage> permissionsFactory,
+        Func<LicensePage> licenseFactory,
+        Func<SyncCenterPage> syncCenterFactory,
         Func<SettingsPage> settingsFactory,
-        Func<UserProfilePage> profileFactory)
+        Func<HelpAboutPage> helpFactory)
     {
-        AveroNova.App.UI.Helpers.StartupLog.Write("MainLayout ctor start");
         InitializeComponent();
-        AveroNova.App.UI.Helpers.StartupLog.Write("MainLayout InitializeComponent done");
 
         _connectivity = connectivity;
         _auth = auth;
         _company = company;
-        _settings = settings;
-        _access = access;
-        _trialReminder = trialReminder;
+        _licenses = licenses;
+        _session = session;
+        _contentNavigator = contentNavigator;
+        _contentNavigator.PageChanged += OnHostedPageChanged;
+
         _dashboardFactory = dashboardFactory;
         _companyFactory = companyFactory;
         _customersFactory = customersFactory;
@@ -89,193 +98,267 @@ public partial class MainLayoutView : ContentView
         _billingFactory = billingFactory;
         _purchasesFactory = purchasesFactory;
         _paymentsFactory = paymentsFactory;
+        _salesReturnsFactory = salesReturnsFactory;
+        _purchaseReturnsFactory = purchaseReturnsFactory;
+        _expensesFactory = expensesFactory;
         _reportsFactory = reportsFactory;
-        _usersRolesFactory = usersRolesFactory;
+        _usersFactory = usersFactory;
+        _rolesFactory = rolesFactory;
+        _permissionsFactory = permissionsFactory;
+        _licenseFactory = licenseFactory;
+        _syncCenterFactory = syncCenterFactory;
         _settingsFactory = settingsFactory;
-        _profileFactory = profileFactory;
+        _helpFactory = helpFactory;
 
         _connectivity.StatusChanged += OnConnectivityChanged;
-        _company.CurrentCompanyChanged += OnCurrentCompanyChanged;
-        SizeChanged += OnLayoutSizeChanged;
-
-        DesktopSidebar.MenuSelected += OnSidebarMenuSelected;
-        MobileSidebar.MenuSelected += OnSidebarMenuSelected;
-        DesktopSidebar.ExpandRequested += OnDesktopSidebarExpandRequested;
-        AccountMenu.ChoiceMade += OnAccountMenuChoice;
-        AccountMenu.ThemeChosen += OnAccountThemeChosen;
-
-        AttachTap(HeaderProfile, ToggleAccountMenu);
-        AttachTap(MobileProfile, ToggleAccountMenu);
-        AttachTap(DrawerScrim, CloseDrawer);
+        _session.SessionChanged += OnSessionChanged;
 
         UpdateUserInfo();
+        UpdateCompanyInfo();
+        ApplyMenuPermissions();
         UpdateConnectivityUI(_connectivity.Status);
 
-        Loaded += OnLoaded;
+        var desktopDashboard = _dashboardFactory();
+        ShowDesktopPage(
+            desktopDashboard,
+            "Dashboard",
+            "Home / Dashboard",
+            BtnDashboard);
+        _contentNavigator.SetRoot(desktopDashboard, "Dashboard", "Home / Dashboard");
+
+        ShowMobilePage(
+            _dashboardFactory(),
+            "Dashboard",
+            "Home / Dashboard");
     }
 
-    private async void OnLoaded(object? sender, EventArgs e)
-    {
-        AveroNova.App.UI.Helpers.StartupLog.Write("MainLayout Loaded");
-        ApplyResponsiveLayout();
-        if (_accessStarted)
-            return;
-
-        _accessStarted = true;
-        await InitializeAccessAsync();
-    }
-
-    private void OnLayoutSizeChanged(object? sender, EventArgs e)
-        => ApplyResponsiveLayout();
-
-    private void ApplyResponsiveLayout()
-    {
-        var width = Width;
-        if (width <= 0)
-            return;
-
-        var size = ResponsiveBreakpoints.FromWidth(width);
-        var compact = size == ScreenSize.Compact;
-        var desktop = !compact;
-        var compactChanged = desktop != _isDesktop;
-
-        _isDesktop = desktop;
-
-        DesktopLayout.IsVisible = desktop;
-        MobileLayout.IsVisible = compact;
-        ApplyDesktopSidebarWidth(size);
-        if (Math.Abs(DrawerPanel.WidthRequest - ResponsiveBreakpoints.SidebarMobileDrawerWidth) >= 0.5)
-            DrawerPanel.WidthRequest = ResponsiveBreakpoints.SidebarMobileDrawerWidth;
-
-        var desktopDensity = size == ScreenSize.Medium ? SidebarDensity.Tablet : SidebarDensity.Desktop;
-        if (DesktopSidebar.Density != desktopDensity)
-            DesktopSidebar.Density = desktopDensity;
-        if (MobileSidebar.Density != SidebarDensity.Mobile)
-            MobileSidebar.Density = SidebarDensity.Mobile;
-
-        if (desktop)
-            CloseDrawer();
-
-        if (compactChanged)
-        {
-            AccountMenu.Close();
-            AttachPageContent();
-        }
-    }
+    // ============================================================
+    // USER
+    // ============================================================
 
     private void UpdateUserInfo()
     {
         var user = _auth.CurrentUser;
+
         if (user == null)
             return;
 
-        var initials = string.IsNullOrWhiteSpace(user.AvatarInitials) ? "SW" : user.AvatarInitials;
-        LblHeaderInitials.Text = initials;
-        MLblHeaderInitials.Text = initials;
-        LblHeaderName.Text = user.Name;
-        LblHeaderEmail.Text = user.Email;
+        LblAvatarInitials.Text = user.AvatarInitials;
+        LblHeaderInitials.Text = user.AvatarInitials;
+        LblUserName.Text = user.Name;
+        LblUserRole.Text = user.Role;
     }
 
-    private static void AttachTap(View view, Action handler)
+    // ============================================================
+    // COMPANY
+    // ============================================================
+
+    private void UpdateCompanyInfo()
     {
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += (_, _) => handler();
-        view.GestureRecognizers.Add(tap);
+        var company = _company.CurrentCompany;
+
+        if (company == null)
+            return;
+
+        var name = company.Name ?? string.Empty;
+
+        LblCompanyName.Text =
+            name.Length > 18
+                ? name[..18] + "…"
+                : name;
     }
 
-    private void OnConnectivityChanged(object? sender, ConnectivityStatus status)
-        => MainThread.BeginInvokeOnMainThread(() => UpdateConnectivityUI(status));
+    // ============================================================
+    // CONNECTIVITY
+    // ============================================================
 
-    private void UpdateConnectivityUI(ConnectivityStatus status)
+    private void OnConnectivityChanged(
+        object? sender,
+        ConnectivityStatus status)
     {
-        var (color, label, textColor) = status switch
-        {
-            ConnectivityStatus.Online => ("#10B981", "Online", "#059669"),
-            ConnectivityStatus.Offline => ("#EF4444", "Offline", "#DC2626"),
-            ConnectivityStatus.Syncing => ("#3B82F6", "Syncing...", "#2563EB"),
-            ConnectivityStatus.Synced => ("#10B981", "Synced", "#059669"),
-            ConnectivityStatus.SyncFailed => ("#EF4444", "Sync Failed", "#DC2626"),
-            ConnectivityStatus.PendingSync => ("#F59E0B", $"{_connectivity.PendingCount} Pending", "#D97706"),
-            _ => ("#9CA3AF", "Unknown", "#6B7280")
-        };
+        MainThread.BeginInvokeOnMainThread(
+            () => UpdateConnectivityUI(status));
+    }
+
+    private void UpdateConnectivityUI(
+        ConnectivityStatus status)
+    {
+        var (color, label, bgColor, borderColor, textColor) =
+            status switch
+            {
+                ConnectivityStatus.Online =>
+                    ("#10B981", "Online", "#ECFDF5", "#A7F3D0", "#059669"),
+
+                ConnectivityStatus.Offline =>
+                    ("#EF4444", "Offline", "#FEF2F2", "#FECACA", "#DC2626"),
+
+                ConnectivityStatus.Syncing =>
+                    ("#3B82F6", "Syncing...", "#EFF6FF", "#BFDBFE", "#2563EB"),
+
+                ConnectivityStatus.Synced =>
+                    ("#10B981", "Synced", "#ECFDF5", "#A7F3D0", "#059669"),
+
+                ConnectivityStatus.SyncFailed =>
+                    ("#EF4444", "Sync Failed", "#FEF2F2", "#FECACA", "#DC2626"),
+
+                ConnectivityStatus.PendingSync =>
+                    ("#F59E0B",
+                     $"{_connectivity.PendingCount} Pending",
+                     "#FFFBEB",
+                     "#FDE68A",
+                     "#D97706"),
+
+                _ =>
+                    ("#9CA3AF",
+                     "Unknown",
+                     "#F3F4F6",
+                     "#E5E7EB",
+                     "#6B7280")
+            };
 
         StatusDot.BackgroundColor = Color.FromArgb(color);
+        MStatusDot.BackgroundColor = Color.FromArgb(color);
+
         LblConnStatus.Text = label;
         LblConnStatus.TextColor = Color.FromArgb(textColor);
-        MStatusDot.BackgroundColor = Color.FromArgb(color);
+
+        var offline = status == ConnectivityStatus.Offline;
+        OfflineBanner.IsVisible = offline;
+        MOfflineBanner.IsVisible = offline;
+        if (offline)
+            LblOfflineBanner.Text = "Offline — changes will sync when connection is restored.";
     }
 
-    private async void OnSidebarMenuSelected(object? sender, string menuKey)
+    private void OnSessionChanged(object? sender, EventArgs e)
     {
-        await NavigateMenuAsync(menuKey);
-        var keepOpen = DesktopSidebar.KeepsDrawerOpen(menuKey) || MobileSidebar.KeepsDrawerOpen(menuKey);
-        if (!keepOpen)
-            CloseDrawer();
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            UpdateUserInfo();
+            UpdateCompanyInfo();
+            ApplyMenuPermissions();
+        });
     }
 
-    private async Task NavigateMenuAsync(string menuKey)
+    private void ApplyMenuPermissions()
     {
-        if (NavigationMenuCatalog.Find(menuKey) == null)
-        {
-            RestoreSidebarSelection();
+        var permissions = _session.Permissions;
+        SetNavVisible(BtnDashboard, "Dashboard", permissions);
+        SetNavVisible(BtnCompany, "Company", permissions);
+        SetNavVisible(BtnCustomers, "Customers", permissions);
+        SetNavVisible(BtnProducts, "Products", permissions);
+        SetNavVisible(BtnInventory, "Inventory", permissions);
+        SetNavVisible(BtnBilling, "Billing", permissions);
+        SetNavVisible(BtnPurchases, "Purchases", permissions);
+        SetNavVisible(BtnPayments, "Payments", permissions);
+        SetNavVisible(BtnSalesReturns, "SalesReturns", permissions);
+        SetNavVisible(BtnPurchaseReturns, "PurchaseReturns", permissions);
+        SetNavVisible(BtnExpenses, "Expenses", permissions);
+        SetNavVisible(BtnReports, "Reports", permissions);
+        SetNavVisible(BtnUsers, "Users", permissions);
+        SetNavVisible(BtnRoles, "Roles", permissions);
+        SetNavVisible(BtnPermissions, "Permissions", permissions);
+        SetNavVisible(BtnSubscription, "License", permissions);
+        SetNavVisible(BtnNotifications, "Notifications", permissions);
+        SetNavVisible(BtnSyncCenter, "SyncCenter", permissions);
+        SetNavVisible(BtnSettings, "Settings", permissions);
+        SetNavVisible(BtnHelp, "Help", permissions);
+        SetNavVisible(BtnAbout, "About", permissions);
+        SetNavVisible(MBtnDashboard, "Dashboard", permissions);
+        SetNavVisible(MBtnBilling, "Billing", permissions);
+        SetNavVisible(MBtnCustomers, "Customers", permissions);
+        SetNavVisible(MBtnReports, "Reports", permissions);
+        SetNavVisible(MBtnSettings, "Settings", permissions);
+    }
+
+    private static void SetNavVisible(Button button, string key, IReadOnlyList<string> permissions)
+        => button.IsVisible = MenuCatalog.IsAllowed(key, permissions);
+
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
+
+    private async void OnNavClicked(
+        object? sender,
+        EventArgs e)
+    {
+        if (sender is not Button button)
             return;
-        }
 
-        if (!TryResolvePage(menuKey, out var factory, out var title, out var breadcrumb))
+        var isMobile = IsMobileButton(button);
+
+        if (TryResolvePage(
+                button,
+                out var pageFactory,
+                out var title,
+                out var breadcrumb))
         {
-            RestoreSidebarSelection();
-            return;
-        }
-
-        var serial = ++_navigationSerial;
-        var previousKey = _selectedMenuKey;
-        SetActiveMenu(menuKey);
-
-        try
-        {
-            var decision = await _access.AuthorizeMenuAsync(menuKey);
-            if (serial != _navigationSerial)
-                return;
-
-            if (!decision.IsAllowed)
+            if (!ReferenceEquals(button, BtnSubscription)
+                && !ReferenceEquals(button, BtnDashboard)
+                && !ReferenceEquals(button, MBtnDashboard)
+                && !ReferenceEquals(button, BtnSettings)
+                && !ReferenceEquals(button, MBtnSettings)
+                && !ReferenceEquals(button, BtnHelp)
+                && !ReferenceEquals(button, BtnAbout)
+                && !ReferenceEquals(button, BtnSyncCenter))
             {
-                if (decision.IsSubscriptionExpired)
+                var access = await _licenses.GetAccessStateAsync();
+                if (!access.AllowsAccess)
                 {
-                    await SignOutExpiredAsync();
-                    return;
+                    pageFactory = () => _licenseFactory();
+                    title = "License";
+                    breadcrumb = "Home / License";
+                    button = BtnSubscription;
                 }
+            }
 
-                SetActiveMenu(previousKey);
-                ShowRestriction(decision.Reason ?? SubscriptionMessages.PermissionDenied);
-                return;
+            if (isMobile)
+            {
+                var page = pageFactory();
+                if (page is IHostedPage hosted)
+                    await hosted.LoadForHostAsync();
+                ShowMobilePage(
+                    page,
+                    title,
+                    breadcrumb);
+                _contentNavigator.SetRoot(page, title, breadcrumb);
+            }
+            else
+            {
+                var page = pageFactory();
+                if (page is IHostedPage hosted)
+                    await hosted.LoadForHostAsync();
+                ShowDesktopPage(
+                    page,
+                    title,
+                    breadcrumb,
+                    button);
+                _contentNavigator.SetRoot(page, title, breadcrumb);
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Menu authorize failed: {ex}");
-            if (serial == _navigationSerial)
-                SetActiveMenu(previousKey);
-            return;
-        }
+    }
 
-        if (serial != _navigationSerial)
-            return;
+    private void OnHostedPageChanged(object? sender, HostedPage entry)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (DesktopLayout.IsVisible)
+                ShowDesktopPage(entry.Page, entry.Title, entry.Breadcrumb);
+            else
+                ShowMobilePage(entry.Page, entry.Title, entry.Breadcrumb);
+        });
+    }
 
-        try
-        {
-            var page = GetOrCreatePage(menuKey, factory);
-            ShowPage(page, title, breadcrumb, menuKey);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Menu page failed: {ex}");
-            if (serial == _navigationSerial)
-                SetActiveMenu(previousKey);
-        }
+    private bool IsMobileButton(Button button)
+    {
+        return ReferenceEquals(button, MBtnDashboard)
+            || ReferenceEquals(button, MBtnBilling)
+            || ReferenceEquals(button, MBtnCustomers)
+            || ReferenceEquals(button, MBtnReports)
+            || ReferenceEquals(button, MBtnSettings);
     }
 
     private bool TryResolvePage(
-        string menuKey,
+        Button button,
         out Func<ContentPage> factory,
         out string title,
         out string breadcrumb)
@@ -284,290 +367,251 @@ public partial class MainLayoutView : ContentView
         title = "Dashboard";
         breadcrumb = "Home / Dashboard";
 
-        switch (menuKey)
+        if (ReferenceEquals(button, BtnDashboard) ||
+            ReferenceEquals(button, MBtnDashboard))
         {
-            case NavigationMenuCatalog.Dashboard:
-                factory = () => _dashboardFactory();
-                return true;
-            case NavigationMenuCatalog.Company:
-                factory = () => _companyFactory();
-                title = "Company";
-                breadcrumb = "Home / Company";
-                return true;
-            case NavigationMenuCatalog.Customers:
-                factory = () => _customersFactory();
-                title = "Customers";
-                breadcrumb = "Home / Customers";
-                return true;
-            case NavigationMenuCatalog.Products:
-                factory = () => _productsFactory();
-                title = "Products";
-                breadcrumb = "Home / Products";
-                return true;
-            case NavigationMenuCatalog.Inventory:
-                factory = () => _inventoryFactory();
-                title = "Inventory";
-                breadcrumb = "Home / Inventory";
-                return true;
-            case NavigationMenuCatalog.Sales:
-                factory = () => _billingFactory();
-                title = "Sales";
-                breadcrumb = "Home / Sales";
-                return true;
-            case NavigationMenuCatalog.Purchase:
-                factory = () => _purchasesFactory();
-                title = "Purchase";
-                breadcrumb = "Home / Purchase";
-                return true;
-            case NavigationMenuCatalog.Payments:
-                factory = () => _paymentsFactory();
-                title = "Payments";
-                breadcrumb = "Home / Payments";
-                return true;
-            case NavigationMenuCatalog.Reports:
-                factory = () => _reportsFactory();
-                title = "Reports";
-                breadcrumb = "Home / Reports";
-                return true;
-            case NavigationMenuCatalog.UsersRoles:
-                factory = () => _usersRolesFactory();
-                title = "Users & Roles";
-                breadcrumb = "Home / Administration / Users & Roles";
-                return true;
-            case NavigationMenuCatalog.Settings:
-                factory = () => _settingsFactory();
-                title = "Settings";
-                breadcrumb = "Home / Settings";
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private ContentPage GetOrCreatePage(string menuKey, Func<ContentPage> factory)
-    {
-        if (_embeddedPages.TryGetValue(menuKey, out var embedded) && embedded.Content != null)
-            return embedded.Page;
-
-        var page = factory();
-        var content = page.Content;
-        page.Content = null;
-        if (content == null)
-            throw new InvalidOperationException($"Page '{menuKey}' has no content.");
-
-        _embeddedPages[menuKey] = new EmbeddedMenuPage(page, content);
-        return page;
-    }
-
-    private void ShowPage(ContentPage page, string title, string breadcrumb, string? menuKey)
-    {
-        AccountMenu.Close();
-        CloseDrawer();
-
-        if (menuKey != null && _embeddedPages.TryGetValue(menuKey, out var embedded))
-            _pageContent = embedded.Content;
-        else
-        {
-            _pageContent = page.Content;
-            page.Content = null;
+            factory = () => _dashboardFactory();
+            title = "Dashboard";
+            breadcrumb = "Home / Dashboard";
+            return true;
         }
 
-        AttachPageContent();
+        if (ReferenceEquals(button, BtnCompany))
+        {
+            factory = () => _companyFactory();
+            title = "Company";
+            breadcrumb = "Home / Company";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnCustomers) ||
+            ReferenceEquals(button, MBtnCustomers))
+        {
+            factory = () => _customersFactory();
+            title = "Customers";
+            breadcrumb = "Home / Customers";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnProducts))
+        {
+            factory = () => _productsFactory();
+            title = "Products";
+            breadcrumb = "Home / Products";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnInventory))
+        {
+            factory = () => _inventoryFactory();
+            title = "Inventory";
+            breadcrumb = "Home / Inventory";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnBilling) ||
+            ReferenceEquals(button, MBtnBilling))
+        {
+            factory = () => _billingFactory();
+            title = "Billing";
+            breadcrumb = "Home / Billing";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnPurchases))
+        {
+            factory = () => _purchasesFactory();
+            title = "Purchases";
+            breadcrumb = "Home / Purchases";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnPayments))
+        {
+            factory = () => _paymentsFactory();
+            title = "Payments";
+            breadcrumb = "Home / Payments";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnSalesReturns))
+        {
+            factory = () => _salesReturnsFactory();
+            title = "Sales Returns";
+            breadcrumb = "Home / Sales Returns";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnPurchaseReturns))
+        {
+            factory = () => _purchaseReturnsFactory();
+            title = "Purchase Returns";
+            breadcrumb = "Home / Purchase Returns";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnExpenses))
+        {
+            factory = () => _expensesFactory();
+            title = "Expenses";
+            breadcrumb = "Home / Expenses";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnReports) ||
+            ReferenceEquals(button, MBtnReports))
+        {
+            factory = () => _reportsFactory();
+            title = "Reports";
+            breadcrumb = "Home / Reports";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnUsers))
+        {
+            factory = () => _usersFactory();
+            title = "Users";
+            breadcrumb = "Home / Administration / Users";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnRoles))
+        {
+            factory = () => _rolesFactory();
+            title = "Roles";
+            breadcrumb = "Home / Administration / Roles";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnPermissions))
+        {
+            factory = () => _permissionsFactory();
+            title = "Permissions";
+            breadcrumb = "Home / Administration / Permissions";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnSubscription))
+        {
+            factory = () => _licenseFactory();
+            title = "License";
+            breadcrumb = "Home / License";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnSyncCenter))
+        {
+            factory = () => _syncCenterFactory();
+            title = "Sync Center";
+            breadcrumb = "Home / Sync Center";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnSettings) ||
+            ReferenceEquals(button, MBtnSettings))
+        {
+            factory = () => _settingsFactory();
+            title = "Settings";
+            breadcrumb = "Home / Settings";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnHelp) ||
+            ReferenceEquals(button, BtnAbout))
+        {
+            factory = () => _helpFactory();
+            title = "Help & Support";
+            breadcrumb = "Home / Help";
+            return true;
+        }
+
+        if (ReferenceEquals(button, BtnNotifications))
+        {
+            factory = () => _dashboardFactory();
+            title = "Notifications";
+            breadcrumb = "Home / Notifications";
+            return true;
+        }
+
+        return false;
+    }
+
+    // ============================================================
+    // PAGE HOSTING
+    // ============================================================
+
+    private static View? ExtractPageContent(ContentPage page)
+    {
+        return page.Content;
+    }
+
+    private void ShowDesktopPage(
+        ContentPage page,
+        string title,
+        string breadcrumb,
+        Button? navButton = null)
+    {
+        var content = ExtractPageContent(page);
+
+        if (content != null)
+        {
+            ContentArea.Content = content;
+        }
 
         LblPageTitle.Text = title;
         LblBreadcrumb.Text = breadcrumb;
+
+        if (_activeNavButton != null)
+        {
+            _activeNavButton.Style =
+                (Style)Resources["SidebarNavItem"];
+        }
+
+        if (navButton != null)
+        {
+            navButton.Style =
+                (Style)Resources["SidebarNavItemActive"];
+
+            _activeNavButton = navButton;
+        }
+    }
+
+    private void ShowMobilePage(
+        ContentPage page,
+        string title,
+        string breadcrumb)
+    {
+        var content = ExtractPageContent(page);
+
+        if (content != null)
+        {
+            MobileContentArea.Content = content;
+        }
+
         MLblPageTitle.Text = title;
-        UpdateUserInfo();
-        SetActiveMenu(menuKey);
-        ReloadPage(page);
     }
 
-    private static void ReloadPage(ContentPage page)
+    // ============================================================
+    // LOGOUT
+    // ============================================================
+
+    private async void OnLogoutClicked(
+        object? sender,
+        EventArgs e)
     {
-        switch (page)
-        {
-            case DashboardPage dashboard:
-                _ = dashboard.ReloadAsync();
-                break;
-            case CompanyPage company:
-                _ = company.ReloadAsync();
-                break;
-            case CustomersListPage customers:
-                _ = customers.ReloadAsync();
-                break;
-            case ProductsListPage products:
-                _ = products.ReloadAsync();
-                break;
-            case InventoryPage inventory:
-                _ = inventory.ReloadAsync();
-                break;
-            case BillingListPage billing:
-                _ = billing.ReloadAsync();
-                break;
-            case PurchasesListPage purchases:
-                _ = purchases.ReloadAsync();
-                break;
-            case PaymentsListPage payments:
-                _ = payments.ReloadAsync();
-                break;
-            case UsersRolesPage usersRoles:
-                _ = usersRoles.ReloadAsync();
-                break;
-            case UserProfilePage profile:
-                profile.Reload();
-                break;
-        }
-    }
+        var mainPage = Microsoft.Maui.Controls.Application.Current?.Windows
+            .FirstOrDefault()?
+            .Page;
 
-    private void ClearEmbeddedPages()
-    {
-        _embeddedPages.Clear();
-        _pageContent = null;
-        ContentArea.Content = null;
-        MobileContentArea.Content = null;
-    }
-
-    private void AttachPageContent()
-    {
-        ContentArea.Content = null;
-        MobileContentArea.Content = null;
-        if (_pageContent == null)
-            return;
-
-        if (_isDesktop)
-            ContentArea.Content = _pageContent;
-        else
-            MobileContentArea.Content = _pageContent;
-    }
-
-    private void SetActiveMenu(string? menuKey)
-    {
-        _selectedMenuKey = menuKey;
-        DesktopSidebar.SelectedKey = menuKey;
-        MobileSidebar.SelectedKey = menuKey;
-    }
-
-    private void RestoreSidebarSelection()
-    {
-        DesktopSidebar.SelectedKey = _selectedMenuKey;
-        MobileSidebar.SelectedKey = _selectedMenuKey;
-    }
-
-    private void OnDesktopMenuClicked(object? sender, EventArgs e)
-        => ToggleDesktopSidebar();
-
-    private void OnMobileMenuClicked(object? sender, EventArgs e)
-        => ToggleMobileDrawer();
-
-    private void ToggleDesktopSidebar()
-    {
-        if (!_isDesktop)
-            return;
-
-        AccountMenu.Close();
-        _sidebarCollapsed = !_sidebarCollapsed;
-        ApplyDesktopSidebarWidth(ResponsiveBreakpoints.FromWidth(Width));
-    }
-
-    private void OnDesktopSidebarExpandRequested(object? sender, EventArgs e)
-    {
-        if (!_sidebarCollapsed)
-            return;
-
-        _sidebarCollapsed = false;
-        ApplyDesktopSidebarWidth(ResponsiveBreakpoints.FromWidth(Width));
-    }
-
-    private void ApplyDesktopSidebarWidth(ScreenSize size)
-    {
-        var dockedWidth = _sidebarCollapsed
-            ? ResponsiveBreakpoints.SidebarCollapsedWidth
-            : ResponsiveBreakpoints.DockedSidebarWidth(size);
-        var columnWidth = Math.Max(dockedWidth, 1);
-        if (Math.Abs(DesktopSidebarColumnDef.Width.Value - columnWidth) >= 0.5)
-            DesktopSidebarColumnDef.Width = new GridLength(columnWidth);
-        if (DesktopSidebar.IsCollapsed != _sidebarCollapsed)
-            DesktopSidebar.IsCollapsed = _sidebarCollapsed;
-    }
-
-    private void ToggleMobileDrawer()
-    {
-        if (DrawerOverlay.IsVisible)
-            CloseDrawer();
-        else
-            OpenDrawer();
-    }
-
-    private async void OpenDrawer()
-    {
-        AccountMenu.Close();
-        DrawerOverlay.IsVisible = true;
-        DrawerPanel.TranslationX = -ResponsiveBreakpoints.SidebarMobileDrawerWidth;
-        await DrawerPanel.TranslateTo(0, 0, 160, Easing.CubicOut);
-    }
-
-    private async void CloseDrawer()
-    {
-        if (!DrawerOverlay.IsVisible)
-            return;
-
-        await DrawerPanel.TranslateTo(-ResponsiveBreakpoints.SidebarMobileDrawerWidth, 0, 140, Easing.CubicIn);
-        DrawerOverlay.IsVisible = false;
-        DrawerPanel.TranslationX = 0;
-    }
-
-    private void ToggleAccountMenu()
-    {
-        if (AccountMenu.IsOpen)
-        {
-            AccountMenu.Close();
-            return;
-        }
-
-        CloseDrawer();
-        AccountMenu.Open(
-            new HeaderAccountMenuModel
-            {
-                CanSettings = NavigationMenuCatalog.ContainsKey(_menus, NavigationMenuCatalog.Settings),
-                CanAdministrator = NavigationMenuCatalog.ContainsKey(_menus, NavigationMenuCatalog.UsersRoles),
-                // Theme replaces the previous ungated header Theme control.
-                // Settings.View (settings.manage) still gates the Settings page.
-                CanTheme = true,
-                CurrentTheme = _settings.Get().Theme
-            },
-            compact: !_isDesktop);
-    }
-
-    private async void OnAccountMenuChoice(object? sender, HeaderAccountMenuChoice choice)
-    {
-        switch (choice)
-        {
-            case HeaderAccountMenuChoice.Settings:
-                await NavigateMenuAsync(NavigationMenuCatalog.Settings);
-                return;
-            case HeaderAccountMenuChoice.Administrator:
-                await NavigateMenuAsync(NavigationMenuCatalog.UsersRoles);
-                return;
-            case HeaderAccountMenuChoice.Logout:
-                await LogoutAsync();
-                return;
-        }
-    }
-
-    private void OnAccountThemeChosen(object? sender, ThemeMode mode)
-        => _settings.SetTheme(mode);
-
-    private async Task LogoutAsync()
-    {
-        var mainPage = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page;
         if (mainPage == null)
             return;
 
-        var confirm = await mainPage.DisplayAlert(
+        bool confirm = await mainPage.DisplayAlert(
             "Sign Out",
             "Are you sure you want to sign out?",
             "Sign Out",
             "Cancel");
+
         if (!confirm)
             return;
 
@@ -575,122 +619,52 @@ public partial class MainLayoutView : ContentView
         await Shell.Current.GoToAsync(AppRoutes.Login);
     }
 
-    private async Task InitializeAccessAsync()
+    // ============================================================
+    // THEME
+    // ============================================================
+
+    private void OnThemeClicked(
+        object? sender,
+        EventArgs e)
     {
-        try
-        {
-            var snapshot = await _access.GetSnapshotAsync();
-            await MainThread.InvokeOnMainThreadAsync(async () =>
-            {
-                BindMenus(snapshot.Menus);
+        var current =
+            Microsoft.Maui.Controls.Application.Current?.UserAppTheme
+            ?? AppTheme.Unspecified;
 
-                var sidebar = NavigationMenuCatalog.SidebarOnly(snapshot.Menus);
-                var target = FindNavigablePage(sidebar, _selectedMenuKey)
-                    ?? FindNavigablePage(snapshot.Menus, _selectedMenuKey)
-                    ?? FirstNavigablePage(sidebar)
-                    ?? FirstNavigablePage(snapshot.Menus);
-                if (target == null)
-                {
-                    ShowRestriction(snapshot.RestrictionReason ?? SubscriptionMessages.PermissionDenied);
-                    return;
-                }
-
-                await NavigateMenuAsync(target.Key);
-            });
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Sidebar access failed: {ex}");
-        }
+        Microsoft.Maui.Controls.Application.Current!.UserAppTheme =
+            current == AppTheme.Dark
+                ? AppTheme.Light
+                : AppTheme.Dark;
     }
 
-    private void BindMenus(IReadOnlyList<NavigationMenuNode> menus)
+    // ============================================================
+    // RESPONSIVE
+    // ============================================================
+
+    protected override void OnSizeAllocated(
+        double width,
+        double height)
     {
-        _menus = menus ?? [];
-        var sidebar = NavigationMenuCatalog.SidebarOnly(_menus);
-        AveroNova.App.UI.Helpers.StartupLog.Write(
-            $"MainLayout menus={_menus.Count} keys={string.Join(",", _menus.Select(m => m.Children.Count == 0 ? m.Key : $"{m.Key}[{string.Join(",", m.Children.Select(c => c.Key))}]"))} sidebar={string.Join(",", sidebar.Select(m => m.Key))}");
-        DesktopSidebar.BindMenus(sidebar, _selectedMenuKey);
-        MobileSidebar.BindMenus(sidebar, _selectedMenuKey);
-    }
+        base.OnSizeAllocated(width, height);
 
-    private NavigationMenuNode? FindNavigablePage(IReadOnlyList<NavigationMenuNode> menus, string? key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-            return null;
+        if (width <= 0)
+            return;
 
-        foreach (var item in menus)
-        {
-            if (item.Key.Equals(key, StringComparison.OrdinalIgnoreCase)
-                && !item.IsAccordion
-                && HasPage(item.Key))
-                return item;
-            var child = item.Children.FirstOrDefault(c =>
-                c.Key.Equals(key, StringComparison.OrdinalIgnoreCase) && HasPage(c.Key));
-            if (child != null)
-                return child;
-        }
+        bool desktop = width >= AveroNova.App.UI.Layout.ResponsiveBreakpoints.ShellDesktopMinWidth;
 
-        return null;
-    }
-
-    private NavigationMenuNode? FirstNavigablePage(IReadOnlyList<NavigationMenuNode> menus)
-    {
-        foreach (var item in menus)
-        {
-            if (!item.IsAccordion && HasPage(item.Key))
-                return item;
-            var child = item.Children.FirstOrDefault(c => HasPage(c.Key));
-            if (child != null)
-                return child;
-        }
-
-        return null;
-    }
-
-    private bool HasPage(string menuKey)
-        => TryResolvePage(menuKey, out _, out _, out _);
-
-    private async void OnCurrentCompanyChanged(object? sender, EventArgs e)
-    {
-        _access.Invalidate();
-        ClearEmbeddedPages();
-        await InitializeAccessAsync();
-    }
-
-    private async Task SignOutExpiredAsync()
-    {
-        PendingAuthMessage.Set(SubscriptionMessages.FreeTrialExpiredAccess);
-        await _auth.LogoutAsync();
-        await Shell.Current.GoToAsync(AppRoutes.Login);
-    }
-
-    private void ShowRestriction(string message)
-    {
-        _pageContent = SubscriptionRestrictionView.Create(message);
-        AttachPageContent();
-        LblPageTitle.Text = "Subscription";
-        LblBreadcrumb.Text = "Home / Subscription";
-        MLblPageTitle.Text = "Subscription";
+        DesktopLayout.IsVisible = desktop;
+        MobileLayout.IsVisible = !desktop;
     }
 
     protected override void OnHandlerChanged()
     {
         base.OnHandlerChanged();
-        if (Handler != null)
-            return;
 
-        SizeChanged -= OnLayoutSizeChanged;
-        _connectivity.StatusChanged -= OnConnectivityChanged;
-        _company.CurrentCompanyChanged -= OnCurrentCompanyChanged;
-        DesktopSidebar.MenuSelected -= OnSidebarMenuSelected;
-        MobileSidebar.MenuSelected -= OnSidebarMenuSelected;
-        DesktopSidebar.ExpandRequested -= OnDesktopSidebarExpandRequested;
-        AccountMenu.ChoiceMade -= OnAccountMenuChoice;
-        AccountMenu.ThemeChosen -= OnAccountThemeChosen;
-        AccountMenu.Close();
-        ClearEmbeddedPages();
+        if (Handler == null)
+        {
+            _connectivity.StatusChanged -=
+                OnConnectivityChanged;
+            _contentNavigator.PageChanged -= OnHostedPageChanged;
+        }
     }
-
-    private sealed record EmbeddedMenuPage(ContentPage Page, View Content);
 }

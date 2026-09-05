@@ -4,38 +4,64 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
     <Grid RowDefinitions="Auto,*,Auto">
-        <Border Grid.Row="0" Padding="20,14" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <Grid ColumnDefinitions="Auto,*"><Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Record Payment" FontSize="18" FontAttributes="Bold" VerticalOptions="Center"/></Grid>
+        <Border Grid.Row="0" Padding="20,14"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <Grid ColumnDefinitions="Auto,*">
+                <Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/>
+                <Label Grid.Column="1" Text="Record Payment" FontSize="18" FontAttributes="Bold" VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+            </Grid>
         </Border>
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="20,16" Spacing="16">
                 <Border Style="{StaticResource AppCard}">
-                    <VerticalStackLayout Spacing="12">
-                        <Label Text="Payment Details" Style="{StaticResource SectionTitle}"/><BoxView Style="{StaticResource Divider}"/>
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Payment Details" FontSize="14" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                        <BoxView Style="{StaticResource Divider}"/>
+                        <Label Text="Customer / Supplier Name *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryParty" Placeholder="Customer or supplier name"/></Border>
+                        <Label Text="Invoice Number" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryInvoice" Placeholder="INV-2026-001"/></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Payment For *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="TypePicker" SelectedIndexChanged="OnTypeChanged"><Picker.Items><x:String>Customer Invoice</x:String><x:String>Supplier Purchase</x:String></Picker.Items></Picker></Border></VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Invoice / Purchase *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="DocumentPicker" Title="Select document" SelectedIndexChanged="OnDocumentChanged"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Amount *" Style="{StaticResource InputLabel}"/>
+                                <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryAmount" Placeholder="0.00" Keyboard="Numeric"/></Border>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                <Label Text="Payment Date" Style="{StaticResource InputLabel}"/>
+                                <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DatePayment" Format="dd MMM yyyy"/></Border>
+                            </VerticalStackLayout>
                         </Grid>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Customer / Supplier" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}" BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource SurfaceColorDark}}"><Entry x:Name="EntryParty" IsReadOnly="True" IsEnabled="False"/></Border></VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Outstanding" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}" BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource SurfaceColorDark}}"><Label x:Name="LblOutstanding" Text="₹0.00" VerticalOptions="Center" Margin="0,10"/></Border></VerticalStackLayout>
-                        </Grid>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Amount *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryAmount" Placeholder="0.00" Keyboard="Numeric"/></Border></VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Payment Date" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DatePayment" Format="dd MMM yyyy"/></Border></VerticalStackLayout>
-                        </Grid>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Payment Method *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="MethodPicker" Title="Select method"><Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Debit Card</x:String><x:String>Cheque</x:String><x:String>Online</x:String></Picker.Items></Picker></Border></VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Reference" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRef" Placeholder="Transaction reference"/></Border></VerticalStackLayout>
-                        </Grid>
-                        <Label Text="Notes" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}" HeightRequest="80"><Editor x:Name="EditorNotes" Placeholder="Optional notes..." AutoSize="TextChanges"/></Border>
+                        <Label Text="Payment Method *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}">
+                            <Picker x:Name="MethodPicker" Title="Select method...">
+                                <Picker.Items><x:String>Cash</x:String><x:String>Bank Transfer</x:String><x:String>Credit Card</x:String><x:String>Debit Card</x:String><x:String>Cheque</x:String><x:String>Online</x:String></Picker.Items>
+                            </Picker>
+                        </Border>
+                        <Label Text="Reference" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryRef" Placeholder="Transaction reference"/></Border>
+                        <Label Text="Notes" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}" HeightRequest="80">
+                            <Editor x:Name="EditorNotes" Placeholder="Optional notes..." AutoSize="TextChanges"/>
+                        </Border>
                     </VerticalStackLayout>
                 </Border>
-                <Border x:Name="ErrorBanner" IsVisible="False" BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10"><Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/></Border>
+                <Border x:Name="ErrorBanner" IsVisible="False"
+                        BackgroundColor="{StaticResource ErrorBg}" Stroke="{StaticResource ErrorBorder}"
+                        StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,10">
+                    <Label x:Name="LblError" FontSize="13" TextColor="{StaticResource ErrorText}" LineBreakMode="WordWrap"/>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
-        <Border Grid.Row="2" Padding="20,12" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}" Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <HorizontalStackLayout HorizontalOptions="End" Spacing="10"><Button Text="Cancel" Style="{StaticResource SmallSecondaryButton}" HeightRequest="40" Padding="16,0" Clicked="OnBackClicked"/><Button Text="Save Payment" Style="{StaticResource SmallButton}" HeightRequest="40" Padding="18,0" Clicked="OnSaveClicked"/></HorizontalStackLayout>
+        <Border Grid.Row="2" Padding="20,12"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Button Text="Cancel" Style="{StaticResource SecondaryButton}" Clicked="OnBackClicked"/>
+                <Button Grid.Column="1" Text="Save Payment" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
+            </Grid>
         </Border>
     </Grid>
 </ContentPage>

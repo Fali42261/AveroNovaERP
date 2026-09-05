@@ -12,7 +12,7 @@
             Text="{Binding Label, Source={x:Reference This}}"
             FontSize="13"
             FontAttributes="Bold"
-            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
+            TextColor="{StaticResource TextPrimary}"
             IsVisible="{Binding HasLabel, Source={x:Reference This}}" />
 
         <!-- Input Border -->
@@ -24,11 +24,13 @@
                 x:Name="EntryControl"
                 Text="{Binding Text, Source={x:Reference This}, Mode=TwoWay}"
                 Placeholder="{Binding Placeholder, Source={x:Reference This}}"
+                PlaceholderColor="{StaticResource Gray400}"
                 Keyboard="{Binding Keyboard, Source={x:Reference This}}"
                 IsPassword="{Binding IsPassword, Source={x:Reference This}}"
                 IsReadOnly="{Binding IsReadOnly, Source={x:Reference This}}"
                 BackgroundColor="Transparent"
                 FontSize="14"
+                TextColor="{StaticResource TextPrimary}"
                 HeightRequest="50"
                 VerticalOptions="Center"
                 ClearButtonVisibility="Never" />

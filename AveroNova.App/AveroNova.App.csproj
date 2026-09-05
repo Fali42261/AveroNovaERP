@@ -34,10 +34,12 @@
                <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation) -->
         <MauiXamlInflator>SourceGen</MauiXamlInflator>
 
-        <!-- Display name -->
-        <ApplicationTitle>AveroNova.App</ApplicationTitle>
+        <!-- Display name shown on all platforms (launcher, taskbar, window title). -->
+        <ApplicationTitle>AveroNova</ApplicationTitle>
+        <Product>AveroNova</Product>
+        <AssemblyTitle>AveroNova</AssemblyTitle>
 
-        <!-- App Identifier -->
+        <!-- App Identifier (internal; not the user-facing name) -->
         <ApplicationId>com.companyname.averonova.app</ApplicationId>
 
         <!-- Versions -->
@@ -59,20 +61,17 @@
 		<MauiIcon
 			Include="Resources\AppIcon\appicon.svg"
 			ForegroundFile="Resources\AppIcon\appiconfg.svg"
-			Color="#2563EB" />
+			Color="#2563EB"
+			ForegroundScale="0.62" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen
 			Include="Resources\Splash\splash.svg"
-			Color="#512BD4"
+			Color="#0F172A"
 			BaseSize="128,128" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
-
-		<MauiImage
-			Update="Resources\Images\dotnet_bot.svg"
-			BaseSize="168,208" />
 
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />

@@ -3,570 +3,614 @@
     x:Class="AveroNova.App.UI.Pages.Authentication.RegisterPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:helpers="clr-namespace:AveroNova.App.UI.Helpers"
     xmlns:layout="clr-namespace:AveroNova.App.UI.Layout"
-    xmlns:cards="clr-namespace:AveroNova.App.UI.Controls.Cards"
-    xmlns:forms="clr-namespace:AveroNova.App.UI.Controls.Forms"
     xmlns:vm="clr-namespace:AveroNova.App.UI.ViewModels"
-    x:DataType="vm:RegisterViewModel"
-    x:Name="RegisterRoot"
+    x:Name="RootPage"
     Shell.NavBarIsVisible="False"
-    NavigationPage.HasBackButton="False"
     SafeAreaEdges="Container"
     HideSoftInputOnTapped="True"
-    BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
+    BackgroundColor="{StaticResource White}">
 
-    <Shell.BackButtonBehavior>
-        <BackButtonBehavior IsVisible="False" IsEnabled="False" />
-    </Shell.BackButtonBehavior>
+    <ScrollView x:Name="PageScroll"
+                Orientation="Vertical"
+                HorizontalScrollBarVisibility="Never"
+                VerticalScrollBarVisibility="Default">
 
-    <ScrollView
-        x:Name="PageScroll"
-        Orientation="Vertical"
-        HorizontalScrollBarVisibility="Never"
-        VerticalScrollBarVisibility="Default">
-        <VerticalStackLayout
-            x:Name="FormHost"
-            VerticalOptions="Start"
-            HorizontalOptions="Center"
-            Padding="{StaticResource PaddingLarge}"
-            Spacing="0">
+        <Grid
+            x:Name="ContentHost"
+            layout:ResponsivePage.Ignore="True"
+            Padding="{StaticResource PaddingLarge}">
 
-            <Border WidthRequest="56" HeightRequest="56"
-                    BackgroundColor="{StaticResource PrimaryColor}"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 14"
-                    HorizontalOptions="Center">
-                <Label Text="SW" FontSize="28" FontAttributes="Bold"
-                       TextColor="{StaticResource White}"
-                       HorizontalOptions="Center" VerticalOptions="Center" />
-            </Border>
+            <Border
+                x:Name="AuthCard"
+                Style="{StaticResource AuthCard}"
+                VerticalOptions="Start"
+                HorizontalOptions="Center">
 
-            <Label Text="Create Account"
-                   Style="{StaticResource PageTitle}"
-                   HorizontalOptions="Center"
-                   HorizontalTextAlignment="Center"
-                   Margin="0,20,0,4" />
-            <Label Text="{Binding StepCaption}"
-                   Style="{StaticResource SecondaryText}"
-                   HorizontalOptions="Center"
-                   HorizontalTextAlignment="Center"
-                   Margin="0,0,0,20" />
+                <VerticalStackLayout Spacing="0" HorizontalOptions="Fill">
 
-            <Grid x:Name="ProgressGrid"
-                  layout:ResponsivePage.Ignore="True"
-                  ColumnDefinitions="Auto,*,Auto,*,Auto,*,Auto"
-                  HorizontalOptions="Fill"
-                  Margin="0,0,0,24">
-                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                    <Border x:Name="StepDot1" WidthRequest="32" HeightRequest="32"
-                            StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                    <Border WidthRequest="56" HeightRequest="56"
+                            BackgroundColor="{StaticResource PrimaryColor}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 14"
                             HorizontalOptions="Center">
-                        <Label x:Name="StepNum1" Text="1" FontSize="13" FontAttributes="Bold"
-                               HorizontalOptions="Center" VerticalOptions="Center"
-                               HorizontalTextAlignment="Center" />
+                        <Label Text="A" FontSize="28" FontAttributes="Bold"
+                               TextColor="{StaticResource White}"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
                     </Border>
-                    <Label x:Name="StepLabel1" Text="Step 1" FontSize="11" LineBreakMode="NoWrap" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-                <BoxView x:Name="StepLine1" Grid.Column="1" HeightRequest="2" VerticalOptions="Center" Margin="8,0,8,18" />
-                <VerticalStackLayout Grid.Column="2" Spacing="6">
-                    <Border x:Name="StepDot2" WidthRequest="32" HeightRequest="32"
-                            StrokeThickness="0" StrokeShape="RoundRectangle 16"
-                            HorizontalOptions="Center">
-                        <Label x:Name="StepNum2" Text="2" FontSize="13" FontAttributes="Bold"
-                               HorizontalOptions="Center" VerticalOptions="Center"
-                               HorizontalTextAlignment="Center" />
+
+                    <Label Text="Create Account"
+                           Style="{StaticResource PageTitle}"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"
+                           LineBreakMode="WordWrap"
+                           Margin="0,20,0,4"/>
+                    <Label Text="{Binding StepTitle}"
+                           Style="{StaticResource SecondaryText}"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"
+                           LineBreakMode="WordWrap"
+                           Margin="0,0,0,20"/>
+
+                    <Grid x:Name="ProgressGrid"
+                          layout:ResponsivePage.Ignore="True"
+                          ColumnDefinitions="*,*,*,*"
+                          ColumnSpacing="8"
+                          Margin="0,0,0,20">
+                        <VerticalStackLayout x:Name="Prog1" Spacing="4">
+                            <Border x:Name="Badge1" StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                                    HeightRequest="28" WidthRequest="28" HorizontalOptions="Center"
+                                    BackgroundColor="{StaticResource PrimaryColor}">
+                                <Label x:Name="Badge1Label" Text="1" FontSize="12" FontAttributes="Bold"
+                                       TextColor="{StaticResource White}"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label x:Name="Prog1Label" Text="Step 1" FontSize="11"
+                                   HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="Prog2" Grid.Column="1" Spacing="4">
+                            <Border x:Name="Badge2" StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                                    HeightRequest="28" WidthRequest="28" HorizontalOptions="Center"
+                                    BackgroundColor="{StaticResource Gray200}">
+                                <Label x:Name="Badge2Label" Text="2" FontSize="12" FontAttributes="Bold"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label x:Name="Prog2Label" Text="Step 2" FontSize="11"
+                                   HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="Prog3" Grid.Column="2" Spacing="4">
+                            <Border x:Name="Badge3" StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                                    HeightRequest="28" WidthRequest="28" HorizontalOptions="Center"
+                                    BackgroundColor="{StaticResource Gray200}">
+                                <Label x:Name="Badge3Label" Text="3" FontSize="12" FontAttributes="Bold"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label x:Name="Prog3Label" Text="Step 3" FontSize="11"
+                                   HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="Prog4" Grid.Column="3" Spacing="4">
+                            <Border x:Name="Badge4" StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                                    HeightRequest="28" WidthRequest="28" HorizontalOptions="Center"
+                                    BackgroundColor="{StaticResource Gray200}">
+                                <Label x:Name="Badge4Label" Text="4" FontSize="12" FontAttributes="Bold"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label x:Name="Prog4Label" Text="Step 4" FontSize="11"
+                                   HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Border IsVisible="{Binding HasGeneralError}"
+                            BackgroundColor="{StaticResource ErrorBg}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="14,10"
+                            Margin="0,0,0,16">
+                        <Label Text="{Binding GeneralError}" FontSize="13" TextColor="{StaticResource ErrorColor}" LineBreakMode="WordWrap"/>
                     </Border>
-                    <Label x:Name="StepLabel2" Text="Step 2" FontSize="11" LineBreakMode="NoWrap" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-                <BoxView x:Name="StepLine2" Grid.Column="3" HeightRequest="2" VerticalOptions="Center" Margin="8,0,8,18" />
-                <VerticalStackLayout Grid.Column="4" Spacing="6">
-                    <Border x:Name="StepDot3" WidthRequest="32" HeightRequest="32"
-                            StrokeThickness="0" StrokeShape="RoundRectangle 16"
-                            HorizontalOptions="Center">
-                        <Label x:Name="StepNum3" Text="3" FontSize="13" FontAttributes="Bold"
-                               HorizontalOptions="Center" VerticalOptions="Center"
-                               HorizontalTextAlignment="Center" />
+                    <Border IsVisible="{Binding HasGeneralSuccess}"
+                            BackgroundColor="{StaticResource SuccessBg}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="14,10"
+                            Margin="0,0,0,16">
+                        <Label Text="{Binding GeneralSuccess}" FontSize="12" TextColor="{StaticResource SuccessText}" LineBreakMode="WordWrap"/>
                     </Border>
-                    <Label x:Name="StepLabel3" Text="Step 3" FontSize="11" LineBreakMode="NoWrap" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-                <BoxView x:Name="StepLine3" Grid.Column="5" HeightRequest="2" VerticalOptions="Center" Margin="8,0,8,18" />
-                <VerticalStackLayout Grid.Column="6" Spacing="6">
-                    <Border x:Name="StepDot4" WidthRequest="32" HeightRequest="32"
-                            StrokeThickness="0" StrokeShape="RoundRectangle 16"
-                            HorizontalOptions="Center">
-                        <Label x:Name="StepNum4" Text="4" FontSize="13" FontAttributes="Bold"
-                               HorizontalOptions="Center" VerticalOptions="Center"
-                               HorizontalTextAlignment="Center" />
-                    </Border>
-                    <Label x:Name="StepLabel4" Text="Step 4" FontSize="11" LineBreakMode="NoWrap" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-            </Grid>
 
-            <Border IsVisible="{Binding HasSuccessMessage}"
-                    BackgroundColor="{StaticResource SuccessBg}"
-                    Stroke="{StaticResource SuccessBorder}"
-                    StrokeThickness="1"
-                    StrokeShape="RoundRectangle 10"
-                    Padding="14,10"
-                    Margin="0,0,0,16">
-                <Label Text="{Binding SuccessMessage}" FontSize="13" TextColor="{StaticResource SuccessText}" LineBreakMode="WordWrap" />
-            </Border>
+                    <!-- ════════════ STEP 1 ════════════ -->
+                    <Grid x:Name="PersonalGrid"
+                          layout:ResponsivePage.Ignore="True"
+                          IsVisible="{Binding IsStep1}"
+                          RowSpacing="10"
+                          ColumnSpacing="12"
+                          ColumnDefinitions="*,*,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto">
 
-            <Border IsVisible="{Binding HasGeneralError}"
-                    BackgroundColor="{StaticResource ErrorBg}"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 10"
-                    Padding="14,10"
-                    Margin="0,0,0,16">
-                <Label Text="{Binding GeneralError}" FontSize="13" TextColor="{StaticResource ErrorColor}" LineBreakMode="WordWrap" />
-            </Border>
+                        <VerticalStackLayout x:Name="FieldFullName" Spacing="4">
+                            <Label Text="Full Name *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding FullName, Mode=TwoWay}" Placeholder="Your full name"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding FullNameError}" IsVisible="{Binding HasFullNameError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-            <Grid x:Name="Step1Grid" layout:ResponsivePage.Ignore="True" IsVisible="{Binding IsStep1}" ColumnDefinitions="*,*,*" ColumnSpacing="20" RowSpacing="8">
-                <VerticalStackLayout x:Name="FullNameField" Grid.Column="0" Spacing="0">
-                    <Label Text="Full Name *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding FullName, Mode=TwoWay}"
-                               Placeholder="Enter your full name"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Full name" />
-                    </Border>
-                    <Label Text="{Binding FullNameError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasFullNameError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldEmail" Grid.Column="1" Spacing="4">
+                            <Label Text="Email *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding Email, Mode=TwoWay}" Placeholder="you@company.com" Keyboard="Email"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding EmailError}" IsVisible="{Binding HasEmailError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="EmailField" Grid.Column="1" Spacing="0">
-                    <Label Text="Email *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding Email, Mode=TwoWay}"
-                               Placeholder="Enter email"
-                               Keyboard="Email"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Email address" />
-                    </Border>
-                    <Label Text="{Binding EmailError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasEmailError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldMobile" Grid.Column="2" Spacing="4">
+                            <Label Text="Mobile Number *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding Mobile, Mode=TwoWay}" Placeholder="+1 555 012 3456" Keyboard="Telephone"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding MobileError}" IsVisible="{Binding HasMobileError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="MobileField" Grid.Column="2" Spacing="0">
-                    <Label Text="Mobile Number *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding Mobile, Mode=TwoWay}"
-                               Placeholder="Enter mobile number"
-                               Keyboard="Telephone"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Personal mobile number" />
-                    </Border>
-                    <Label Text="{Binding MobileError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasMobileError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCity" Grid.Row="1" Spacing="4">
+                            <Label Text="City" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding City, Mode=TwoWay}" Placeholder="City"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CityError}" IsVisible="{Binding HasCityError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PersonalPinField" Grid.Row="1" Grid.Column="0" Spacing="0">
-                    <Label Text="PIN / ZIP" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PersonalPinCode, Mode=TwoWay}"
-                               Placeholder="Enter PIN or ZIP"
-                               Keyboard="Numeric"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="PIN or ZIP" />
-                    </Border>
-                    <Label Text="{Binding PersonalPinCodeError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPersonalPinCodeError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldState" Grid.Row="1" Grid.Column="1" Spacing="4">
+                            <Label Text="State" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding State, Mode=TwoWay}" Placeholder="State"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding StateError}" IsVisible="{Binding HasStateError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PasswordField" Grid.Row="1" Grid.Column="1" Spacing="0">
-                    <Label Text="Password *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding Password, Mode=TwoWay}"
-                               Placeholder="Enter password"
-                               IsPassword="{Binding IsPasswordHidden}"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Password" />
-                    </Border>
-                    <Label Text="{Binding PasswordError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPasswordError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCountry" Grid.Row="1" Grid.Column="2" Spacing="4">
+                            <Label Text="Country" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding Country, Mode=TwoWay}" Placeholder="Country"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CountryError}" IsVisible="{Binding HasCountryError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="ConfirmField" Grid.Row="1" Grid.Column="2" Spacing="0">
-                    <Label Text="Confirm Password" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding ConfirmPassword, Mode=TwoWay}"
-                               Placeholder="Confirm password"
-                               IsPassword="{Binding IsConfirmPasswordHidden}"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Confirm password" />
-                    </Border>
-                    <Label Text="{Binding ConfirmPasswordError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasConfirmPasswordError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldPin" Grid.Row="2" Spacing="4">
+                            <Label Text="PIN/ZIP Code" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding PinCode, Mode=TwoWay}" Placeholder="PIN / ZIP"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding PinCodeError}" IsVisible="{Binding HasPinCodeError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PersonalAddressField" Grid.Row="2" Grid.Column="0" Spacing="0">
-                    <Label Text="Address" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PersonalAddress, Mode=TwoWay}"
-                               Placeholder="Enter address"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Address" />
-                    </Border>
-                    <Label Text="{Binding PersonalAddressError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPersonalAddressError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldPassword" Grid.Row="2" Grid.Column="1" Spacing="4">
+                            <Label Text="Password *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding Password, Mode=TwoWay}" Placeholder="Create a password"
+                                       IsPassword="{Binding IsPasswordHidden}"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding PasswordError}" IsVisible="{Binding HasPasswordError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PersonalCityField" Grid.Row="2" Grid.Column="1" Spacing="0">
-                    <Label Text="City" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PersonalCity, Mode=TwoWay}"
-                               Placeholder="Enter city"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="City" />
-                    </Border>
-                    <Label Text="{Binding PersonalCityError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPersonalCityError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldConfirmPassword" Grid.Row="2" Grid.Column="2" Spacing="4">
+                            <Label Text="Confirm Password *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding ConfirmPassword, Mode=TwoWay}" Placeholder="Repeat password"
+                                       IsPassword="{Binding IsConfirmPasswordHidden}"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding ConfirmPasswordError}" IsVisible="{Binding HasConfirmPasswordError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PersonalStateField" Grid.Row="2" Grid.Column="2" Spacing="0">
-                    <Label Text="State" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PersonalState, Mode=TwoWay}"
-                               Placeholder="Enter state"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="State" />
-                    </Border>
-                    <Label Text="{Binding PersonalStateError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPersonalStateError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldAddress" Grid.Row="3" Grid.ColumnSpan="3" Spacing="4">
+                            <Label Text="Address" Style="{StaticResource InputLabel}"/>
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource InputBackgroundDark}}"
+                                    Stroke="Transparent" StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                                    Padding="14,10" MinimumHeightRequest="88">
+                                <Editor Text="{Binding Address, Mode=TwoWay}" Placeholder="Street address"
+                                        AutoSize="TextChanges" MinimumHeightRequest="72" FontSize="14"
+                                        BackgroundColor="Transparent" TextColor="{StaticResource TextPrimary}"/>
+                            </Border>
+                            <Label Text="{Binding AddressError}" IsVisible="{Binding HasAddressError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                    </Grid>
 
-                <VerticalStackLayout x:Name="PersonalCountryField" Grid.Row="3" Grid.Column="0" Spacing="0">
-                    <Label Text="Country" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PersonalCountry, Mode=TwoWay}"
-                               Placeholder="Enter country"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Country" />
-                    </Border>
-                    <Label Text="{Binding PersonalCountryError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPersonalCountryError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
-            </Grid>
+                    <!-- ════════════ STEP 2 ════════════ -->
+                    <Grid x:Name="CompanyGrid"
+                          layout:ResponsivePage.Ignore="True"
+                          IsVisible="{Binding IsStep2}"
+                          RowSpacing="10"
+                          ColumnSpacing="12"
+                          ColumnDefinitions="*,*,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto">
 
-            <Grid x:Name="Step2Grid" layout:ResponsivePage.Ignore="True" IsVisible="{Binding IsStep2}" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="8">
-                <VerticalStackLayout x:Name="CompanyNameField" Grid.Column="0" Spacing="0">
-                    <Label Text="Company Name *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding CompanyName, Mode=TwoWay}"
-                               Placeholder="Enter company name"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Company name" />
-                    </Border>
-                    <Label Text="{Binding CompanyNameError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasCompanyNameError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyName" Spacing="4">
+                            <Label Text="Company Name *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyName, Mode=TwoWay}" Placeholder="Enter company name"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyNameError}" IsVisible="{Binding HasCompanyNameError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="OwnerNameField" Grid.Column="1" Spacing="0">
-                    <Label Text="Owner Name *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding OwnerName, Mode=TwoWay}"
-                               Placeholder="Enter owner name"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Owner name" />
-                    </Border>
-                    <Label Text="{Binding OwnerNameError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasOwnerNameError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldOwnerName" Grid.Column="1" Spacing="4">
+                            <Label Text="Owner Name *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding OwnerName, Mode=TwoWay}" Placeholder="Enter owner name"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding OwnerNameError}" IsVisible="{Binding HasOwnerNameError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="GSTNumberField" Grid.Column="2" Spacing="0">
-                    <Label Text="GST Number" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding GSTNumber, Mode=TwoWay}"
-                               Placeholder="Enter GST number"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="GST number" />
-                    </Border>
-                    <Label Text="{Binding GSTNumberError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasGSTNumberError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldGst" Grid.Column="2" Spacing="4">
+                            <Label Text="GST Number" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding GSTNumber, Mode=TwoWay}" Placeholder="GST number"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding GSTNumberError}" IsVisible="{Binding HasGSTNumberError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PANNumberField" Grid.Row="1" Grid.Column="0" Spacing="0">
-                    <Label Text="PAN Number" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PANNumber, Mode=TwoWay}"
-                               Placeholder="Enter PAN number"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="PAN number" />
-                    </Border>
-                    <Label Text="{Binding PANNumberError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPANNumberError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldPan" Grid.Row="1" Spacing="4">
+                            <Label Text="PAN Number" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding PanNumber, Mode=TwoWay}" Placeholder="PAN number"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding PanNumberError}" IsVisible="{Binding HasPanNumberError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="CompanyEmailField" Grid.Row="1" Grid.Column="1" Spacing="0">
-                    <Label Text="Email *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding CompanyEmail, Mode=TwoWay}"
-                               Placeholder="Enter email"
-                               Keyboard="Email"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Company email" />
-                    </Border>
-                    <Label Text="{Binding CompanyEmailError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasCompanyEmailError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyEmail" Grid.Row="1" Grid.Column="1" Spacing="4">
+                            <Label Text="Email *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyEmail, Mode=TwoWay}" Placeholder="company@email.com" Keyboard="Email"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyEmailError}" IsVisible="{Binding HasCompanyEmailError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="MobileNumberField" Grid.Row="1" Grid.Column="2" Spacing="0">
-                    <Label Text="Mobile Number *" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding MobileNumber, Mode=TwoWay}"
-                               Placeholder="Enter mobile number"
-                               Keyboard="Telephone"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Mobile number" />
-                    </Border>
-                    <Label Text="{Binding MobileNumberError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasMobileNumberError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyMobile" Grid.Row="1" Grid.Column="2" Spacing="4">
+                            <Label Text="Mobile Number *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyMobile, Mode=TwoWay}" Placeholder="Company mobile" Keyboard="Telephone"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyMobileError}" IsVisible="{Binding HasCompanyMobileError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="CountryField" Grid.Row="2" Grid.Column="0" Spacing="0">
-                    <Label Text="Country" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding Country, Mode=TwoWay}"
-                               Placeholder="Enter country"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Country" />
-                    </Border>
-                    <Label Text="{Binding CountryError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasCountryError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyCountry" Grid.Row="2" Spacing="4">
+                            <Label Text="Country" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyCountry, Mode=TwoWay}" Placeholder="Country"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyCountryError}" IsVisible="{Binding HasCompanyCountryError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="StateField" Grid.Row="2" Grid.Column="1" Spacing="0">
-                    <Label Text="State" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding State, Mode=TwoWay}"
-                               Placeholder="Enter state"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="State" />
-                    </Border>
-                    <Label Text="{Binding StateError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasStateError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyState" Grid.Row="2" Grid.Column="1" Spacing="4">
+                            <Label Text="State" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyState, Mode=TwoWay}" Placeholder="State"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyStateError}" IsVisible="{Binding HasCompanyStateError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="CityField" Grid.Row="2" Grid.Column="2" Spacing="0">
-                    <Label Text="City" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding City, Mode=TwoWay}"
-                               Placeholder="Enter city"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="City" />
-                    </Border>
-                    <Label Text="{Binding CityError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasCityError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyCity" Grid.Row="2" Grid.Column="2" Spacing="4">
+                            <Label Text="City" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyCity, Mode=TwoWay}" Placeholder="City"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyCityError}" IsVisible="{Binding HasCompanyCityError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="PinCodeField" Grid.Row="3" Grid.Column="0" Spacing="0">
-                    <Label Text="Pin Code" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding PinCode, Mode=TwoWay}"
-                               Placeholder="Enter pin code"
-                               Keyboard="Numeric"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Pin code" />
-                    </Border>
-                    <Label Text="{Binding PinCodeError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPinCodeError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="FieldCompanyPin" Grid.Row="3" Spacing="4">
+                            <Label Text="PIN/ZIP Code" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource AuthenticationInput}">
+                                <Entry Text="{Binding CompanyPinCode, Mode=TwoWay}" Placeholder="PIN / ZIP"
+                                       PlaceholderColor="{StaticResource Gray400}" BackgroundColor="Transparent"
+                                       TextColor="{StaticResource TextPrimary}" ClearButtonVisibility="Never"/>
+                            </Border>
+                            <Label Text="{Binding CompanyPinCodeError}" IsVisible="{Binding HasCompanyPinCodeError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout x:Name="AddressField" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Spacing="0">
-                    <Label Text="Company Address" Style="{StaticResource InputLabel}" LineBreakMode="NoWrap" />
-                    <Border Style="{StaticResource AuthenticationInput}" Margin="0,6,0,4">
-                        <Entry Text="{Binding Address, Mode=TwoWay}"
-                               Placeholder="Enter company address"
-                               BackgroundColor="Transparent"
-                               ClearButtonVisibility="Never"
-                               ReturnType="Next"
-                               SemanticProperties.Description="Company address" />
-                    </Border>
-                    <Label Text="{Binding AddressError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasAddressError}" LineBreakMode="WordWrap" Margin="0,0,0,12" />
-                </VerticalStackLayout>
-            </Grid>
+                        <VerticalStackLayout x:Name="FieldCompanyAddress" Grid.Row="4" Grid.ColumnSpan="3" Spacing="4">
+                            <Label Text="Company Address" Style="{StaticResource InputLabel}"/>
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource InputBackgroundDark}}"
+                                    Stroke="Transparent" StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                                    Padding="14,10" MinimumHeightRequest="88">
+                                <Editor Text="{Binding CompanyAddress, Mode=TwoWay}" Placeholder="Company address"
+                                        AutoSize="TextChanges" MinimumHeightRequest="72" FontSize="14"
+                                        BackgroundColor="Transparent" TextColor="{StaticResource TextPrimary}"/>
+                            </Border>
+                            <Label Text="{Binding CompanyAddressError}" IsVisible="{Binding HasCompanyAddressError}" TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                    </Grid>
 
-            <VerticalStackLayout x:Name="Step3Panel" IsVisible="{Binding IsStep3}" Spacing="16" Margin="0,0,0,8">
-                <Label Text="Your company starts with a 15-day Free Trial. Paid plans are not available yet."
-                       Style="{StaticResource SecondaryText}"
-                       LineBreakMode="WordWrap" />
-                <Label Text="{Binding PlanError}" FontSize="12" TextColor="{StaticResource ErrorColor}" IsVisible="{Binding HasPlanError}" LineBreakMode="WordWrap" />
-                <Grid x:Name="PlanCardsGrid"
-                      layout:ResponsivePage.Ignore="True"
-                      ColumnDefinitions="*,*,*,*"
-                      ColumnSpacing="12"
-                      RowSpacing="12"
-                      HorizontalOptions="Fill"
-                      BindableLayout.ItemsSource="{Binding Plans}">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="vm:RegisterPlanOption">
-                            <cards:SubscriptionPlanCard
-                                HorizontalOptions="Fill"
-                                VerticalOptions="Fill" />
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
-                </Grid>
-            </VerticalStackLayout>
-
-            <VerticalStackLayout x:Name="Step4Panel" IsVisible="{Binding IsStep4}" Spacing="16" Margin="0,0,0,8">
-                <Border x:Name="UnderReviewCard" Style="{StaticResource AppCard}" Padding="16">
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="Under Review" FontSize="18" FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
-                        <Label Text="Please confirm your personal, company, and subscription details, then create your account."
-                               FontSize="13"
-                               TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
-                               LineBreakMode="WordWrap" />
+                    <!-- ════════════ STEP 3 ════════════ -->
+                    <VerticalStackLayout x:Name="SubscriptionHost" IsVisible="{Binding IsStep3}" Spacing="10">
+                        <Label Text="{Binding SubscriptionError}" IsVisible="{Binding HasSubscriptionError}"
+                               TextColor="{StaticResource ErrorColor}" FontSize="12" LineBreakMode="WordWrap"/>
+                        <Grid x:Name="PlansGrid"
+                              layout:ResponsivePage.Ignore="True"
+                              BindableLayout.ItemsSource="{Binding PlanOptions}"
+                              ColumnDefinitions="*,*,*"
+                              ColumnSpacing="12"
+                              RowSpacing="12">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource PlanCard}"
+                                            HorizontalOptions="Fill"
+                                            VerticalOptions="Fill">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding BindingContext.SelectPlanCommand, Source={x:Reference RootPage}}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource PrimaryColor}"/>
+                                                <Setter Property="StrokeThickness" Value="2"/>
+                                                <Setter Property="BackgroundColor" Value="{StaticResource Primary50}"/>
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Grid layout:ResponsivePage.Ignore="True" RowDefinitions="*,Auto">
+                                            <VerticalStackLayout Spacing="8" VerticalOptions="Start">
+                                                <Grid ColumnDefinitions="*,Auto" layout:ResponsivePage.Ignore="True">
+                                                    <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold"
+                                                           LineBreakMode="WordWrap"
+                                                           TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                                                    <Border Grid.Column="1" IsVisible="{Binding IsPopular}"
+                                                            BackgroundColor="{StaticResource PrimaryColor}"
+                                                            StrokeThickness="0" StrokeShape="RoundRectangle 10"
+                                                            Padding="8,2" VerticalOptions="Start">
+                                                        <Label Text="Popular" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource White}"/>
+                                                    </Border>
+                                                </Grid>
+                                                <Label Text="{Binding PriceDisplay}" FontSize="22" FontAttributes="Bold"
+                                                       TextColor="{StaticResource PrimaryColor}"/>
+                                                <Label Text="{Binding BillingPeriodDisplay}" FontSize="12"
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                                                <Label Text="{Binding TrialHeadline}" FontSize="13" FontAttributes="Bold"
+                                                       IsVisible="{Binding HasTrial}" LineBreakMode="WordWrap"
+                                                       TextColor="{StaticResource PrimaryColor}"/>
+                                                <Label Text="{Binding Details}" FontSize="13" LineBreakMode="WordWrap"
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                                                <Label Text="{Binding Summary}" FontSize="12" FontAttributes="Bold" LineBreakMode="WordWrap"
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Features}" Spacing="4">
+                                                    <BindableLayout.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Label Text="{Binding .}" FontSize="12" LineBreakMode="WordWrap"
+                                                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
+                                                        </DataTemplate>
+                                                    </BindableLayout.ItemTemplate>
+                                                </VerticalStackLayout>
+                                            </VerticalStackLayout>
+                                            <Button Grid.Row="1"
+                                                    Text="{Binding SelectButtonText}"
+                                                    Style="{StaticResource SmallButton}"
+                                                    Margin="0,12,0,0"
+                                                    VerticalOptions="End"
+                                                    IsEnabled="{Binding IsAvailable}"
+                                                    Command="{Binding BindingContext.SelectPlanCommand, Source={x:Reference RootPage}}"
+                                                    CommandParameter="{Binding .}"
+                                                    helpers:CursorBehavior.Cursor="Hand"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </Grid>
                     </VerticalStackLayout>
-                </Border>
 
-                <Grid x:Name="ReviewCardsGrid"
-                      layout:ResponsivePage.Ignore="True"
-                      ColumnDefinitions="*,*,*,*"
-                      ColumnSpacing="12"
-                      RowSpacing="12"
-                      HorizontalOptions="Fill">
-                    <Border x:Name="PersonalReviewCard" Style="{StaticResource ReviewCard}">
-                        <Grid RowDefinitions="Auto,*" RowSpacing="12" VerticalOptions="Fill">
-                            <Label Text="Personal Information" Style="{StaticResource CardTitle}" LineBreakMode="WordWrap" />
-                            <VerticalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Start">
-                                <forms:ReviewFieldRow LabelText="Full Name" ValueText="{Binding FullName}" />
-                                <forms:ReviewFieldRow LabelText="Email" ValueText="{Binding Email}" />
-                                <forms:ReviewFieldRow LabelText="Mobile Number" ValueText="{Binding Mobile}" />
+                    <!-- ════════════ STEP 4 ════════════ -->
+                    <Grid x:Name="ReviewHost"
+                          IsVisible="{Binding IsStep4}"
+                          layout:ResponsivePage.Ignore="True"
+                          ColumnDefinitions="*,*,*,*"
+                          ColumnSpacing="12"
+                          RowSpacing="12">
+
+                        <Border x:Name="ReviewPersonal" Style="{StaticResource AppCard}" Padding="16" VerticalOptions="Fill">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Personal Information" FontSize="14" FontAttributes="Bold"/>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Full Name" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding FullName}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Email" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding Email}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Mobile Number" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding Mobile}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
                             </VerticalStackLayout>
-                        </Grid>
-                    </Border>
+                        </Border>
 
-                    <Border x:Name="CompanyReviewCard" Style="{StaticResource ReviewCard}">
-                        <Grid RowDefinitions="Auto,*" RowSpacing="12" VerticalOptions="Fill">
-                            <Label Text="Company Details" Style="{StaticResource CardTitle}" LineBreakMode="WordWrap" />
-                            <VerticalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Start">
-                                <forms:ReviewFieldRow LabelText="Company Name" ValueText="{Binding CompanyName}" />
-                                <forms:ReviewFieldRow LabelText="Owner Name" ValueText="{Binding OwnerName}" />
-                                <forms:ReviewFieldRow LabelText="Email" ValueText="{Binding CompanyEmail}" />
-                                <forms:ReviewFieldRow LabelText="Mobile Number" ValueText="{Binding MobileNumber}" />
-                                <forms:ReviewFieldRow LabelText="GST Number" ValueText="{Binding GSTNumber}"
-                                                     IsVisible="{Binding GSTNumber, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="PAN Number" ValueText="{Binding PANNumber}"
-                                                     IsVisible="{Binding PANNumber, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="Country" ValueText="{Binding Country}"
-                                                     IsVisible="{Binding Country, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="State" ValueText="{Binding State}"
-                                                     IsVisible="{Binding State, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="City" ValueText="{Binding City}"
-                                                     IsVisible="{Binding City, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="Pin Code" ValueText="{Binding PinCode}"
-                                                     IsVisible="{Binding PinCode, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="Company Address" ValueText="{Binding Address}"
-                                                     IsVisible="{Binding Address, Converter={StaticResource StringNotEmptyConverter}}" />
+                        <Border x:Name="ReviewCompany" Grid.Column="1" Style="{StaticResource AppCard}" Padding="16" VerticalOptions="Fill">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Company Details" FontSize="14" FontAttributes="Bold"/>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Company Name" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyName}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Owner Name" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding OwnerName}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Email" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyEmail}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Mobile Number" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyMobile}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="GST Number" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding GSTNumber}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="PAN Number" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding PanNumber}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Country" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyCountry}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="State" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyState}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="City" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyCity}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="PIN/ZIP Code" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyPinCode}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Company Address" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding CompanyAddress}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
                             </VerticalStackLayout>
-                        </Grid>
-                    </Border>
+                        </Border>
 
-                    <Border x:Name="PlanReviewCard" Style="{StaticResource ReviewCard}">
-                        <Grid RowDefinitions="Auto,*" RowSpacing="12" VerticalOptions="Fill">
-                            <Label Text="Subscription Plan" Style="{StaticResource CardTitle}" LineBreakMode="WordWrap" />
-                            <VerticalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Start">
-                                <forms:ReviewFieldRow LabelText="Plan" ValueText="{Binding SelectedPlanName}" />
-                                <forms:ReviewFieldRow LabelText="Price" ValueText="{Binding SelectedPlanPrice}" />
-                                <forms:ReviewFieldRow LabelText="Validity" ValueText="{Binding SelectedPlanValidity}" />
-                                <forms:ReviewFieldRow LabelText="Status" ValueText="Selected" />
+                        <Border x:Name="ReviewSubscription" Grid.Column="2" Style="{StaticResource AppCard}" Padding="16" VerticalOptions="Fill">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Subscription Plan" FontSize="14" FontAttributes="Bold"/>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Selected Plan" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding SelectedPlanName}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Price" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding SelectedPlanPrice}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Billing Period" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding SelectedBillingPeriod}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True" IsVisible="{Binding HasSelectedTrial}">
+                                    <Label Text="Trial" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding SelectedTrialInfo}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Users" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding SelectedPlanUsers}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Companies" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding SelectedPlanCompanies}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
                             </VerticalStackLayout>
-                        </Grid>
-                    </Border>
+                        </Border>
 
-                    <Border x:Name="AdditionalReviewCard"
-                            Style="{StaticResource ReviewCard}"
-                            IsVisible="{Binding HasAdditionalReviewDetails}">
-                        <Grid RowDefinitions="Auto,*" RowSpacing="12" VerticalOptions="Fill">
-                            <Label Text="Additional Details" Style="{StaticResource CardTitle}" LineBreakMode="WordWrap" />
-                            <VerticalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Start">
-                                <forms:ReviewFieldRow LabelText="Address" ValueText="{Binding PersonalAddress}"
-                                                     IsVisible="{Binding PersonalAddress, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="City" ValueText="{Binding PersonalCity}"
-                                                     IsVisible="{Binding PersonalCity, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="State" ValueText="{Binding PersonalState}"
-                                                     IsVisible="{Binding PersonalState, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="Country" ValueText="{Binding PersonalCountry}"
-                                                     IsVisible="{Binding PersonalCountry, Converter={StaticResource StringNotEmptyConverter}}" />
-                                <forms:ReviewFieldRow LabelText="Pin Code" ValueText="{Binding PersonalPinCode}"
-                                                     IsVisible="{Binding PersonalPinCode, Converter={StaticResource StringNotEmptyConverter}}" />
+                        <Border x:Name="ReviewAdditional" Grid.Column="3" Style="{StaticResource AppCard}" Padding="16" VerticalOptions="Fill">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Additional Details" FontSize="14" FontAttributes="Bold"/>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Address" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding Address}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="City" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding City}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="State" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding State}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="Country" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding Country}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" layout:ResponsivePage.Ignore="True">
+                                    <Label Text="PIN/ZIP Code" FontSize="13" TextColor="{StaticResource TextSecondary}"/>
+                                    <Label Grid.Column="1" Text="{Binding PinCode}" FontSize="13" LineBreakMode="WordWrap" HorizontalTextAlignment="End"/>
+                                </Grid>
                             </VerticalStackLayout>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
 
-            <Grid x:Name="ActionGrid"
-                  layout:ResponsivePage.Ignore="True"
-                  Margin="0,16,0,24">
-                <Grid x:Name="ActionButtonsHost"
-                      HorizontalOptions="End"
-                      VerticalOptions="Center"
-                      ColumnDefinitions="Auto,Auto,Auto"
-                      ColumnSpacing="12"
-                      RowSpacing="8">
-                    <Button x:Name="BackButton"
-                            Grid.Column="0"
-                            Text="Back"
-                            Style="{StaticResource WizardSecondaryButton}"
-                            Clicked="OnBackClicked"
-                            IsVisible="{Binding IsBackVisible}"
-                            IsEnabled="{Binding IsInteractionEnabled}" />
-                    <ActivityIndicator x:Name="ActionSpinner"
-                                       Grid.Column="1"
-                                       WidthRequest="22"
-                                       HeightRequest="22"
-                                       Color="{StaticResource PrimaryColor}"
-                                       IsRunning="False"
-                                       IsVisible="False"
-                                       VerticalOptions="Center" />
-                    <Button x:Name="PrimaryActionButton"
-                            Grid.Column="2"
-                            Text="{Binding PrimaryActionText}"
-                            Style="{StaticResource WizardPrimaryButton}"
-                            Clicked="OnPrimaryActionClicked"
-                            IsEnabled="{Binding IsInteractionEnabled}" />
-                </Grid>
-            </Grid>
+                    <Grid x:Name="ActionsGrid"
+                          layout:ResponsivePage.Ignore="True"
+                          Margin="0,24,0,0">
+                        <HorizontalStackLayout x:Name="ActionsHost"
+                                               HorizontalOptions="End"
+                                               Spacing="12">
+                            <Button x:Name="BtnBack" Text="Back"
+                                    Style="{StaticResource LightSecondaryButton}"
+                                    Clicked="OnBackClicked"
+                                    IsVisible="{Binding CanGoBack}"
+                                    IsEnabled="{Binding IsInteractionEnabled}"
+                                    helpers:CursorBehavior.Cursor="Hand"/>
+                            <Button x:Name="BtnPrimary"
+                                    Text="{Binding PrimaryActionText}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Clicked="OnPrimaryClicked"
+                                    IsEnabled="{Binding IsInteractionEnabled}"
+                                    helpers:CursorBehavior.Cursor="Hand"/>
+                        </HorizontalStackLayout>
+                    </Grid>
 
-            <HorizontalStackLayout
-                IsVisible="{Binding IsStep1}"
-                HorizontalOptions="Center"
-                Spacing="4"
-                Margin="0,28,0,0">
-                <Label Text="Already have an account?"
-                       FontSize="13"
-                       TextColor="{StaticResource TextSecondary}" />
-                <Label Text="Login"
-                       FontSize="13"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource PrimaryColor}">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnLoginTapped" />
-                    </Label.GestureRecognizers>
-                </Label>
-            </HorizontalStackLayout>
-        </VerticalStackLayout>
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                                       Color="{StaticResource PrimaryColor}" HorizontalOptions="Center"
+                                       Margin="0,16,0,0"/>
+
+                    <FlexLayout
+                        x:Name="LoginLink"
+                        IsVisible="{Binding ShowLoginLink}"
+                        JustifyContent="Center"
+                        AlignItems="Center"
+                        Wrap="Wrap"
+                        Margin="0,28,0,0">
+                        <Label Text="Already have an account?"
+                               FontSize="13"
+                               Margin="0,0,4,0"
+                               TextColor="{StaticResource TextSecondary}"/>
+                        <Label Text="Login"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource PrimaryColor}"
+                               helpers:CursorBehavior.Cursor="Hand">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnLoginTapped"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
     </ScrollView>
 </ContentPage>

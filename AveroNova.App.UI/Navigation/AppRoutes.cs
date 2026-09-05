@@ -9,6 +9,7 @@ public static class AppRoutes
     // Auth
     public const string Splash         = "//Splash";
     public const string Welcome        = "//Welcome";
+    public const string LicenseActivation = "//LicenseActivation";
     public const string Login          = "//Login";
     public const string Register       = "Register";
     public const string ForgotPassword = "ForgotPassword";
@@ -65,8 +66,6 @@ public static class AppRoutes
     public const string RoleAdd        = "RoleAdd";
     public const string RoleEdit       = "RoleEdit";
     public const string Permissions    = "Permissions";
-    public const string UsersRoles     = "UsersRoles";
-    public const string Profile        = "Profile";
 
     // Subscription
     public const string Subscription   = "Subscription";

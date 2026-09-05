@@ -14,7 +14,7 @@
             Text="{Binding Label, Source={x:Reference This}}"
             FontSize="13"
             FontAttributes="Bold"
-            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+            TextColor="{StaticResource TextPrimary}" />
 
         <!-- Editor -->
 

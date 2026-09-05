@@ -15,7 +15,7 @@ namespace AveroNova.App
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new MainPage()) { Title = "AveroNova.App" };
+            return new Window(new MainPage()) { Title = "AveroNova" };
         }
     }
 }

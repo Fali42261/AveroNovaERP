@@ -4,12 +4,29 @@ namespace AveroNova.App.UI.Views.Auth;
 
 public partial class LoginFormView : ContentView
 {
+    public static readonly BindableProperty IsCreateAccountVisibleProperty =
+        BindableProperty.Create(
+            nameof(IsCreateAccountVisible),
+            typeof(bool),
+            typeof(LoginFormView),
+            true,
+            propertyChanged: static (bindable, _, value) =>
+            {
+                if (bindable is LoginFormView view)
+                    view.CreateAccountRow.IsVisible = value is true;
+            });
+
     public LoginFormView()
     {
         InitializeComponent();
     }
 
-    // Events raised to the hosting Page so navigation stays in the Page layer
+    public bool IsCreateAccountVisible
+    {
+        get => (bool)GetValue(IsCreateAccountVisibleProperty);
+        set => SetValue(IsCreateAccountVisibleProperty, value);
+    }
+
     public event EventHandler? SignInRequested;
     public event EventHandler? CreateAccountRequested;
 

@@ -2,76 +2,54 @@
 using AveroNova.Domain.Entities;
 using AveroNova.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace AveroNova.Infrastructure.Repositories
 {
     public class CompanyRepository : ICompanyRepository
     {
-        private readonly IDbContextFactory<AppDbContext> _factory;
+        private readonly AppDbContext _context;
 
-        public CompanyRepository(IDbContextFactory<AppDbContext> factory)
+        public CompanyRepository(AppDbContext context)
         {
-            _factory = factory;
+            _context = context;
         }
-
         public async Task AddAsync(Company company)
         {
-            await using var db = await _factory.CreateDbContextAsync();
-            await db.Companies.AddAsync(company);
-            await db.SaveChangesAsync();
+            await _context.Companies.AddAsync(company);
+            //var countBefore = await _context.Companies.CountAsync();
+            await _context.SaveChangesAsync();
+
+            //var countAfter = await _context.Companies.CountAsync();
+
+            //Console.WriteLine($"Before : {countBefore}");
+            //Console.WriteLine($"After  : {countAfter}");
         }
 
         public async Task DeleteAsync(Company company)
         {
-            await using var db = await _factory.CreateDbContextAsync();
-            var existing = await db.Companies.FirstOrDefaultAsync(
-                c => c.Id == company.Id && !c.IsDeleted);
-            if (existing == null)
-                return;
-
-            existing.IsDeleted = true;
-            existing.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
+            company.IsDeleted = false;
+            _context.Companies.Update(company);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<Company>> GetAllAsync()
         {
-            await using var db = await _factory.CreateDbContextAsync();
-            return await db.Companies.AsNoTracking()
-                .Where(c => !c.IsDeleted)
-                .ToListAsync();
+            var reult = await _context.Companies.ToListAsync();
+            return reult;
         }
 
         public async Task<Company?> GetByIdAsync(Guid id)
         {
-            if (id == Guid.Empty)
-                return null;
-
-            await using var db = await _factory.CreateDbContextAsync();
-            return await db.Companies.AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            return await _context.Companies.FindAsync(id);
         }
 
         public async Task UpdateAsync(Company company)
         {
-            await using var db = await _factory.CreateDbContextAsync();
-            var existing = await db.Companies.FirstOrDefaultAsync(
-                c => c.Id == company.Id && !c.IsDeleted);
-            if (existing == null)
-                return;
-
-            existing.OwnerName = company.OwnerName;
-            existing.GSTNumber = company.GSTNumber;
-            existing.PANNumber = company.PANNumber;
-            existing.Email = company.Email;
-            existing.MobileNumber = company.MobileNumber;
-            existing.Address = company.Address;
-            existing.City = company.City;
-            existing.State = company.State;
-            existing.Country = company.Country;
-            existing.PinCode = company.PinCode;
-            existing.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
+            _context.Companies.Update(company);
+            await _context.SaveChangesAsync();
         }
     }
 }

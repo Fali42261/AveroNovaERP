@@ -15,9 +15,7 @@ public class ProductModel : BaseModel
     public decimal  PurchasePrice   { get; set; }
     public decimal  SellingPrice    { get; set; }
     public decimal  TaxPercent      { get; set; }
-    public decimal  DiscountPercent { get; set; }
     public int      Stock           { get; set; }
-    public int      OpeningStock    { get; set; }
     public int      MinimumStock    { get; set; }
     public string   Description     { get; set; } = string.Empty;
     public string?  ImageUrl        { get; set; }

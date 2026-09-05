@@ -1,31 +1,25 @@
-﻿using AveroNova.Shared.Helpers;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
+namespace AveroNova.Infrastructure.Persistence;
 
-namespace AveroNova.Infrastructure.Persistence
+/// <summary>
+/// Design-time factory for EF migrations against the development SQLite database.
+/// </summary>
+public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
-    public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+    public AppDbContext CreateDbContext(string[] args)
     {
-        public AppDbContext CreateDbContext(string[] args)
-        {
-            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "AveroNova.API");
+        var basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "AveroNova.API"));
+        if (!Directory.Exists(basePath))
+            basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "AveroNova.API"));
 
-            var dataFolder = Path.Combine(basePath, "Data");
+        var databaseFolder = Path.Combine(basePath, "Database");
+        Directory.CreateDirectory(databaseFolder);
+        var dbPath = Path.Combine(databaseFolder, "AveroNovaDev.db");
 
-            Directory.CreateDirectory(dataFolder);
-
-            var dbPath = Path.Combine(dataFolder, "AveroNova.db");
-
-            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-
-            optionsBuilder.UseSqlite($"Data Source={dbPath}");
-
-            return new AppDbContext(optionsBuilder.Options);
-        }
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+        optionsBuilder.UseSqlite($"Data Source={dbPath}");
+        return new AppDbContext(optionsBuilder.Options);
     }
 }

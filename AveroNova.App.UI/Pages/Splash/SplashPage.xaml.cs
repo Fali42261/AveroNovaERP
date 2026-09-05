@@ -1,81 +1,52 @@
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
-using AveroNova.App.UI.Services.Local;
 
 namespace AveroNova.App.UI.Pages.Splash;
 
 public partial class SplashPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
-    private readonly LocalDatabaseInitializer _db;
-    private readonly IConnectivityService _connectivity;
-    private readonly ISyncService _sync;
+    private readonly IInstallationService _installation;
+    private readonly ILicenseService _licenses;
 
-    public SplashPage(
-        IAuthenticationService auth,
-        LocalDatabaseInitializer db,
-        IConnectivityService connectivity,
-        ISyncService? sync = null)
+    public SplashPage(IAuthenticationService auth, IInstallationService installation, ILicenseService licenses)
     {
         InitializeComponent();
-        AveroNova.App.UI.Helpers.StartupLog.Write("Splash ctor");
         _auth = auth;
-        _db = db;
-        _connectivity = connectivity;
-        _sync = sync;
+        _installation = installation;
+        _licenses = licenses;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        AveroNova.App.UI.Helpers.StartupLog.Write("Splash OnAppearing");
-        await Task.Delay(800);
-        AveroNova.App.UI.Helpers.StartupLog.Write("Splash delay done");
+        await Task.Delay(1200);
 
-        string nextRoute;
-        try
-        {
-            await Task.Run(() => _db.EnsureInitializedAsync());
-            AveroNova.App.UI.Helpers.StartupLog.Write("DB initialized");
+        await _installation.EnsureInitializedAsync();
 
-            if (await _auth.TryAutoLoginAsync())
-            {
-                AveroNova.App.UI.Helpers.StartupLog.Write("Auto-login OK, going Main");
-                nextRoute = AppRoutes.Main;
-            }
-            else if (await _auth.HasLocalUserAsync())
-            {
-                nextRoute = AppRoutes.Login;
-            }
-            else
-            {
-                nextRoute = AppRoutes.Welcome;
-            }
-        }
-        catch (Exception ex)
+        var licenseStatus = await _licenses.EnsureActivatedAsync();
+        if (licenseStatus == LicenseBootstrapStatus.Blocked)
         {
-            AveroNova.App.UI.Helpers.StartupLog.Write("DB init failed: " + ex);
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Local database init failed: {ex}");
-            nextRoute = AppRoutes.Welcome;
+            await Shell.Current.GoToAsync(AppRoutes.LicenseActivation);
+            return;
         }
 
-        await MainThread.InvokeOnMainThreadAsync(async () =>
+        // Registered + valid local offline session → continue offline (or online).
+        if (await _auth.TryAutoLoginAsync())
         {
-            await Shell.Current.GoToAsync(nextRoute);
-            if (nextRoute == AppRoutes.Main && _connectivity.IsOnline && _sync is not null)
-                _ = SafeSyncAsync();
-        });
-    }
+            await _licenses.ValidateOnlineIfPossibleAsync();
+            await Shell.Current.GoToAsync(AppRoutes.Main);
+            return;
+        }
 
-    private async Task SafeSyncAsync()
-    {
-        try
+        // Registered installation → Login only (no Create Account landing).
+        if (_installation.IsRegistered)
         {
-            await _sync!.SyncNowAsync();
+            await Shell.Current.GoToAsync(AppRoutes.Login);
+            return;
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[AveroNova] Startup sync skipped: {ex.Message}");
-        }
+
+        // Fresh installation → Welcome (Login + Create Account).
+        await Shell.Current.GoToAsync(AppRoutes.Welcome);
     }
 }

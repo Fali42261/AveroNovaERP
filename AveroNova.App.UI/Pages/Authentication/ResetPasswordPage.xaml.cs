@@ -4,45 +4,24 @@ using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Authentication;
 
-[QueryProperty(nameof(Email), "email")]
 public partial class ResetPasswordPage : ContentPage
 {
     private readonly IAuthenticationService _auth;
-    private readonly IToastService _toasts;
-    private readonly HashSet<string> _touched = [];
     private bool _layoutBusy;
-    private bool _busy;
-    private bool _interactionReady;
-    private bool _unfocusedAttached;
     private double _appliedMinHeight = double.NaN;
     private ScreenSize? _appliedSize;
 
-    public string Email
-    {
-        get => EntryEmail?.Text ?? string.Empty;
-        set
-        {
-            if (EntryEmail != null)
-                EntryEmail.Text = Uri.UnescapeDataString(value ?? string.Empty);
-        }
-    }
-
-    public ResetPasswordPage(IAuthenticationService auth, IToastService toasts)
+    public ResetPasswordPage(IAuthenticationService auth)
     {
         InitializeComponent();
         _auth = auth;
-        _toasts = toasts;
         SizeChanged += (_, _) => ApplyLayout();
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        _toasts.AttachTo(this);
-        _interactionReady = false;
-        AttachFieldValidation();
         ApplyLayout();
-        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(400), () => _interactionReady = true);
     }
 
     private void ApplyLayout()
@@ -69,15 +48,11 @@ public partial class ResetPasswordPage : ContentPage
 
                 AuthCard.HorizontalOptions = LayoutOptions.Center;
                 AuthCard.Padding = compact ? new Thickness(4, 8) : new Thickness(32);
-                AuthCard.VerticalOptions = compact ? LayoutOptions.Start : LayoutOptions.Center;
 
                 if (compact)
                 {
                     AuthCard.StrokeThickness = 0;
                     AuthCard.BackgroundColor = Colors.Transparent;
-                    ContentHost.ClearValue(MinimumHeightRequestProperty);
-                    _appliedMinHeight = double.NaN;
-                    ContentHost.Padding = new Thickness(20, 24, 20, 160);
                 }
                 else
                 {
@@ -86,17 +61,14 @@ public partial class ResetPasswordPage : ContentPage
                 }
             }
 
-            if (!compact)
+            var minHeight = Height > 0
+                ? Math.Max(0, Height - ContentHost.Padding.VerticalThickness)
+                : -1;
+            if (minHeight >= 0
+                && (double.IsNaN(_appliedMinHeight) || Math.Abs(_appliedMinHeight - minHeight) >= 32))
             {
-                var minHeight = Height > 0
-                    ? Math.Max(0, Height - ContentHost.Padding.VerticalThickness)
-                    : -1;
-                if (minHeight >= 0
-                    && (double.IsNaN(_appliedMinHeight) || Math.Abs(_appliedMinHeight - minHeight) >= 32))
-                {
-                    _appliedMinHeight = minHeight;
-                    ContentHost.MinimumHeightRequest = minHeight;
-                }
+                _appliedMinHeight = minHeight;
+                ContentHost.MinimumHeightRequest = minHeight;
             }
 
             var available = Math.Max(280, Width - ContentHost.Padding.HorizontalThickness);
@@ -113,58 +85,32 @@ public partial class ResetPasswordPage : ContentPage
         }
     }
 
-    private void AttachFieldValidation()
-    {
-        if (_unfocusedAttached)
-            return;
+    private void OnEmailCompleted(object? sender, EventArgs e) => EntryPassword.Focus();
 
-        _unfocusedAttached = true;
-        AttachField(EntryEmail, "Email");
-        AttachField(EntryPassword, "Password");
-        AttachField(EntryConfirm, "Confirm");
-    }
-
-    private void AttachField(Entry entry, string field)
-    {
-        entry.Focused += (_, _) =>
-        {
-            if (_interactionReady)
-                _touched.Add(field);
-        };
-        entry.Unfocused += (_, _) =>
-        {
-            if (_interactionReady && _touched.Contains(field))
-                ValidateField(field);
-        };
-    }
-
-    private void OnEmailCompleted(object? sender, EventArgs e)
-    {
-        _touched.Add("Email");
-        ValidateField("Email");
-        EntryPassword.Focus();
-    }
-
-    private void OnPasswordCompleted(object? sender, EventArgs e)
-    {
-        _touched.Add("Password");
-        ValidateField("Password");
-        EntryConfirm.Focus();
-    }
+    private void OnPasswordCompleted(object? sender, EventArgs e) => EntryConfirm.Focus();
 
     private void OnConfirmCompleted(object? sender, EventArgs e) => OnResetClicked(sender, e);
 
     private async void OnResetClicked(object? sender, EventArgs e)
     {
-        if (_busy)
-            return;
+        HideFieldErrors();
 
-        _touched.Add("Email");
-        _touched.Add("Password");
-        _touched.Add("Confirm");
-        ErrorBanner.IsVisible = false;
+        var emailMissing = string.IsNullOrWhiteSpace(EntryEmail.Text);
+        var passwordMissing = string.IsNullOrWhiteSpace(EntryPassword.Text);
+        var confirmMissing = string.IsNullOrWhiteSpace(EntryConfirm.Text);
+        var mismatch = !passwordMissing && !confirmMissing
+                       && !string.Equals(EntryPassword.Text, EntryConfirm.Text, StringComparison.Ordinal);
 
-        if (!ValidateAll())
+        if (emailMissing)
+            ShowFieldError(LblEmailError, "Email address is required");
+        if (passwordMissing)
+            ShowFieldError(LblPasswordError, "New password is required");
+        if (confirmMissing)
+            ShowFieldError(LblConfirmError, "Confirm password is required");
+        else if (mismatch)
+            ShowFieldError(LblConfirmError, "Passwords do not match");
+
+        if (emailMissing || passwordMissing || confirmMissing || mismatch)
             return;
 
         SetLoading(true);
@@ -172,139 +118,52 @@ public partial class ResetPasswordPage : ContentPage
         try
         {
             var (success, error) = await _auth.ResetPasswordAsync(
-                (EntryEmail.Text ?? string.Empty).Trim(),
-                EntryPassword.Text ?? string.Empty);
+                EntryEmail.Text.Trim(),
+                EntryPassword.Text);
 
             if (success)
             {
-                _toasts.ShowSuccess(
-                    "Password Updated",
-                    "Your local password was changed successfully. Sign in with the new password.",
-                    TimeSpan.FromSeconds(2));
-                await Task.Delay(500);
-                await GoToLoginAsync();
+                SuccessBanner.IsVisible = true;
+                await Task.Delay(800);
+                await Shell.Current.GoToAsync(AppRoutes.Login);
             }
             else
             {
                 ShowBanner(error ?? "Unable to reset password. Please try again.");
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"[swapdigit] Password reset failed: {ex}");
-            ShowBanner("Unable to access the local account database. Please try again.");
+            ShowBanner("Unable to reset password. Please try again.");
         }
         finally
         {
             SetLoading(false);
         }
     }
+
+    private async void OnBackClicked(object? sender, EventArgs e)
+        => await GoToLoginAsync();
 
     private async void OnSignInTapped(object? sender, TappedEventArgs e)
-    {
-        if (_busy)
-            return;
-
-        SetLoading(true, "Please wait...");
-        try
-        {
-            await GoToLoginAsync();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[swapdigit] Navigate to login failed: {ex}");
-            ShowBanner("Unable to open Sign In. Please try again.");
-        }
-        finally
-        {
-            SetLoading(false);
-        }
-    }
+        => await GoToLoginAsync();
 
     private static Task GoToLoginAsync()
         => Shell.Current.GoToAsync(AppRoutes.Login);
 
-    private bool ValidateAll()
+    private static void ShowFieldError(Label label, string message)
     {
-        var emailOk = ValidateField("Email");
-        var passwordOk = ValidateField("Password");
-        var confirmOk = ValidateField("Confirm");
-        return emailOk && passwordOk && confirmOk;
+        label.Text = message;
+        label.IsVisible = true;
     }
 
-    private bool ValidateField(string field)
+    private void HideFieldErrors()
     {
-        switch (field)
-        {
-            case "Email":
-            {
-                var email = (EntryEmail.Text ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(email))
-                {
-                    ShowFieldError(LblEmailError, "Email address is required");
-                    return false;
-                }
-
-                if (!IsValidEmail(email))
-                {
-                    ShowFieldError(LblEmailError, "Please enter a valid email address.");
-                    return false;
-                }
-
-                ShowFieldError(LblEmailError, null);
-                return true;
-            }
-            case "Password":
-            {
-                var password = EntryPassword.Text ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(password))
-                {
-                    ShowFieldError(LblPasswordError, "New password is required");
-                    return false;
-                }
-
-                if (password.Length < 8)
-                {
-                    ShowFieldError(LblPasswordError, "Password must be at least 8 characters");
-                    return false;
-                }
-
-                ShowFieldError(LblPasswordError, null);
-                if (_touched.Contains("Confirm") && !string.IsNullOrWhiteSpace(EntryConfirm.Text))
-                    ValidateField("Confirm");
-                return true;
-            }
-            case "Confirm":
-            {
-                var confirm = EntryConfirm.Text ?? string.Empty;
-                var password = EntryPassword.Text ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(confirm))
-                {
-                    ShowFieldError(LblConfirmError, "Confirm password is required");
-                    return false;
-                }
-
-                if (!string.Equals(password, confirm, StringComparison.Ordinal))
-                {
-                    ShowFieldError(LblConfirmError, "Passwords do not match");
-                    return false;
-                }
-
-                ShowFieldError(LblConfirmError, null);
-                return true;
-            }
-            default:
-                return true;
-        }
-    }
-
-    private static bool IsValidEmail(string email)
-        => System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-
-    private static void ShowFieldError(Label label, string? message)
-    {
-        label.Text = message ?? string.Empty;
-        label.IsVisible = !string.IsNullOrEmpty(message);
+        LblEmailError.IsVisible = false;
+        LblPasswordError.IsVisible = false;
+        LblConfirmError.IsVisible = false;
+        ErrorBanner.IsVisible = false;
+        SuccessBanner.IsVisible = false;
     }
 
     private void ShowBanner(string message)
@@ -313,11 +172,10 @@ public partial class ResetPasswordPage : ContentPage
         ErrorBanner.IsVisible = true;
     }
 
-    private void SetLoading(bool loading, string? busyText = null)
+    private void SetLoading(bool loading)
     {
-        _busy = loading;
         BtnReset.IsEnabled = !loading;
-        BtnReset.Text = loading ? (busyText ?? "Resetting...") : "Reset Password";
+        BtnReset.Text = loading ? "Resetting..." : "Reset Password";
         Loader.IsRunning = loading;
         Loader.IsVisible = loading;
         if (loading)

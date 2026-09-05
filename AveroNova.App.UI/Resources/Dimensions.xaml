@@ -37,38 +37,17 @@
     <x:Double x:Key="RadiusFull">999</x:Double>
 
     <!-- ── Component Sizes ────────────────────────────────────────────── -->
-    <x:Double x:Key="ButtonHeight">48</x:Double>
+    <x:Double x:Key="ButtonHeight">46</x:Double>
     <x:Double x:Key="ButtonHeightSmall">36</x:Double>
     <x:Double x:Key="ButtonHeightLarge">54</x:Double>
-    <x:Double x:Key="WizardButtonMinWidth">140</x:Double>
-    <x:Double x:Key="WizardPrimaryButtonMinWidth">180</x:Double>
-    <x:Double x:Key="ReviewLabelColumnWidth">148</x:Double>
-    <x:Double x:Key="ReviewLabelColumnWidthNarrow">118</x:Double>
     <x:Double x:Key="InputHeight">48</x:Double>
     <x:Double x:Key="InputHeightSmall">40</x:Double>
 
     <x:Double x:Key="HeaderHeight">64</x:Double>
     <x:Double x:Key="MobileHeaderHeight">56</x:Double>
     <x:Double x:Key="BottomNavHeight">60</x:Double>
-    <x:Double x:Key="SidebarWidth">256</x:Double>
-    <x:Double x:Key="SidebarWidthDesktop">256</x:Double>
-    <x:Double x:Key="SidebarWidthTablet">240</x:Double>
-    <x:Double x:Key="SidebarWidthMobileDrawer">280</x:Double>
+    <x:Double x:Key="SidebarWidth">260</x:Double>
     <x:Double x:Key="SidebarCollapsedWidth">64</x:Double>
-    <x:Double x:Key="SidebarBrandHeight">72</x:Double>
-    <x:Double x:Key="SidebarLogoSize">42</x:Double>
-    <x:Double x:Key="SidebarItemHeight">44</x:Double>
-    <x:Double x:Key="SidebarChildItemHeight">40</x:Double>
-    <x:Double x:Key="SidebarItemHeightMobile">44</x:Double>
-    <x:Double x:Key="SidebarItemPadH">14</x:Double>
-    <x:Double x:Key="SidebarItemPadHTablet">12</x:Double>
-    <x:Double x:Key="SidebarIconSlot">20</x:Double>
-    <x:Double x:Key="SidebarIconSize">16</x:Double>
-    <x:Double x:Key="SidebarIconTextGap">10</x:Double>
-    <x:Double x:Key="SidebarChevronSize">14</x:Double>
-    <x:Double x:Key="SidebarItemRadius">6</x:Double>
-    <x:Double x:Key="SidebarSectionGap">12</x:Double>
-    <x:Double x:Key="SidebarNavPadBottom">16</x:Double>
 
     <x:Double x:Key="AvatarSmall">32</x:Double>
     <x:Double x:Key="AvatarMedium">40</x:Double>

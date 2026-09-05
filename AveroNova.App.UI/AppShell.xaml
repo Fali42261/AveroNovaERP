@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:splash="clr-namespace:AveroNova.App.UI.Pages.Splash"
+    xmlns:license="clr-namespace:AveroNova.App.UI.Pages.License"
     xmlns:auth="clr-namespace:AveroNova.App.UI.Pages.Authentication"
     xmlns:local="clr-namespace:AveroNova.App.UI"
     FlyoutBehavior="Disabled"
@@ -14,6 +15,9 @@
 
     <!-- 2. Welcome -->
     <ShellContent Route="Welcome"  ContentTemplate="{DataTemplate auth:WelcomePage}" />
+
+    <!-- 2b. First-time license activation (only when no local license and offline) -->
+    <ShellContent Route="LicenseActivation" ContentTemplate="{DataTemplate license:LicenseActivationPage}" />
 
     <!-- 3. Login -->
     <ShellContent Route="Login"    ContentTemplate="{DataTemplate auth:LoginPage}" />

@@ -25,7 +25,7 @@
 
             <Label
                 VerticalOptions="Center"
-                Text="© 2026 swapdigit ERP"
+                Text="© 2026 AveroNova ERP"
                 FontSize="14"
                 TextColor="Gray"/>
 

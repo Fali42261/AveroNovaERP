@@ -17,6 +17,59 @@ namespace AveroNova.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
 
+            modelBuilder.Entity("AveroNova.Domain.Entities.ClientInstallation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("InstallationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("InstallationId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ClientInstallations", (string)null);
+                });
+
             modelBuilder.Entity("AveroNova.Domain.Entities.Company", b =>
                 {
                     b.Property<Guid>("Id")
@@ -61,12 +114,20 @@ namespace AveroNova.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("MobileNumber")
                         .IsRequired()
-                        .HasMaxLength(15)
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OwnerName")
@@ -89,6 +150,87 @@ namespace AveroNova.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyCode")
+                        .IsUnique();
+
+                    b.ToTable("Companies", (string)null);
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.DeviceSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RefreshTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
+
+                    b.Property<string>("TokenFamilyId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
@@ -97,12 +239,91 @@ namespace AveroNova.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyCode")
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("RefreshTokenHash");
+
+                    b.HasIndex("UserId", "DeviceId");
+
+                    b.ToTable("DeviceSessions", (string)null);
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.License", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ExpiryDateUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsTrial")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastSyncedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastValidatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartDateUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
+
+                    b.Property<DateTime>("TrialEndDateUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("TrialStartDateUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("DeviceId")
                         .IsUnique();
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Companies", (string)null);
+                    b.ToTable("Licenses", (string)null);
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.Permission", b =>
@@ -124,10 +345,21 @@ namespace AveroNova.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PermissionName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -138,6 +370,205 @@ namespace AveroNova.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Permissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b1111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "View dashboard",
+                            IsDeleted = false,
+                            PermissionName = "Dashboard.View",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b2222222-2222-2222-2222-222222222222"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "View sales",
+                            IsDeleted = false,
+                            PermissionName = "Sales.View",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b3333333-3333-3333-3333-333333333333"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Create sales",
+                            IsDeleted = false,
+                            PermissionName = "Sales.Create",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b4444444-4444-4444-4444-444444444444"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "View inventory",
+                            IsDeleted = false,
+                            PermissionName = "Inventory.View",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b5555555-5555-5555-5555-555555555555"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "View customers",
+                            IsDeleted = false,
+                            PermissionName = "Customers.View",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b6666666-6666-6666-6666-666666666666"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "View reports",
+                            IsDeleted = false,
+                            PermissionName = "Reports.View",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b7777777-7777-7777-7777-777777777777"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Manage company",
+                            IsDeleted = false,
+                            PermissionName = "Company.Manage",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("b8888888-8888-8888-8888-888888888888"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Manage users",
+                            IsDeleted = false,
+                            PermissionName = "Users.Manage",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        });
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.Plan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CreditLimit")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("INR");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
+
+                    b.Property<int>("TrialDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Plans", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreditLimit = 1000,
+                            Currency = "INR",
+                            Description = "Starter plan with 15-day free trial.",
+                            IsActive = true,
+                            IsAvailable = true,
+                            IsDeleted = false,
+                            Name = "Starter",
+                            Price = 0m,
+                            SyncStatus = 2,
+                            SyncVersion = 1L,
+                            TrialDays = 15
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreditLimit = 10000,
+                            Currency = "INR",
+                            Description = "Business plan — Coming Soon.",
+                            IsActive = true,
+                            IsAvailable = false,
+                            IsDeleted = false,
+                            Name = "Business",
+                            Price = 0m,
+                            SyncStatus = 2,
+                            SyncVersion = 1L,
+                            TrialDays = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreditLimit = -1,
+                            Currency = "INR",
+                            Description = "Enterprise plan — Coming Soon.",
+                            IsActive = true,
+                            IsAvailable = false,
+                            IsDeleted = false,
+                            Name = "Enterprise",
+                            Price = 0m,
+                            SyncStatus = 2,
+                            SyncVersion = 1L,
+                            TrialDays = 0
+                        });
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.Role", b =>
@@ -158,10 +589,21 @@ namespace AveroNova.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -172,6 +614,18 @@ namespace AveroNova.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Full access company owner role.",
+                            IsDeleted = false,
+                            Name = "Company Owner",
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        });
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.RolePermission", b =>
@@ -188,11 +642,22 @@ namespace AveroNova.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("PermissionId")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -205,6 +670,88 @@ namespace AveroNova.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("RolePermissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("c1111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b1111111-1111-1111-1111-111111111111"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c2222222-2222-2222-2222-222222222222"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b2222222-2222-2222-2222-222222222222"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c3333333-3333-3333-3333-333333333333"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b3333333-3333-3333-3333-333333333333"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c4444444-4444-4444-4444-444444444444"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b4444444-4444-4444-4444-444444444444"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c5555555-5555-5555-5555-555555555555"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b5555555-5555-5555-5555-555555555555"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c6666666-6666-6666-6666-666666666666"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b6666666-6666-6666-6666-666666666666"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c7777777-7777-7777-7777-777777777777"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b7777777-7777-7777-7777-777777777777"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        },
+                        new
+                        {
+                            Id = new Guid("c8888888-8888-8888-8888-888888888888"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            PermissionId = new Guid("b8888888-8888-8888-8888-888888888888"),
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            SyncStatus = 2,
+                            SyncVersion = 1L
+                        });
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.Subscription", b =>
@@ -213,46 +760,31 @@ namespace AveroNova.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("AutoRenew")
-                        .HasColumnType("INTEGER");
-
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("DurationInDays")
+                    b.Property<int>("CreditLimit")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("ExpiryDate")
+                    b.Property<int>("CreditsUsed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("EndDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsSubscription")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsTrial")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Plan")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid?>("PlanId")
+                    b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PlanName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
+                    b.Property<Guid>("PlanId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartDate")
@@ -261,14 +793,13 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SubscriptionType")
+                    b.Property<int>("SyncStatus")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("TrialEndDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("TrialStartDate")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -282,100 +813,69 @@ namespace AveroNova.Infrastructure.Migrations
                     b.ToTable("Subscriptions", (string)null);
                 });
 
-            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlan", b =>
+            modelBuilder.Entity("AveroNova.Domain.Entities.SyncQueueItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(50)
+                    b.Property<Guid?>("CompanyId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
+                    b.Property<Guid>("EntityId")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("DurationInDays")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsCustomerAvailable")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsTrialPlan")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
+                    b.Property<DateTime?>("LastAttemptAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
+                    b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("SortOrder")
+                    b.Property<int>("Operation")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("PayloadJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QueueStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
-                        .IsUnique();
+                    b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("SubscriptionPlans", (string)null);
-                });
+                    b.HasIndex("QueueStatus", "CreatedAt");
 
-            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlanFeature", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ModuleKey")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ModuleName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PlanId", "ModuleKey")
-                        .IsUnique();
-
-                    b.ToTable("SubscriptionPlanFeatures", (string)null);
+                    b.ToTable("SyncQueue", (string)null);
                 });
 
             modelBuilder.Entity("AveroNova.Domain.Entities.User", b =>
@@ -405,9 +905,25 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MobileNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -425,6 +941,9 @@ namespace AveroNova.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("MobileNumber")
                         .IsUnique();
 
                     b.HasIndex("UserCode")
@@ -448,11 +967,25 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsOwner")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -476,17 +1009,28 @@ namespace AveroNova.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("RoleId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SyncVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1L);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -496,23 +1040,65 @@ namespace AveroNova.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
-
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("UserId", "CompanyId", "RoleId")
+                    b.HasIndex("UserId", "RoleId", "CompanyId")
                         .IsUnique();
 
                     b.ToTable("UserRoles", (string)null);
                 });
 
-            modelBuilder.Entity("AveroNova.Domain.Entities.Company", b =>
+            modelBuilder.Entity("AveroNova.Domain.Entities.ClientInstallation", b =>
                 {
+                    b.HasOne("AveroNova.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AveroNova.Domain.Entities.User", "User")
-                        .WithMany("Companies")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.DeviceSession", b =>
+                {
+                    b.HasOne("AveroNova.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AveroNova.Domain.Entities.User", "User")
+                        .WithMany("DeviceSessions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AveroNova.Domain.Entities.License", b =>
+                {
+                    b.HasOne("AveroNova.Domain.Entities.Company", "Company")
+                        .WithMany("Licenses")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AveroNova.Domain.Entities.User", "User")
+                        .WithMany("Licenses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
 
                     b.Navigation("User");
                 });
@@ -541,26 +1127,16 @@ namespace AveroNova.Infrastructure.Migrations
                     b.HasOne("AveroNova.Domain.Entities.Company", "Company")
                         .WithMany("Subscriptions")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("AveroNova.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
+                    b.HasOne("AveroNova.Domain.Entities.Plan", "Plan")
                         .WithMany("Subscriptions")
                         .HasForeignKey("PlanId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Company");
-
-                    b.Navigation("SubscriptionPlan");
-                });
-
-            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlanFeature", b =>
-                {
-                    b.HasOne("AveroNova.Domain.Entities.SubscriptionPlan", "Plan")
-                        .WithMany("Features")
-                        .HasForeignKey("PlanId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Plan");
                 });
@@ -586,11 +1162,6 @@ namespace AveroNova.Infrastructure.Migrations
 
             modelBuilder.Entity("AveroNova.Domain.Entities.UserRole", b =>
                 {
-                    b.HasOne("AveroNova.Domain.Entities.Company", "Company")
-                        .WithMany()
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("AveroNova.Domain.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
@@ -603,8 +1174,6 @@ namespace AveroNova.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Company");
-
                     b.Navigation("Role");
 
                     b.Navigation("User");
@@ -612,6 +1181,8 @@ namespace AveroNova.Infrastructure.Migrations
 
             modelBuilder.Entity("AveroNova.Domain.Entities.Company", b =>
                 {
+                    b.Navigation("Licenses");
+
                     b.Navigation("Subscriptions");
 
                     b.Navigation("UserCompanies");
@@ -622,6 +1193,11 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Navigation("RolePermissions");
                 });
 
+            modelBuilder.Entity("AveroNova.Domain.Entities.Plan", b =>
+                {
+                    b.Navigation("Subscriptions");
+                });
+
             modelBuilder.Entity("AveroNova.Domain.Entities.Role", b =>
                 {
                     b.Navigation("RolePermissions");
@@ -629,16 +1205,11 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("AveroNova.Domain.Entities.SubscriptionPlan", b =>
-                {
-                    b.Navigation("Features");
-
-                    b.Navigation("Subscriptions");
-                });
-
             modelBuilder.Entity("AveroNova.Domain.Entities.User", b =>
                 {
-                    b.Navigation("Companies");
+                    b.Navigation("DeviceSessions");
+
+                    b.Navigation("Licenses");
 
                     b.Navigation("UserCompanies");
 

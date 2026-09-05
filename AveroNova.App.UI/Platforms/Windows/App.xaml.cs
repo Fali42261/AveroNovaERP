@@ -1,6 +1,7 @@
-﻿using AveroNova.App.UI.Models;
-using AveroNova.App.UI.Services.Local;
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
+
+// To learn more about WinUI, the WinUI project structure,
+// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace AveroNova.App.UI.WinUI
 {
@@ -15,13 +16,10 @@ namespace AveroNova.App.UI.WinUI
         /// </summary>
         public App()
         {
-            // Must be set in the constructor, before the window exists.
-            RequestedTheme = ThemePreferenceStore.Load() == ThemeMode.Dark
-                ? ApplicationTheme.Dark
-                : ApplicationTheme.Light;
             this.InitializeComponent();
         }
 
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
     }
+
 }
