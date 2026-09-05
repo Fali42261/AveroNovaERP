@@ -10,11 +10,19 @@ public sealed class LocalInventoryService : IInventoryService
 {
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAppSessionContext _session;
+    private readonly ISyncService _sync;
+    private readonly IConnectivityService _connectivity;
 
-    public LocalInventoryService(IDbContextFactory<LocalAppDbContext> dbFactory, IAppSessionContext session)
+    public LocalInventoryService(
+        IDbContextFactory<LocalAppDbContext> dbFactory,
+        IAppSessionContext session,
+        ISyncService sync,
+        IConnectivityService connectivity)
     {
         _dbFactory = dbFactory;
         _session = session;
+        _sync = sync;
+        _connectivity = connectivity;
     }
 
     public async Task<List<InventoryItemModel>> GetInventoryAsync(Guid companyId)
@@ -135,13 +143,54 @@ public sealed class LocalInventoryService : IInventoryService
         };
 
         db.StockMovements.Add(movement);
+
         LocalSyncQueueWriter.Enqueue(db, "Product", product.Id, product.CompanyId, SyncOperation.Update,
-            new { product.Id, product.CompanyId, product.Stock }, now);
+            new
+            {
+                product.Id,
+                product.CompanyId,
+                product.Name,
+                Sku = product.SKU,
+                product.Barcode,
+                product.Category,
+                product.Brand,
+                product.Unit,
+                product.PurchasePrice,
+                product.SellingPrice,
+                product.TaxPercent,
+                product.Stock,
+                product.MinimumStock,
+                product.Description,
+                product.Status,
+                SyncVersion = 1L
+            }, now);
+
         LocalSyncQueueWriter.Enqueue(db, "StockMovement", movement.Id, movement.CompanyId, SyncOperation.Create,
-            new { movement.Id, movement.CompanyId, movement.ProductId, movement.Type, movement.Quantity, movement.StockBefore, movement.StockAfter, movement.Reference, movement.Notes }, now);
+            new
+            {
+                movement.Id,
+                movement.CompanyId,
+                movement.ProductId,
+                movement.ProductName,
+                Sku = movement.SKU,
+                movement.Type,
+                movement.Quantity,
+                movement.StockBefore,
+                movement.StockAfter,
+                movement.Reference,
+                movement.Notes,
+                movement.CreatedBy,
+                SyncVersion = 1L
+            }, now);
 
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
+
+        _connectivity.IncrementPending();
+        _connectivity.IncrementPending();
+        if (_connectivity.IsOnline)
+            _ = _sync.SyncNowAsync();
+
         return (true, null);
     }
 
