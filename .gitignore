@@ -23,6 +23,8 @@ obj/
 *.db-shm
 *.db-wal
 AveroNova.API/Data/
+AveroNova.API/Database/*
+!AveroNova.API/Database/.gitkeep
 **/AveroNovaDev.db
 **/AveroNovaLocal.db
 **/AveroNova.local.db
