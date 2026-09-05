@@ -1,6 +1,7 @@
 using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -28,8 +29,6 @@ public partial class ProductViewPage : ContentPage
     private void BuildContent(ProductModel p)
     {
         Content.Children.Clear();
-
-        // Stock status
         if (p.IsLowStock)
         {
             var warn = new Border { BackgroundColor = Color.FromArgb("#FEF2F2"), Stroke = Color.FromArgb("#FECACA"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) }, Padding = new Thickness(14, 10) };
@@ -37,32 +36,23 @@ public partial class ProductViewPage : ContentPage
             Content.Children.Add(warn);
         }
 
-        // Price cards
         var priceCard = new Border { Style = (Style)Resources["AppCard"] };
         var pg = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)), ColumnSpacing = 12 };
-        pg.Add(StatBox("Selling Price",  $"${p.SellingPrice:N2}",  "#2563EB"), 0, 0);
+        pg.Add(StatBox("Selling Price", $"${p.SellingPrice:N2}", "#2563EB"), 0, 0);
         pg.Add(StatBox("Purchase Price", $"${p.PurchasePrice:N2}", "#64748B"), 1, 0);
-        pg.Add(StatBox("Margin",         $"{p.Margin}%",            "#059669"), 2, 0);
+        pg.Add(StatBox("Margin", $"{p.Margin}%", "#059669"), 2, 0);
         priceCard.Content = pg;
 
-        // Details
         var detail = new Border { Style = (Style)Resources["AppCard"] };
         var dv = new VerticalStackLayout { Spacing = 12 };
         dv.Children.Add(new Label { Text = p.Name, FontSize = 18, FontAttributes = FontAttributes.Bold });
         dv.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
         void Row(string l, string v) => dv.Children.Add(DetailRow(l, v));
-        Row("SKU",         p.SKU);
-        Row("Barcode",     p.Barcode);
-        Row("Category",    p.Category);
-        Row("Brand",       p.Brand);
-        Row("Unit",        p.Unit);
-        Row("Tax",         $"{p.TaxPercent}%");
-        Row("Stock",       $"{p.Stock} {p.Unit}");
-        Row("Min. Stock",  $"{p.MinimumStock} {p.Unit}");
-        Row("Status",      p.StatusLabel);
+        Row("SKU", p.SKU); Row("Barcode", p.Barcode); Row("Category", p.Category); Row("Brand", p.Brand);
+        Row("Unit", p.Unit); Row("Tax", $"{p.TaxPercent}%"); Row("Stock", $"{p.Stock} {p.Unit}");
+        Row("Min. Stock", $"{p.MinimumStock} {p.Unit}"); Row("Status", p.StatusLabel);
         if (!string.IsNullOrEmpty(p.Description)) Row("Description", p.Description);
         detail.Content = dv;
-
         Content.Children.Add(priceCard);
         Content.Children.Add(detail);
     }
@@ -79,7 +69,7 @@ public partial class ProductViewPage : ContentPage
     {
         var g = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(new GridLength(140)), new ColumnDefinition(GridLength.Star)) };
         g.Add(new Label { Text = l, FontSize = 13, TextColor = Color.FromArgb("#64748B") }, 0, 0);
-        g.Add(new Label { Text = v, FontSize = 13, FontAttributes = FontAttributes.Bold },  1, 0);
+        g.Add(new Label { Text = v, FontSize = 13, FontAttributes = FontAttributes.Bold }, 1, 0);
         return g;
     }
 
@@ -89,7 +79,13 @@ public partial class ProductViewPage : ContentPage
     {
         if (_product == null) return;
         if (!await DialogHelper.ConfirmDeleteAsync("Product", $"Delete {_product.Name}?")) return;
-        await _svc.DeleteAsync(_product.LocalId);
+        var (ok, error) = await _svc.DeleteAsync(_product.LocalId);
+        if (!ok)
+        {
+            await AppToast.ErrorAsync(error ?? "Unable to delete product.");
+            return;
+        }
+        await AppToast.SuccessAsync("Product deleted successfully.");
         await Shell.Current.GoToAsync("..");
     }
 }
