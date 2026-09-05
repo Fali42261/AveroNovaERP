@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AveroNova.App.UI.Data;
+using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Api;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.Services.Security;
