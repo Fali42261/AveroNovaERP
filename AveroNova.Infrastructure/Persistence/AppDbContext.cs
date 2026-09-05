@@ -6,10 +6,7 @@ namespace AveroNova.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
-
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
@@ -21,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
@@ -38,26 +36,12 @@ public class AppDbContext : DbContext
     private static void SeedFoundationData(ModelBuilder modelBuilder)
     {
         var seedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        var starter = Plan.CreateStarterCatalog();
-        starter.CreatedAt = seedAt;
-        var business = Plan.CreateBusinessCatalog();
-        business.CreatedAt = seedAt;
-        var enterprise = Plan.CreateEnterpriseCatalog();
-        enterprise.CreatedAt = seedAt;
+        var starter = Plan.CreateStarterCatalog(); starter.CreatedAt = seedAt;
+        var business = Plan.CreateBusinessCatalog(); business.CreatedAt = seedAt;
+        var enterprise = Plan.CreateEnterpriseCatalog(); enterprise.CreatedAt = seedAt;
         modelBuilder.Entity<Plan>().HasData(starter, business, enterprise);
-
         var ownerRoleId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        modelBuilder.Entity<Role>().HasData(new Role
-        {
-            Id = ownerRoleId,
-            Name = Domain.Constants.RoleNames.CompanyOwner,
-            Description = "Full access company owner role.",
-            CreatedAt = seedAt,
-            SyncStatus = RecordSyncStatus.Synced,
-            SyncVersion = 1
-        });
-
+        modelBuilder.Entity<Role>().HasData(new Role { Id = ownerRoleId, Name = Domain.Constants.RoleNames.CompanyOwner, Description = "Full access company owner role.", CreatedAt = seedAt, SyncStatus = RecordSyncStatus.Synced, SyncVersion = 1 });
         var permissions = new (Guid Id, Guid LinkId, string Name, string Description)[]
         {
             (Guid.Parse("b1111111-1111-1111-1111-111111111111"), Guid.Parse("c1111111-1111-1111-1111-111111111111"), "Dashboard.View", "View dashboard"),
@@ -69,28 +53,10 @@ public class AppDbContext : DbContext
             (Guid.Parse("b7777777-7777-7777-7777-777777777777"), Guid.Parse("c7777777-7777-7777-7777-777777777777"), "Company.Manage", "Manage company"),
             (Guid.Parse("b8888888-8888-8888-8888-888888888888"), Guid.Parse("c8888888-8888-8888-8888-888888888888"), "Users.Manage", "Manage users"),
         };
-
         foreach (var p in permissions)
         {
-            modelBuilder.Entity<Permission>().HasData(new Permission
-            {
-                Id = p.Id,
-                PermissionName = p.Name,
-                Description = p.Description,
-                CreatedAt = seedAt,
-                SyncStatus = RecordSyncStatus.Synced,
-                SyncVersion = 1
-            });
-
-            modelBuilder.Entity<RolePermission>().HasData(new RolePermission
-            {
-                Id = p.LinkId,
-                RoleId = ownerRoleId,
-                PermissionId = p.Id,
-                CreatedAt = seedAt,
-                SyncStatus = RecordSyncStatus.Synced,
-                SyncVersion = 1
-            });
+            modelBuilder.Entity<Permission>().HasData(new Permission { Id = p.Id, PermissionName = p.Name, Description = p.Description, CreatedAt = seedAt, SyncStatus = RecordSyncStatus.Synced, SyncVersion = 1 });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { Id = p.LinkId, RoleId = ownerRoleId, PermissionId = p.Id, CreatedAt = seedAt, SyncStatus = RecordSyncStatus.Synced, SyncVersion = 1 });
         }
     }
 }
