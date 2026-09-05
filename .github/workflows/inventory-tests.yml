@@ -54,7 +54,7 @@ jobs:
       - name: Install Android workload
         run: dotnet workload install maui-android
       - name: Build Android UI
-        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-android --configuration Debug -p:TargetFrameworks=net10.0-android
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-android --configuration Debug -p:AveroNovaCiTargetFramework=net10.0-android
 
   windows-build:
     runs-on: windows-latest
@@ -68,4 +68,4 @@ jobs:
       - name: Install Windows MAUI workload
         run: dotnet workload install maui-windows
       - name: Build Windows UI
-        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-windows10.0.19041.0 --configuration Debug -p:TargetFrameworks=net10.0-windows10.0.19041.0
+        run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-windows10.0.19041.0 --configuration Debug -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0
