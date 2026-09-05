@@ -22,7 +22,7 @@ public partial class AddReturns : Migration
                 ReturnDate=table.Column<DateTime>(nullable:false), ItemsJson=table.Column<string>(nullable:false), Reason=table.Column<string>(nullable:false), Notes=table.Column<string>(nullable:false), RefundAmount=table.Column<decimal>(nullable:false), Status=table.Column<int>(nullable:false),
                 CreatedAt=table.Column<DateTime>(nullable:false), UpdatedAt=table.Column<DateTime>(nullable:true), IsDeleted=table.Column<bool>(nullable:false), SyncVersion=table.Column<long>(nullable:false), SyncStatus=table.Column<int>(nullable:false), LastSyncedAt=table.Column<DateTime>(nullable:true)
             }, constraints: table=>table.PrimaryKey("PK_SalesReturns",x=>x.Id));
-        migrationBuilder.CreateIndex(name:"IX_SalesReturns_CompanyId_ReturnNumber",table:"SalesReturns",columns:new[]{"CompanyId","ReturnNumber"},unique:true);
+        migrationBuilder.CreateIndex(name:"IX_SalesReturns_CompanyId_ReturnNumber",table:"SalesReturns",columns:new[]{"CompanyId","ReturnNumber"});
         migrationBuilder.CreateIndex(name:"IX_SalesReturns_CompanyId_InvoiceId",table:"SalesReturns",columns:new[]{"CompanyId","InvoiceId"});
 
         migrationBuilder.CreateTable(
@@ -34,7 +34,7 @@ public partial class AddReturns : Migration
                 ReturnDate=table.Column<DateTime>(nullable:false), ItemsJson=table.Column<string>(nullable:false), Reason=table.Column<string>(nullable:false), Notes=table.Column<string>(nullable:false), RefundAmount=table.Column<decimal>(nullable:false), Status=table.Column<int>(nullable:false),
                 CreatedAt=table.Column<DateTime>(nullable:false), UpdatedAt=table.Column<DateTime>(nullable:true), IsDeleted=table.Column<bool>(nullable:false), SyncVersion=table.Column<long>(nullable:false), SyncStatus=table.Column<int>(nullable:false), LastSyncedAt=table.Column<DateTime>(nullable:true)
             }, constraints: table=>table.PrimaryKey("PK_PurchaseReturns",x=>x.Id));
-        migrationBuilder.CreateIndex(name:"IX_PurchaseReturns_CompanyId_ReturnNumber",table:"PurchaseReturns",columns:new[]{"CompanyId","ReturnNumber"},unique:true);
+        migrationBuilder.CreateIndex(name:"IX_PurchaseReturns_CompanyId_ReturnNumber",table:"PurchaseReturns",columns:new[]{"CompanyId","ReturnNumber"});
         migrationBuilder.CreateIndex(name:"IX_PurchaseReturns_CompanyId_PurchaseId",table:"PurchaseReturns",columns:new[]{"CompanyId","PurchaseId"});
     }
 
