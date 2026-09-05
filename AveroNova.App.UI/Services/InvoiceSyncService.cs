@@ -9,20 +9,18 @@ using Microsoft.Extensions.Logging;
 
 namespace AveroNova.App.UI.Services;
 
-public interface IInvoiceSyncService
-{
-    Task SyncPendingAsync(CancellationToken cancellationToken = default);
-}
-
-public sealed class InvoiceSyncService : IInvoiceSyncService
+public sealed class InvoiceSyncService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly SemaphoreSlim Gate = new(1, 1);
+    private static readonly object SubscriptionGate = new();
+    private static bool _connectivitySubscribed;
+
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IApiClient _api;
     private readonly ISecureTokenStore _tokens;
     private readonly IConnectivityService _connectivity;
     private readonly ILogger<InvoiceSyncService> _logger;
-    private readonly SemaphoreSlim _gate = new(1, 1);
 
     public InvoiceSyncService(IDbContextFactory<LocalAppDbContext> dbFactory, IApiClient api,
         ISecureTokenStore tokens, IConnectivityService connectivity, ILogger<InvoiceSyncService> logger)
@@ -32,12 +30,20 @@ public sealed class InvoiceSyncService : IInvoiceSyncService
         _tokens = tokens;
         _connectivity = connectivity;
         _logger = logger;
-        _connectivity.StatusChanged += OnConnectivityChanged;
+
+        lock (SubscriptionGate)
+        {
+            if (!_connectivitySubscribed)
+            {
+                _connectivity.StatusChanged += OnConnectivityChanged;
+                _connectivitySubscribed = true;
+            }
+        }
     }
 
     public async Task SyncPendingAsync(CancellationToken cancellationToken = default)
     {
-        if (!_connectivity.IsOnline || !await _gate.WaitAsync(0, cancellationToken)) return;
+        if (!_connectivity.IsOnline || !await Gate.WaitAsync(0, cancellationToken)) return;
         try
         {
             var token = await _tokens.GetAccessTokenAsync();
@@ -80,6 +86,7 @@ public sealed class InvoiceSyncService : IInvoiceSyncService
                         payload.CustomerId == Guid.Empty || string.IsNullOrWhiteSpace(payload.InvoiceNumber))
                     {
                         MarkFailed(item, "Invoice sync payload is incomplete.");
+                        await db.SaveChangesAsync(cancellationToken);
                         continue;
                     }
 
@@ -130,7 +137,7 @@ public sealed class InvoiceSyncService : IInvoiceSyncService
         }
         finally
         {
-            _gate.Release();
+            Gate.Release();
         }
     }
 
