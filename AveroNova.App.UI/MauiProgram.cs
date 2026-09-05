@@ -188,6 +188,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<INotificationService, LocalNotificationService>();
         builder.Services.AddSingleton<IPaymentSyncService, PaymentSyncService>();
         builder.Services.AddSingleton<IProcurementSyncService, ProcurementSyncService>();
+        builder.Services.AddSingleton<IReturnSyncService, ReturnSyncService>();
         builder.Services.AddTransient<IPaymentService, LocalPaymentService>();
         builder.Services.AddTransient<IProductService, LocalProductService>();
         builder.Services.AddTransient<IPurchaseService, LocalPurchaseService>();
