@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -261,6 +261,31 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 
         await _db.Database.ExecuteSqlRawAsync(
             """
+            CREATE TABLE IF NOT EXISTS "LocalStockMovements" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_LocalStockMovements" PRIMARY KEY,
+                "ServerId" TEXT NULL,
+                "CompanyId" TEXT NOT NULL,
+                "ProductId" TEXT NOT NULL,
+                "ProductName" TEXT NOT NULL,
+                "SKU" TEXT NOT NULL,
+                "Type" INTEGER NOT NULL,
+                "Quantity" INTEGER NOT NULL,
+                "StockBefore" INTEGER NOT NULL,
+                "StockAfter" INTEGER NOT NULL,
+                "Reference" TEXT NOT NULL,
+                "Notes" TEXT NOT NULL,
+                "CreatedBy" TEXT NOT NULL,
+                "SyncStatus" INTEGER NOT NULL,
+                "CreatedAtUtc" TEXT NOT NULL,
+                "UpdatedAtUtc" TEXT NOT NULL,
+                "LastSyncedAtUtc" TEXT NULL,
+                "SyncError" TEXT NULL
+            );
+            """,
+            cancellationToken);
+
+        await _db.Database.ExecuteSqlRawAsync(
+            """
             CREATE INDEX IF NOT EXISTS "IX_LocalCustomers_CompanyId" ON "LocalCustomers" ("CompanyId");
             """,
             cancellationToken);
@@ -277,6 +302,18 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await _db.Database.ExecuteSqlRawAsync(
             """
             CREATE INDEX IF NOT EXISTS "IX_LocalPayments_CompanyId" ON "LocalPayments" ("CompanyId");
+            """,
+            cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            """
+            CREATE INDEX IF NOT EXISTS "IX_LocalStockMovements_CompanyId_CreatedAtUtc"
+            ON "LocalStockMovements" ("CompanyId", "CreatedAtUtc");
+            """,
+            cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync(
+            """
+            CREATE INDEX IF NOT EXISTS "IX_LocalStockMovements_CompanyId_ProductId"
+            ON "LocalStockMovements" ("CompanyId", "ProductId");
             """,
             cancellationToken);
     }
