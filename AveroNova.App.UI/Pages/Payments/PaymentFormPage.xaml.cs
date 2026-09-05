@@ -71,7 +71,7 @@ public partial class PaymentFormPage : ContentPage
         m.InvoiceId = inv.LocalId;
         m.InvoiceNumber = inv.InvoiceNumber;
         m.Amount = amt;
-        m.PaymentDate = DatePayment.Date;
+        m.PaymentDate = DatePayment.Date ?? DateTime.Today;
         m.Reference = EntryRef.Text?.Trim() ?? "";
         m.Notes = EditorNotes.Text?.Trim() ?? "";
         m.Status = PaymentStatus.Completed;
