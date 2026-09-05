@@ -22,6 +22,27 @@
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="20,16,20,32" Spacing="20">
 
+                <Border Style="{StaticResource AppCard}" Padding="16">
+                    <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="From" Style="{StaticResource InputLabel}"/>
+                            <DatePicker x:Name="FromDate" HorizontalTextAlignment="Center"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="5">
+                            <Label Text="To" Style="{StaticResource InputLabel}"/>
+                            <DatePicker x:Name="ToDate" HorizontalTextAlignment="Center"/>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="Apply" Style="{StaticResource PrimaryButton}"
+                                VerticalOptions="End" Clicked="OnApplyClicked"/>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="ErrorBanner" IsVisible="False" Padding="12"
+                        BackgroundColor="{StaticResource Error50}" StrokeThickness="0"
+                        StrokeShape="RoundRectangle 10">
+                    <Label x:Name="LblError" TextColor="{StaticResource ErrorText}" FontSize="12"/>
+                </Border>
+
                 <Label Text="Overview" FontSize="15" FontAttributes="Bold"
                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
 
@@ -41,7 +62,7 @@
                                     <Label Text="{StaticResource IconProfit}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblRevenue" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Label Text="This period" FontSize="11"
@@ -64,7 +85,7 @@
                                     <Label Text="{StaticResource IconExpenses}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblExpenses" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Label Text="This period" FontSize="11"
@@ -87,7 +108,7 @@
                                     <Label Text="{StaticResource IconCurrency}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblProfit" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Label Text="Revenue - Expenses" FontSize="11"
@@ -110,7 +131,7 @@
                                     <Label Text="{StaticResource IconOutstanding}" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
                             </Grid>
-                            <Label Text="$0" FontSize="28" FontAttributes="Bold"
+                            <Label x:Name="LblOutstanding" Text="$0" FontSize="28" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                             <HorizontalStackLayout Spacing="6">
                                 <Label Text="Pending collection" FontSize="11"
@@ -126,13 +147,7 @@
                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
 
                 <RefreshView x:Name="Refresher" Refreshing="OnRefreshing">
-                    <VerticalStackLayout Spacing="10" x:Name="ReportsList">
-                       <Label Text="Reports coming soon."
-       FontSize="14"
-       TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
-       HorizontalOptions="Center"
-       Margin="0,40,0,0"/>
-                    </VerticalStackLayout>
+                    <VerticalStackLayout Spacing="10" x:Name="ReportsList"/>
                 </RefreshView>
 
             </VerticalStackLayout>
