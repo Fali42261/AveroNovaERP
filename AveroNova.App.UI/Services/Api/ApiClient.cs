@@ -11,6 +11,7 @@ public interface IApiClient
     Task<ApiCallResult<T>> PostAsync<T>(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default);
     Task<ApiCallResult> PostAsync(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default);
     Task<ApiCallResult<T>> PutAsync<T>(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default);
+    Task<ApiCallResult> DeleteAsync(string relativeUrl, string? bearerToken = null, CancellationToken cancellationToken = default);
 }
 
 public class ApiCallResult
@@ -58,10 +59,8 @@ public sealed class ApiClient : IApiClient
         _http = http;
         var baseUrl = options.Value.BaseUrl?.Trim();
         if (string.IsNullOrWhiteSpace(baseUrl))
-            throw new InvalidOperationException(
-                "ApiSettings.BaseUrl is empty. Configure it in appsettings.Development.json / appsettings.Production.json.");
-        if (!baseUrl.EndsWith('/'))
-            baseUrl += "/";
+            throw new InvalidOperationException("ApiSettings.BaseUrl is empty. Configure it in appsettings.Development.json / appsettings.Production.json.");
+        if (!baseUrl.EndsWith('/')) baseUrl += "/";
         _http.BaseAddress = new Uri(baseUrl);
         _http.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.Value.TimeoutSeconds, 5, 120));
     }
@@ -78,58 +77,40 @@ public sealed class ApiClient : IApiClient
     public async Task<ApiCallResult> PostAsync(string relativeUrl, object? body, string? bearerToken = null, CancellationToken cancellationToken = default)
     {
         var typed = await SendAsync<object>(HttpMethod.Post, relativeUrl, body, bearerToken, cancellationToken);
-        return typed.Success
-            ? ApiCallResult.Ok(typed.StatusCode)
-            : ApiCallResult.Fail(typed.StatusCode, typed.Error ?? "Request failed.", typed.IsNetworkError);
+        return typed.Success ? ApiCallResult.Ok(typed.StatusCode) : ApiCallResult.Fail(typed.StatusCode, typed.Error ?? "Request failed.", typed.IsNetworkError);
     }
 
-    private async Task<ApiCallResult<T>> SendAsync<T>(
-        HttpMethod method,
-        string relativeUrl,
-        object? body,
-        string? bearerToken,
-        CancellationToken cancellationToken)
+    public async Task<ApiCallResult> DeleteAsync(string relativeUrl, string? bearerToken = null, CancellationToken cancellationToken = default)
+    {
+        var typed = await SendAsync<object>(HttpMethod.Delete, relativeUrl, null, bearerToken, cancellationToken);
+        return typed.Success ? ApiCallResult.Ok(typed.StatusCode) : ApiCallResult.Fail(typed.StatusCode, typed.Error ?? "Request failed.", typed.IsNetworkError);
+    }
+
+    private async Task<ApiCallResult<T>> SendAsync<T>(HttpMethod method, string relativeUrl, object? body, string? bearerToken, CancellationToken cancellationToken)
     {
         try
         {
             using var request = new HttpRequestMessage(method, relativeUrl.TrimStart('/'));
-            if (!string.IsNullOrWhiteSpace(bearerToken))
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
-            if (body is not null)
-                request.Content = JsonContent.Create(body, options: JsonOptions);
+            if (!string.IsNullOrWhiteSpace(bearerToken)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            if (body is not null) request.Content = JsonContent.Create(body, options: JsonOptions);
 
             using var response = await _http.SendAsync(request, cancellationToken);
             var status = (int)response.StatusCode;
             var raw = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (string.IsNullOrWhiteSpace(raw))
-            {
-                return response.IsSuccessStatusCode
-                    ? ApiCallResult<T>.Ok(default!, status)
-                    : ApiCallResult<T>.Fail(status, MapStatusError(status));
-            }
+                return response.IsSuccessStatusCode ? ApiCallResult<T>.Ok(default!, status) : ApiCallResult<T>.Fail(status, MapStatusError(status));
 
             ApiEnvelope<T>? envelope = null;
-            try
-            {
-                envelope = JsonSerializer.Deserialize<ApiEnvelope<T>>(raw, JsonOptions);
-            }
-            catch
-            {
-            }
+            try { envelope = JsonSerializer.Deserialize<ApiEnvelope<T>>(raw, JsonOptions); } catch { }
 
             if (envelope is not null)
             {
-                if (envelope.Success && envelope.Data is not null)
-                    return ApiCallResult<T>.Ok(envelope.Data, status);
-                if (envelope.Success && envelope.Data is null && response.IsSuccessStatusCode)
-                    return ApiCallResult<T>.Ok(default!, status);
+                if (envelope.Success) return ApiCallResult<T>.Ok(envelope.Data!, status);
                 return ApiCallResult<T>.Fail(status, envelope.Error ?? MapStatusError(status));
             }
 
-            if (!response.IsSuccessStatusCode)
-                return ApiCallResult<T>.Fail(status, MapStatusError(status));
-
+            if (!response.IsSuccessStatusCode) return ApiCallResult<T>.Fail(status, MapStatusError(status));
             var direct = JsonSerializer.Deserialize<T>(raw, JsonOptions);
             return ApiCallResult<T>.Ok(direct!, status);
         }
@@ -141,7 +122,7 @@ public sealed class ApiClient : IApiClient
         {
             return ApiCallResult<T>.Fail(0, "Unable to connect to the server. Please try again.", network: true);
         }
-        catch (Exception)
+        catch
         {
             return ApiCallResult<T>.Fail(0, "Unable to connect to the server. Please try again.", network: true);
         }
@@ -151,6 +132,7 @@ public sealed class ApiClient : IApiClient
     {
         401 => "Your session has expired. Please sign in again.",
         403 => "You do not have access.",
+        404 => "The requested record was not found.",
         409 => "A newer server version exists. Refresh and try again.",
         429 => "Too many attempts. Please try again later.",
         _ => "Unable to complete the request. Please try again."
