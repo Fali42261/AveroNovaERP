@@ -6,25 +6,22 @@ namespace AveroNova.App.UI.Services;
 
 /// <summary>
 /// Keeps server concurrency versions in the existing local SQLite tables without
-/// forcing a destructive local database rebuild. This is intentionally small and
-/// idempotent so upgraded installations can evolve in place.
+/// forcing a destructive local database rebuild. The schema check is intentionally
+/// idempotent and runs per database connection so a process can safely work with
+/// more than one SQLite database (for example tests, upgrades, or database swaps).
 /// </summary>
 public static class LocalSyncVersionStore
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
-    private static bool _schemaReady;
 
     public static async Task EnsureSchemaAsync(LocalAppDbContext db, CancellationToken cancellationToken = default)
     {
-        if (_schemaReady) return;
         await Gate.WaitAsync(cancellationToken);
         try
         {
-            if (_schemaReady) return;
             await EnsureColumnAsync(db, "LocalExpenses", cancellationToken);
             await EnsureColumnAsync(db, "LocalSalesReturns", cancellationToken);
             await EnsureColumnAsync(db, "LocalPurchaseReturns", cancellationToken);
-            _schemaReady = true;
         }
         finally { Gate.Release(); }
     }
