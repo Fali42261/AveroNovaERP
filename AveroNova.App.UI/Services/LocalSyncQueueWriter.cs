@@ -6,7 +6,7 @@ namespace AveroNova.App.UI.Services;
 
 internal static class LocalSyncQueueWriter
 {
-    public static void Enqueue(
+    public static Guid Enqueue(
         LocalAppDbContext db,
         string entityType,
         Guid entityId,
@@ -15,9 +15,10 @@ internal static class LocalSyncQueueWriter
         object? payload,
         DateTime utcNow)
     {
+        var id = Guid.NewGuid();
         db.SyncQueue.Add(new LocalSyncQueueEntity
         {
-            Id = Guid.NewGuid(),
+            Id = id,
             EntityType = entityType,
             EntityId = entityId,
             Operation = (int)operation,
@@ -27,5 +28,6 @@ internal static class LocalSyncQueueWriter
             CompanyId = companyId,
             PayloadJson = payload is null ? null : JsonSerializer.Serialize(payload)
         });
+        return id;
     }
 }
