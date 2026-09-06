@@ -21,10 +21,7 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets><PrivateAssets>all</PrivateAssets></PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -44,30 +41,17 @@
     <Compile Include="..\AveroNova.App.UI\Services\Api\ApiSettings.cs" Link="Linked\Services\Api\ApiSettings.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Security\ISecureTokenStore.cs" Link="Linked\Services\Security\ISecureTokenStore.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Security\IPendingRegistrationSecretStore.cs" Link="Linked\Services\Security\IPendingRegistrationSecretStore.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IAuthenticationService.cs" Link="Linked\Services\Interfaces\IAuthenticationService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IClientDeviceInfo.cs" Link="Linked\Services\Interfaces\IClientDeviceInfo.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IConnectivityService.cs" Link="Linked\Services\Interfaces\IConnectivityService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IInstallationService.cs" Link="Linked\Services\Interfaces\IInstallationService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IStableDeviceIdProvider.cs" Link="Linked\Services\Interfaces\IStableDeviceIdProvider.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ISyncService.cs" Link="Linked\Services\Interfaces\ISyncService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ILicenseService.cs" Link="Linked\Services\Interfaces\ILicenseService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ICustomerService.cs" Link="Linked\Services\Interfaces\ICustomerService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IProductService.cs" Link="Linked\Services\Interfaces\IProductService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IInventoryService.cs" Link="Linked\Services\Interfaces\IInventoryService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IBillingService.cs" Link="Linked\Services\Interfaces\IBillingService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IPaymentService.cs" Link="Linked\Services\Interfaces\IPaymentService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IPurchaseService.cs" Link="Linked\Services\Interfaces\IPurchaseService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ISupplierService.cs" Link="Linked\Services\Interfaces\ISupplierService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IExpenseService.cs" Link="Linked\Services\Interfaces\IExpenseService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IReturnService.cs" Link="Linked\Services\Interfaces\IReturnService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\IUserService.cs" Link="Linked\Services\Interfaces\IUserService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ISettingsService.cs" Link="Linked\Services\Interfaces\ISettingsService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ISubscriptionService.cs" Link="Linked\Services\Interfaces\ISubscriptionService.cs" />
-    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\ICompanyService.cs" Link="Linked\Services\Interfaces\ICompanyService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Security\ILocalCredentialStore.cs" Link="Linked\Services\Security\ILocalCredentialStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Interfaces\*.cs" Link="Linked\Services\Interfaces\%(Filename)%(Extension)" />
     <Compile Include="..\AveroNova.App.UI\Services\License\LicenseApiClient.cs" Link="Linked\Services\License\LicenseApiClient.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LicenseService.cs" Link="Linked\Services\LicenseService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalSyncQueueWriter.cs" Link="Linked\Services\LocalSyncQueueWriter.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\LocalSyncVersionStore.cs" Link="Linked\Services\LocalSyncVersionStore.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\InvoiceSyncService.cs" Link="Linked\Services\InvoiceSyncService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\PaymentSyncService.cs" Link="Linked\Services\PaymentSyncService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\ProcurementSyncService.cs" Link="Linked\Services\ProcurementSyncService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\ExpenseSyncService.cs" Link="Linked\Services\ExpenseSyncService.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\ReturnSyncService.cs" Link="Linked\Services\ReturnSyncService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalCustomerService.cs" Link="Linked\Services\LocalCustomerService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalProductService.cs" Link="Linked\Services\LocalProductService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\LocalInventoryService.cs" Link="Linked\Services\LocalInventoryService.cs" />
