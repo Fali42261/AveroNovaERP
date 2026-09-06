@@ -27,7 +27,7 @@ public sealed class LocalReturnService : IReturnService
         await using var db=await _factory.CreateDbContextAsync();await LocalSyncVersionStore.EnsureSchemaAsync(db);await using var tx=await db.Database.BeginTransactionAsync();
         var now=DateTime.UtcNow;m.LocalId=m.LocalId==Guid.Empty?Guid.NewGuid():m.LocalId;m.ReturnNumber=await NextAsync(db,"SR",m.CompanyId,true);var x=SalesEntity(m,now);db.SalesReturns.Add(x);
         var queueId=LocalSyncQueueWriter.Enqueue(db,"SalesReturn",x.Id,x.CompanyId,SyncOperation.Create,SalesPayload(x,1),now);
-        err=await ApplyStockDeltaAsync(db,x.CompanyId,m.Items,1,queueId,x.ReturnNumber,"Sales return",now);if(err is not null)return(false,err);
+        if(IsInventoryApplied(m.Status)){err=await ApplyStockDeltaAsync(db,x.CompanyId,m.Items,1,queueId,x.ReturnNumber,"Sales return completed",now);if(err is not null)return(false,err);}
         await db.SaveChangesAsync();await tx.CommitAsync();AfterQueued();return(true,null);
     }
 
@@ -36,17 +36,18 @@ public sealed class LocalReturnService : IReturnService
         var err=await ValidateSalesAsync(m);if(err is not null)return(false,err);
         await using var db=await _factory.CreateDbContextAsync();await LocalSyncVersionStore.EnsureSchemaAsync(db);await using var tx=await db.Database.BeginTransactionAsync();
         var x=await db.SalesReturns.FirstOrDefaultAsync(r=>r.Id==m.LocalId);if(x is null||!Allows(x.CompanyId)||x.CompanyId!=m.CompanyId)return(false,"Sales return not found.");
-        var oldItems=DeserializeReturnItems(x.ItemsJson);var version=await LocalSyncVersionStore.GetSalesReturnAsync(db,x.Id);Apply(x,m,DateTime.UtcNow);
+        var oldItems=DeserializeReturnItems(x.ItemsJson);var oldStatus=(ReturnStatus)x.Status;var version=await LocalSyncVersionStore.GetSalesReturnAsync(db,x.Id);Apply(x,m,DateTime.UtcNow);
         var queueId=LocalSyncQueueWriter.Enqueue(db,"SalesReturn",x.Id,x.CompanyId,SyncOperation.Update,SalesPayload(x,version),x.UpdatedAtUtc);
-        err=await ApplyStockDifferenceAsync(db,x.CompanyId,oldItems,m.Items,1,queueId,x.ReturnNumber,"Sales return updated",x.UpdatedAtUtc);if(err is not null)return(false,err);
+        var oldEffective=IsInventoryApplied(oldStatus)?oldItems:[];var newEffective=IsInventoryApplied(m.Status)?m.Items:[];
+        err=await ApplyStockDifferenceAsync(db,x.CompanyId,oldEffective,newEffective,1,queueId,x.ReturnNumber,"Sales return updated",x.UpdatedAtUtc);if(err is not null)return(false,err);
         await db.SaveChangesAsync();await tx.CommitAsync();AfterQueued();return(true,null);
     }
 
     public async Task<(bool Ok,string? Error)> DeleteSalesReturnAsync(Guid id)
     {
         await using var db=await _factory.CreateDbContextAsync();await using var tx=await db.Database.BeginTransactionAsync();var x=await db.SalesReturns.FirstOrDefaultAsync(r=>r.Id==id);if(x is null||!Allows(x.CompanyId))return(false,"Sales return not found.");
-        var items=DeserializeReturnItems(x.ItemsJson);var now=DateTime.UtcNow;var queueId=LocalSyncQueueWriter.Enqueue(db,"SalesReturn",x.Id,x.CompanyId,SyncOperation.Delete,new{x.Id,x.CompanyId},now);
-        var err=await ApplyStockDeltaAsync(db,x.CompanyId,items,-1,queueId,x.ReturnNumber,"Sales return deleted",now);if(err is not null)return(false,err);
+        var now=DateTime.UtcNow;var queueId=LocalSyncQueueWriter.Enqueue(db,"SalesReturn",x.Id,x.CompanyId,SyncOperation.Delete,new{x.Id,x.CompanyId},now);
+        if(IsInventoryApplied((ReturnStatus)x.Status)){var items=DeserializeReturnItems(x.ItemsJson);var err=await ApplyStockDeltaAsync(db,x.CompanyId,items,-1,queueId,x.ReturnNumber,"Sales return deleted",now);if(err is not null)return(false,err);}
         db.SalesReturns.Remove(x);await db.SaveChangesAsync();await tx.CommitAsync();AfterQueued();return(true,null);
     }
 
@@ -59,7 +60,7 @@ public sealed class LocalReturnService : IReturnService
         await using var db=await _factory.CreateDbContextAsync();await LocalSyncVersionStore.EnsureSchemaAsync(db);await using var tx=await db.Database.BeginTransactionAsync();
         var now=DateTime.UtcNow;m.LocalId=m.LocalId==Guid.Empty?Guid.NewGuid():m.LocalId;m.ReturnNumber=await NextAsync(db,"PR",m.CompanyId,false);var x=PurchaseEntity(m,now);db.PurchaseReturns.Add(x);
         var queueId=LocalSyncQueueWriter.Enqueue(db,"PurchaseReturn",x.Id,x.CompanyId,SyncOperation.Create,PurchasePayload(x,1),now);
-        err=await ApplyStockDeltaAsync(db,x.CompanyId,m.Items,-1,queueId,x.ReturnNumber,"Purchase return",now);if(err is not null)return(false,err);
+        if(IsInventoryApplied(m.Status)){err=await ApplyStockDeltaAsync(db,x.CompanyId,m.Items,-1,queueId,x.ReturnNumber,"Purchase return completed",now);if(err is not null)return(false,err);}
         await db.SaveChangesAsync();await tx.CommitAsync();AfterQueued();return(true,null);
     }
 
@@ -68,17 +69,18 @@ public sealed class LocalReturnService : IReturnService
         var err=await ValidatePurchaseAsync(m);if(err is not null)return(false,err);
         await using var db=await _factory.CreateDbContextAsync();await LocalSyncVersionStore.EnsureSchemaAsync(db);await using var tx=await db.Database.BeginTransactionAsync();
         var x=await db.PurchaseReturns.FirstOrDefaultAsync(r=>r.Id==m.LocalId);if(x is null||!Allows(x.CompanyId)||x.CompanyId!=m.CompanyId)return(false,"Purchase return not found.");
-        var oldItems=DeserializeReturnItems(x.ItemsJson);var version=await LocalSyncVersionStore.GetPurchaseReturnAsync(db,x.Id);Apply(x,m,DateTime.UtcNow);
+        var oldItems=DeserializeReturnItems(x.ItemsJson);var oldStatus=(ReturnStatus)x.Status;var version=await LocalSyncVersionStore.GetPurchaseReturnAsync(db,x.Id);Apply(x,m,DateTime.UtcNow);
         var queueId=LocalSyncQueueWriter.Enqueue(db,"PurchaseReturn",x.Id,x.CompanyId,SyncOperation.Update,PurchasePayload(x,version),x.UpdatedAtUtc);
-        err=await ApplyStockDifferenceAsync(db,x.CompanyId,oldItems,m.Items,-1,queueId,x.ReturnNumber,"Purchase return updated",x.UpdatedAtUtc);if(err is not null)return(false,err);
+        var oldEffective=IsInventoryApplied(oldStatus)?oldItems:[];var newEffective=IsInventoryApplied(m.Status)?m.Items:[];
+        err=await ApplyStockDifferenceAsync(db,x.CompanyId,oldEffective,newEffective,-1,queueId,x.ReturnNumber,"Purchase return updated",x.UpdatedAtUtc);if(err is not null)return(false,err);
         await db.SaveChangesAsync();await tx.CommitAsync();AfterQueued();return(true,null);
     }
 
     public async Task<(bool Ok,string? Error)> DeletePurchaseReturnAsync(Guid id)
     {
         await using var db=await _factory.CreateDbContextAsync();await using var tx=await db.Database.BeginTransactionAsync();var x=await db.PurchaseReturns.FirstOrDefaultAsync(r=>r.Id==id);if(x is null||!Allows(x.CompanyId))return(false,"Purchase return not found.");
-        var items=DeserializeReturnItems(x.ItemsJson);var now=DateTime.UtcNow;var queueId=LocalSyncQueueWriter.Enqueue(db,"PurchaseReturn",x.Id,x.CompanyId,SyncOperation.Delete,new{x.Id,x.CompanyId},now);
-        var err=await ApplyStockDeltaAsync(db,x.CompanyId,items,1,queueId,x.ReturnNumber,"Purchase return deleted",now);if(err is not null)return(false,err);
+        var now=DateTime.UtcNow;var queueId=LocalSyncQueueWriter.Enqueue(db,"PurchaseReturn",x.Id,x.CompanyId,SyncOperation.Delete,new{x.Id,x.CompanyId},now);
+        if(IsInventoryApplied((ReturnStatus)x.Status)){var items=DeserializeReturnItems(x.ItemsJson);var err=await ApplyStockDeltaAsync(db,x.CompanyId,items,1,queueId,x.ReturnNumber,"Purchase return deleted",now);if(err is not null)return(false,err);}
         db.PurchaseReturns.Remove(x);await db.SaveChangesAsync();await tx.CommitAsync();AfterQueued();return(true,null);
     }
 
@@ -109,19 +111,24 @@ public sealed class LocalReturnService : IReturnService
 
     private async Task<string?> ValidateSalesAsync(SalesReturnModel m)
     {
-        var common=Validate(m.CompanyId,m.ReturnDate,m.Reason,m.RefundAmount,m.Items);if(common is not null)return common;if(m.InvoiceId==Guid.Empty)return"Select an invoice.";await using var db=await _factory.CreateDbContextAsync();var invoice=await db.Invoices.AsNoTracking().FirstOrDefaultAsync(x=>x.Id==m.InvoiceId&&x.CompanyId==m.CompanyId);if(invoice is null)return"Invoice not found for this company.";
-        var items=JsonSerializer.Deserialize<List<InvoiceLineItem>>(invoice.ItemsJson)??[];var source=items.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));foreach(var item in m.Items){if(!source.TryGetValue(item.ProductId,out var qty))return"A returned product does not exist on the invoice.";if(item.Quantity>qty)return"Returned quantity cannot exceed the invoiced quantity.";}
-        var subtotal=items.Sum(x=>x.LineTotal);var total=subtotal+items.Sum(x=>x.TaxAmount)+subtotal*invoice.TaxPct/100m-subtotal*invoice.DiscountPct/100m;if(m.RefundAmount>Math.Max(0,total))return"Refund cannot exceed invoice total.";m.InvoiceNumber=invoice.InvoiceNumber;m.CustomerId=invoice.CustomerId;m.CustomerName=invoice.CustomerName;return null;
+        var common=Validate(m.CompanyId,m.ReturnDate,m.Reason,m.RefundAmount,m.Items,m.Status);if(common is not null)return common;if(m.InvoiceId==Guid.Empty)return"Select an invoice.";await using var db=await _factory.CreateDbContextAsync();var invoice=await db.Invoices.AsNoTracking().FirstOrDefaultAsync(x=>x.Id==m.InvoiceId&&x.CompanyId==m.CompanyId);if(invoice is null)return"Invoice not found for this company.";
+        var items=JsonSerializer.Deserialize<List<InvoiceLineItem>>(invoice.ItemsJson)??[];var source=items.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));var requested=m.Items.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));foreach(var item in requested){if(!source.TryGetValue(item.Key,out var qty))return"A returned product does not exist on the invoice.";if(item.Value>qty)return"Returned quantity cannot exceed the invoiced quantity.";}
+        var subtotal=items.Sum(x=>x.LineTotal);var total=Math.Max(0,subtotal+items.Sum(x=>x.TaxAmount)+subtotal*invoice.TaxPct/100m-subtotal*invoice.DiscountPct/100m);if(m.RefundAmount>total)return"Refund cannot exceed invoice total.";
+        if(m.Status!=ReturnStatus.Rejected){var prior=await db.SalesReturns.AsNoTracking().Where(x=>x.CompanyId==m.CompanyId&&x.InvoiceId==m.InvoiceId&&x.Id!=m.LocalId&&x.Status!=(int)ReturnStatus.Rejected).Select(x=>new{x.ItemsJson,x.RefundAmount}).ToListAsync();var priorQty=new Dictionary<Guid,int>();foreach(var p in prior){foreach(var g in DeserializeReturnItems(p.ItemsJson).GroupBy(x=>x.ProductId))priorQty[g.Key]=priorQty.GetValueOrDefault(g.Key)+g.Sum(x=>x.Quantity);}foreach(var item in requested){if(priorQty.GetValueOrDefault(item.Key)+item.Value>source[item.Key])return"Total returned quantity across returns cannot exceed the invoiced quantity.";}if(prior.Sum(x=>x.RefundAmount)+m.RefundAmount>total)return"Total refund across returns cannot exceed invoice total.";}
+        m.InvoiceNumber=invoice.InvoiceNumber;m.CustomerId=invoice.CustomerId;m.CustomerName=invoice.CustomerName;return null;
     }
 
     private async Task<string?> ValidatePurchaseAsync(PurchaseReturnModel m)
     {
-        var common=Validate(m.CompanyId,m.ReturnDate,m.Reason,m.RefundAmount,m.Items);if(common is not null)return common;if(m.PurchaseId==Guid.Empty)return"Select a purchase.";await using var db=await _factory.CreateDbContextAsync();var purchase=await db.Purchases.AsNoTracking().FirstOrDefaultAsync(x=>x.Id==m.PurchaseId&&x.CompanyId==m.CompanyId);if(purchase is null)return"Purchase not found for this company.";
-        var items=JsonSerializer.Deserialize<List<PurchaseLineItem>>(purchase.ItemsJson)??[];var source=items.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));foreach(var item in m.Items){if(!source.TryGetValue(item.ProductId,out var qty))return"A returned product does not exist on the purchase.";if(item.Quantity>qty)return"Returned quantity cannot exceed the purchased quantity.";}
-        var total=items.Sum(x=>x.GrandTotal);if(m.RefundAmount>total)return"Refund cannot exceed purchase total.";m.PurchaseNumber=purchase.PurchaseNumber;m.SupplierId=purchase.SupplierId;m.SupplierName=purchase.SupplierName;return null;
+        var common=Validate(m.CompanyId,m.ReturnDate,m.Reason,m.RefundAmount,m.Items,m.Status);if(common is not null)return common;if(m.PurchaseId==Guid.Empty)return"Select a purchase.";await using var db=await _factory.CreateDbContextAsync();var purchase=await db.Purchases.AsNoTracking().FirstOrDefaultAsync(x=>x.Id==m.PurchaseId&&x.CompanyId==m.CompanyId);if(purchase is null)return"Purchase not found for this company.";
+        var items=JsonSerializer.Deserialize<List<PurchaseLineItem>>(purchase.ItemsJson)??[];var source=items.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));var requested=m.Items.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));foreach(var item in requested){if(!source.TryGetValue(item.Key,out var qty))return"A returned product does not exist on the purchase.";if(item.Value>qty)return"Returned quantity cannot exceed the purchased quantity.";}
+        var total=items.Sum(x=>x.GrandTotal);if(m.RefundAmount>total)return"Refund cannot exceed purchase total.";
+        if(m.Status!=ReturnStatus.Rejected){var prior=await db.PurchaseReturns.AsNoTracking().Where(x=>x.CompanyId==m.CompanyId&&x.PurchaseId==m.PurchaseId&&x.Id!=m.LocalId&&x.Status!=(int)ReturnStatus.Rejected).Select(x=>new{x.ItemsJson,x.RefundAmount}).ToListAsync();var priorQty=new Dictionary<Guid,int>();foreach(var p in prior){foreach(var g in DeserializeReturnItems(p.ItemsJson).GroupBy(x=>x.ProductId))priorQty[g.Key]=priorQty.GetValueOrDefault(g.Key)+g.Sum(x=>x.Quantity);}foreach(var item in requested){if(priorQty.GetValueOrDefault(item.Key)+item.Value>source[item.Key])return"Total returned quantity across returns cannot exceed the purchased quantity.";}if(prior.Sum(x=>x.RefundAmount)+m.RefundAmount>total)return"Total refund across returns cannot exceed purchase total.";}
+        m.PurchaseNumber=purchase.PurchaseNumber;m.SupplierId=purchase.SupplierId;m.SupplierName=purchase.SupplierName;return null;
     }
 
-    private string? Validate(Guid companyId,DateTime date,string reason,decimal refund,List<ReturnLineItem> items){if(!Allows(companyId))return"You do not have access to this company.";if(date.Date>DateTime.Today)return"Return date cannot be in the future.";if(string.IsNullOrWhiteSpace(reason))return"Return reason is required.";if(refund<=0)return"Refund amount must be greater than zero.";if(items.Count==0)return"At least one return item is required.";if(items.Any(x=>x.ProductId==Guid.Empty||x.Quantity<=0))return"Every returned item must have a product and positive quantity.";return null;}
+    private string? Validate(Guid companyId,DateTime date,string reason,decimal refund,List<ReturnLineItem> items,ReturnStatus status){if(!Allows(companyId))return"You do not have access to this company.";if(date.Date>DateTime.Today)return"Return date cannot be in the future.";if((int)status<0||(int)status>(int)ReturnStatus.Completed)return"Return status is invalid.";if(string.IsNullOrWhiteSpace(reason))return"Return reason is required.";if(refund<=0)return"Refund amount must be greater than zero.";if(items.Count==0)return"At least one return item is required.";if(items.Any(x=>x.ProductId==Guid.Empty||x.Quantity<=0))return"Every returned item must have a product and positive quantity.";return null;}
+    private static bool IsInventoryApplied(ReturnStatus status)=>status==ReturnStatus.Completed;
     private async Task<string> NextAsync(LocalAppDbContext db,string kind,Guid cid,bool sales){var prefix=$"{kind}-{DateTime.Today:yyyy}-";var values=sales?await db.SalesReturns.Where(x=>x.CompanyId==cid&&x.ReturnNumber.StartsWith(prefix)).Select(x=>x.ReturnNumber).ToListAsync():await db.PurchaseReturns.Where(x=>x.CompanyId==cid&&x.ReturnNumber.StartsWith(prefix)).Select(x=>x.ReturnNumber).ToListAsync();var max=values.Select(x=>int.TryParse(x[prefix.Length..],out var n)?n:0).DefaultIfEmpty().Max();return$"{prefix}{max+1:D4}";}
     private bool Allows(Guid id)=>id!=Guid.Empty&&_session.CurrentCompanyId==id;
     private static List<ReturnLineItem> DeserializeReturnItems(string json){try{return JsonSerializer.Deserialize<List<ReturnLineItem>>(json)??[];}catch{return[];}}
