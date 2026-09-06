@@ -95,12 +95,27 @@ public sealed class ReturnSyncService : IReturnSyncService
                     item.Status=(int)(result.IsNetworkError||item.RetryCount<5?RecordSyncStatus.Pending:RecordSyncStatus.Failed);
                     await db.SaveChangesAsync(cancellationToken);continue;
                 }
-                item.Status=(int)RecordSyncStatus.Synced;item.Error=null;item.SyncedAt=DateTime.UtcNow;item.LastAttemptAt=DateTime.UtcNow;
+
+                var now=DateTime.UtcNow;
+                await MarkStockMovementsSyncedAsync(db,item.Id,now,cancellationToken);
+                item.Status=(int)RecordSyncStatus.Synced;item.Error=null;item.SyncedAt=now;item.LastAttemptAt=now;
                 _connectivity.DecrementPending();await db.SaveChangesAsync(cancellationToken);
             }
         }
         catch(Exception ex){_logger.LogWarning(ex,"Return sync failed; local data remains queued.");}
         finally{_gate.Release();}
+    }
+
+    private static async Task MarkStockMovementsSyncedAsync(LocalAppDbContext db,Guid queueId,DateTime now,CancellationToken ct)
+    {
+        var reference=$"RETURNQ:{queueId:D}";
+        var movements=await db.StockMovements.Where(x=>x.Reference==reference&&x.SyncStatus!=(int)RecordSyncStatus.Synced).ToListAsync(ct);
+        foreach(var movement in movements)
+        {
+            movement.SyncStatus=(int)RecordSyncStatus.Synced;
+            movement.LastSyncedAtUtc=now;
+            movement.SyncError=null;
+        }
     }
 
     private static void MarkFailed(LocalSyncQueueEntity item,string error){item.RetryCount++;item.Error=error;item.LastAttemptAt=DateTime.UtcNow;item.Status=(int)RecordSyncStatus.Failed;}
