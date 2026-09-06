@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using AveroNova.Domain.Entities;
 using AveroNova.Domain.Enums;
 using AveroNova.Infrastructure.Persistence;
@@ -85,16 +86,84 @@ public sealed class ReturnsController(AppDbContext db) : ControllerBase
 
     private async Task<string?> ValidateSales(SalesReturnRequest r,CancellationToken ct)
     {
-        if(r.Id==Guid.Empty||r.CompanyId==Guid.Empty||r.InvoiceId==Guid.Empty||string.IsNullOrWhiteSpace(r.ReturnNumber)||string.IsNullOrWhiteSpace(r.Reason)||r.RefundAmount<=0)return "Return id, company, invoice, number, reason and positive refund are required.";
-        return await db.Invoices.AnyAsync(x=>x.Id==r.InvoiceId&&x.CompanyId==r.CompanyId&&!x.IsDeleted,ct)?null:"Invoice not found for this company.";
+        if(r.Id==Guid.Empty||r.CompanyId==Guid.Empty||r.InvoiceId==Guid.Empty||string.IsNullOrWhiteSpace(r.ReturnNumber)||string.IsNullOrWhiteSpace(r.Reason)||r.RefundAmount<=0)
+            return "Return id, company, invoice, number, reason and positive refund are required.";
+
+        var invoice=await db.Invoices.AsNoTracking().FirstOrDefaultAsync(x=>x.Id==r.InvoiceId&&x.CompanyId==r.CompanyId&&!x.IsDeleted,ct);
+        if(invoice is null) return "Invoice not found for this company.";
+
+        if(!TryReadReturnItems(r.ItemsJson,out var returned,out var itemError)) return itemError;
+        if(!TryReadInvoiceItems(invoice.ItemsJson,out var source)) return "Invoice items are invalid on the server.";
+
+        var sourceByProduct=source.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));
+        foreach(var item in returned)
+        {
+            if(item.ProductId==Guid.Empty||item.Quantity<=0) return "Every returned item must have a product and positive quantity.";
+            if(!sourceByProduct.TryGetValue(item.ProductId,out var sourceQty)) return "A returned product does not exist on the invoice.";
+            if(item.Quantity>sourceQty) return "Returned quantity cannot exceed the invoiced quantity.";
+        }
+
+        var subtotal=source.Sum(x=>x.UnitPrice*x.Quantity*(1-x.DiscountPct/100m));
+        var lineTax=source.Sum(x=>(x.UnitPrice*x.Quantity*(1-x.DiscountPct/100m))*x.TaxPct/100m);
+        var invoiceTax=subtotal*invoice.TaxPct/100m;
+        var invoiceDiscount=subtotal*invoice.DiscountPct/100m;
+        var invoiceTotal=Math.Max(0m,subtotal+lineTax+invoiceTax-invoiceDiscount);
+        if(r.RefundAmount>invoiceTotal) return "Refund cannot exceed invoice total.";
+        return null;
     }
+
     private async Task<string?> ValidatePurchase(PurchaseReturnRequest r,CancellationToken ct)
     {
-        if(r.Id==Guid.Empty||r.CompanyId==Guid.Empty||r.PurchaseId==Guid.Empty||string.IsNullOrWhiteSpace(r.ReturnNumber)||string.IsNullOrWhiteSpace(r.Reason)||r.RefundAmount<=0)return "Return id, company, purchase, number, reason and positive refund are required.";
-        return await db.Purchases.AnyAsync(x=>x.Id==r.PurchaseId&&x.CompanyId==r.CompanyId&&!x.IsDeleted,ct)?null:"Purchase not found for this company.";
+        if(r.Id==Guid.Empty||r.CompanyId==Guid.Empty||r.PurchaseId==Guid.Empty||string.IsNullOrWhiteSpace(r.ReturnNumber)||string.IsNullOrWhiteSpace(r.Reason)||r.RefundAmount<=0)
+            return "Return id, company, purchase, number, reason and positive refund are required.";
+
+        var purchase=await db.Purchases.AsNoTracking().FirstOrDefaultAsync(x=>x.Id==r.PurchaseId&&x.CompanyId==r.CompanyId&&!x.IsDeleted,ct);
+        if(purchase is null) return "Purchase not found for this company.";
+
+        if(!TryReadReturnItems(r.ItemsJson,out var returned,out var itemError)) return itemError;
+        if(!TryReadPurchaseItems(purchase.ItemsJson,out var source)) return "Purchase items are invalid on the server.";
+
+        var sourceByProduct=source.GroupBy(x=>x.ProductId).ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));
+        foreach(var item in returned)
+        {
+            if(item.ProductId==Guid.Empty||item.Quantity<=0) return "Every returned item must have a product and positive quantity.";
+            if(!sourceByProduct.TryGetValue(item.ProductId,out var sourceQty)) return "A returned product does not exist on the purchase.";
+            if(item.Quantity>sourceQty) return "Returned quantity cannot exceed the purchased quantity.";
+        }
+
+        var purchaseTotal=source.Sum(x=>(x.UnitPrice*x.Quantity)*(1+x.TaxPct/100m));
+        if(r.RefundAmount>purchaseTotal) return "Refund cannot exceed purchase total.";
+        return null;
     }
+
+    private static bool TryReadReturnItems(string? json,out List<ReturnItemDto> items,out string error)
+    {
+        items=[];error="";
+        if(string.IsNullOrWhiteSpace(json)){error="At least one return item is required.";return false;}
+        try{items=JsonSerializer.Deserialize<List<ReturnItemDto>>(json,new JsonSerializerOptions{PropertyNameCaseInsensitive=true})??[];}
+        catch(JsonException){error="Return items are invalid.";return false;}
+        if(items.Count==0){error="At least one return item is required.";return false;}
+        return true;
+    }
+
+    private static bool TryReadInvoiceItems(string? json,out List<InvoiceItemDto> items)
+    {
+        try{items=JsonSerializer.Deserialize<List<InvoiceItemDto>>(json??"[]",new JsonSerializerOptions{PropertyNameCaseInsensitive=true})??[];return items.Count>0;}
+        catch(JsonException){items=[];return false;}
+    }
+
+    private static bool TryReadPurchaseItems(string? json,out List<PurchaseItemDto> items)
+    {
+        try{items=JsonSerializer.Deserialize<List<PurchaseItemDto>>(json??"[]",new JsonSerializerOptions{PropertyNameCaseInsensitive=true})??[];return items.Count>0;}
+        catch(JsonException){items=[];return false;}
+    }
+
     private async Task<bool> CanAccessCompany(Guid companyId,CancellationToken ct){var raw=User.FindFirstValue(ClaimTypes.NameIdentifier)??User.FindFirstValue("sub");return Guid.TryParse(raw,out var userId)&&await db.UserCompanies.AnyAsync(x=>x.UserId==userId&&x.CompanyId==companyId&&x.IsActive&&!x.IsDeleted,ct);}
     private static object ToResponse(BaseEntity x)=>new{id=x.Id,x.SyncVersion,x.UpdatedAt};
+
+    private sealed class ReturnItemDto{public Guid ProductId{get;set;}public int Quantity{get;set;}public decimal UnitPrice{get;set;}}
+    private sealed class InvoiceItemDto{public Guid ProductId{get;set;}public int Quantity{get;set;}public decimal UnitPrice{get;set;}public decimal DiscountPct{get;set;}public decimal TaxPct{get;set;}}
+    private sealed class PurchaseItemDto{public Guid ProductId{get;set;}public int Quantity{get;set;}public decimal UnitPrice{get;set;}public decimal TaxPct{get;set;}}
 
     public sealed class SalesReturnRequest{public Guid Id{get;set;}public Guid CompanyId{get;set;}public string ReturnNumber{get;set;}="";public Guid InvoiceId{get;set;}public string? InvoiceNumber{get;set;}public Guid CustomerId{get;set;}public string? CustomerName{get;set;}public DateTime ReturnDate{get;set;}public string? ItemsJson{get;set;}public string Reason{get;set;}="";public string? Notes{get;set;}public decimal RefundAmount{get;set;}public int Status{get;set;}public long SyncVersion{get;set;}}
     public sealed class PurchaseReturnRequest{public Guid Id{get;set;}public Guid CompanyId{get;set;}public string ReturnNumber{get;set;}="";public Guid PurchaseId{get;set;}public string? PurchaseNumber{get;set;}public Guid SupplierId{get;set;}public string? SupplierName{get;set;}public DateTime ReturnDate{get;set;}public string? ItemsJson{get;set;}public string Reason{get;set;}="";public string? Notes{get;set;}public decimal RefundAmount{get;set;}public int Status{get;set;}public long SyncVersion{get;set;}}
