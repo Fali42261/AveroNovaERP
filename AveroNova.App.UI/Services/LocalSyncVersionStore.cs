@@ -7,8 +7,8 @@ namespace AveroNova.App.UI.Services;
 /// <summary>
 /// Keeps server concurrency versions in the existing local SQLite tables without
 /// forcing a destructive local database rebuild. The schema check is intentionally
-/// idempotent and runs per database connection so a process can safely work with
-/// more than one SQLite database (for example tests, upgrades, or database swaps).
+/// idempotent and safe when an older/partial local database does not yet contain
+/// one of the newer module tables.
 /// </summary>
 public static class LocalSyncVersionStore
 {
@@ -23,37 +23,60 @@ public static class LocalSyncVersionStore
             await EnsureColumnAsync(db, "LocalSalesReturns", cancellationToken);
             await EnsureColumnAsync(db, "LocalPurchaseReturns", cancellationToken);
         }
-        finally { Gate.Release(); }
+        finally
+        {
+            Gate.Release();
+        }
     }
 
     public static Task<long> GetExpenseAsync(LocalAppDbContext db, Guid id, CancellationToken cancellationToken = default)
         => GetAsync(db, "LocalExpenses", id, cancellationToken);
+
     public static Task<long> GetSalesReturnAsync(LocalAppDbContext db, Guid id, CancellationToken cancellationToken = default)
         => GetAsync(db, "LocalSalesReturns", id, cancellationToken);
+
     public static Task<long> GetPurchaseReturnAsync(LocalAppDbContext db, Guid id, CancellationToken cancellationToken = default)
         => GetAsync(db, "LocalPurchaseReturns", id, cancellationToken);
 
     public static Task SetExpenseAsync(LocalAppDbContext db, Guid id, long version, CancellationToken cancellationToken = default)
         => SetAsync(db, "LocalExpenses", id, version, cancellationToken);
+
     public static Task SetSalesReturnAsync(LocalAppDbContext db, Guid id, long version, CancellationToken cancellationToken = default)
         => SetAsync(db, "LocalSalesReturns", id, version, cancellationToken);
+
     public static Task SetPurchaseReturnAsync(LocalAppDbContext db, Guid id, long version, CancellationToken cancellationToken = default)
         => SetAsync(db, "LocalPurchaseReturns", id, version, cancellationToken);
 
     private static async Task EnsureColumnAsync(LocalAppDbContext db, string table, CancellationToken ct)
     {
         var connection = db.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open) await connection.OpenAsync(ct);
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(ct);
+
+        // PRAGMA table_info returns zero rows both when a table is absent and when
+        // it has no columns. Do not issue ALTER TABLE in the former case: partial
+        // databases and upgrade/test databases may legitimately not have a newer
+        // module table yet.
         await using var check = connection.CreateCommand();
         check.CommandText = $"PRAGMA table_info([{table}]);";
         await using var reader = await check.ExecuteReaderAsync(ct);
-        var exists = false;
+
+        var tableExists = false;
+        var columnExists = false;
         while (await reader.ReadAsync(ct))
         {
-            if (string.Equals(reader.GetString(1), "SyncVersion", StringComparison.OrdinalIgnoreCase)) { exists = true; break; }
+            tableExists = true;
+            if (string.Equals(reader.GetString(1), "SyncVersion", StringComparison.OrdinalIgnoreCase))
+            {
+                columnExists = true;
+                break;
+            }
         }
+
         await reader.DisposeAsync();
-        if (exists) return;
+        if (!tableExists || columnExists)
+            return;
+
         await using var alter = connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE [{table}] ADD COLUMN [SyncVersion] INTEGER NOT NULL DEFAULT 1;";
         await alter.ExecuteNonQueryAsync(ct);
@@ -62,11 +85,19 @@ public static class LocalSyncVersionStore
     private static async Task<long> GetAsync(LocalAppDbContext db, string table, Guid id, CancellationToken ct)
     {
         await EnsureSchemaAsync(db, ct);
+        if (!await TableExistsAsync(db, table, ct))
+            return 1L;
+
         var connection = db.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open) await connection.OpenAsync(ct);
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(ct);
+
         await using var command = connection.CreateCommand();
         command.CommandText = $"SELECT COALESCE([SyncVersion],1) FROM [{table}] WHERE [Id]=$id LIMIT 1;";
-        var parameter = command.CreateParameter(); parameter.ParameterName = "$id"; parameter.Value = id.ToString(); command.Parameters.Add(parameter);
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "$id";
+        parameter.Value = id.ToString();
+        command.Parameters.Add(parameter);
         var value = await command.ExecuteScalarAsync(ct);
         return value is null || value is DBNull ? 1L : Convert.ToInt64(value);
     }
@@ -74,12 +105,38 @@ public static class LocalSyncVersionStore
     private static async Task SetAsync(LocalAppDbContext db, string table, Guid id, long version, CancellationToken ct)
     {
         await EnsureSchemaAsync(db, ct);
+        if (!await TableExistsAsync(db, table, ct))
+            return;
+
         var connection = db.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open) await connection.OpenAsync(ct);
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(ct);
+
         await using var command = connection.CreateCommand();
         command.CommandText = $"UPDATE [{table}] SET [SyncVersion]=$version WHERE [Id]=$id;";
-        var idParameter = command.CreateParameter(); idParameter.ParameterName = "$id"; idParameter.Value = id.ToString(); command.Parameters.Add(idParameter);
-        var versionParameter = command.CreateParameter(); versionParameter.ParameterName = "$version"; versionParameter.Value = Math.Max(1, version); command.Parameters.Add(versionParameter);
+        var idParameter = command.CreateParameter();
+        idParameter.ParameterName = "$id";
+        idParameter.Value = id.ToString();
+        command.Parameters.Add(idParameter);
+        var versionParameter = command.CreateParameter();
+        versionParameter.ParameterName = "$version";
+        versionParameter.Value = Math.Max(1, version);
+        command.Parameters.Add(versionParameter);
         await command.ExecuteNonQueryAsync(ct);
+    }
+
+    private static async Task<bool> TableExistsAsync(LocalAppDbContext db, string table, CancellationToken ct)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(ct);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=$table LIMIT 1;";
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "$table";
+        parameter.Value = table;
+        command.Parameters.Add(parameter);
+        return await command.ExecuteScalarAsync(ct) is not null;
     }
 }
