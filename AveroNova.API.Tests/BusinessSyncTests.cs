@@ -117,6 +117,35 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SupplierPayment_ReconcilesPurchasePayable_AndRejectsOverpayment()
+    {
+        var (client, companyId) = await AuthenticatedClientAsync("payable");
+        var purchaseId = Guid.NewGuid();
+        var supplierId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var ok = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items =
+            [
+                PurchaseItem(companyId, purchaseId, supplierId, 120m),
+                PaymentItem(companyId, paymentId, purchaseId, supplierId, 70m, isSupplier: true)
+            ]
+        });
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var purchase = await db.SyncQueueItems.SingleAsync(x => x.CompanyId == companyId && x.EntityType == "Purchase" && x.EntityId == purchaseId);
+        Assert.Equal(70m, ReadDecimal(purchase.PayloadJson!, "PaidAmount"));
+
+        var rejected = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [PaymentItem(companyId, Guid.NewGuid(), purchaseId, supplierId, 51m, isSupplier: true)]
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+    }
+
     private async Task<(HttpClient Client, Guid CompanyId)> AuthenticatedClientAsync(string prefix)
     {
         var client = _factory.CreateClient();
@@ -159,7 +188,7 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         };
 
     private static BusinessSyncItemRequest PaymentItem(
-        Guid companyId, Guid paymentId, Guid invoiceId, Guid customerId, decimal amount)
+        Guid companyId, Guid paymentId, Guid invoiceId, Guid customerId, decimal amount, bool isSupplier = false)
         => new()
         {
             QueueId = Guid.NewGuid(), EntityType = "Payment", EntityId = paymentId,
@@ -167,10 +196,24 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
             PayloadJson = JsonSerializer.Serialize(new
             {
                 Id = paymentId, CompanyId = companyId, PaymentNumber = "PAY-SYNC-1",
-                PartyId = customerId, PartyName = "Customer", IsSupplier = false,
+                PartyId = customerId, PartyName = isSupplier ? "Supplier" : "Customer", IsSupplier = isSupplier,
                 InvoiceId = invoiceId, InvoiceNumber = "INV-SYNC-1", Amount = amount,
                 Method = 0, PaymentDate = DateTime.Today, Reference = "", Notes = "",
                 Status = 1, UpdatedAtUtc = DateTime.UtcNow
+            })
+        };
+
+    private static BusinessSyncItemRequest PurchaseItem(Guid companyId, Guid purchaseId, Guid supplierId, decimal total)
+        => new()
+        {
+            QueueId=Guid.NewGuid(),EntityType="Purchase",EntityId=purchaseId,CompanyId=companyId,
+            Operation=SyncOperation.Update,ClientUpdatedAtUtc=DateTime.UtcNow,
+            PayloadJson=JsonSerializer.Serialize(new
+            {
+                Id=purchaseId,CompanyId=companyId,PurchaseNumber="PO-SYNC-1",SupplierId=supplierId,
+                SupplierName="Supplier",PurchaseDate=DateTime.Today,DueDate=DateTime.Today.AddDays(30),
+                ItemsJson="[]",PaymentMethod=0,Reference="",Notes="",Status=3,PaidAmount=999m,
+                GrandTotal=total,UpdatedAtUtc=DateTime.UtcNow
             })
         };
 

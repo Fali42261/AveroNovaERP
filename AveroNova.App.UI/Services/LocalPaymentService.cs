@@ -45,9 +45,8 @@ public sealed class LocalPaymentService : IPaymentService
             return (false, validationError);
 
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var linkedInvoice = await ValidateAndPrepareInvoiceAsync(db, payment);
-        if (linkedInvoice.Error is not null)
-            return (false, linkedInvoice.Error);
+        var linked = await ValidateAndPrepareDocumentAsync(db, payment);
+        if (linked.Error is not null) return (false, linked.Error);
 
         var now = DateTime.UtcNow;
         payment.LocalId = payment.LocalId == Guid.Empty ? Guid.NewGuid() : payment.LocalId;
@@ -57,8 +56,8 @@ public sealed class LocalPaymentService : IPaymentService
         var row = ToEntity(payment, now);
         row.SyncStatus = (int)RecordSyncStatus.Pending;
         db.Payments.Add(row);
-        if (linkedInvoice.Invoice is not null)
-            await ReconcileInvoiceAsync(db, linkedInvoice.Invoice, row, includeCurrent: true, now);
+        if (linked.Invoice is not null) await ReconcileInvoiceAsync(db, linked.Invoice, row, true, now);
+        if (linked.Purchase is not null) await ReconcilePurchaseAsync(db, linked.Purchase, row, true, now);
         LocalSyncQueueWriter.Enqueue(db, "Payment", row.Id, row.CompanyId, SyncOperation.Create, Payload(row), now);
         await db.SaveChangesAsync();
         return (true, null);
@@ -75,22 +74,29 @@ public sealed class LocalPaymentService : IPaymentService
         if (row is null || !Allows(row.CompanyId) || row.CompanyId != payment.CompanyId)
             return (false, "Payment not found.");
 
-        var oldInvoiceId = row.InvoiceId;
-        var linkedInvoice = await ValidateAndPrepareInvoiceAsync(db, payment, row.Id);
-        if (linkedInvoice.Error is not null)
-            return (false, linkedInvoice.Error);
+        var oldDocumentId = row.InvoiceId;
+        var oldIsSupplier = row.IsSupplier;
+        var linked = await ValidateAndPrepareDocumentAsync(db, payment, row.Id);
+        if (linked.Error is not null) return (false, linked.Error);
 
         var now = DateTime.UtcNow;
         Apply(row, payment, now);
         row.SyncStatus = (int)RecordSyncStatus.Pending;
-        if (oldInvoiceId is Guid previousId && previousId != row.InvoiceId)
+        if (oldDocumentId is Guid previousId && (previousId != row.InvoiceId || oldIsSupplier != row.IsSupplier))
         {
-            var previous = await db.Invoices.FirstOrDefaultAsync(i => i.Id == previousId && i.CompanyId == row.CompanyId);
-            if (previous is not null)
-                await ReconcileInvoiceAsync(db, previous, row, includeCurrent: false, now);
+            if (oldIsSupplier)
+            {
+                var previous = await db.Purchases.FirstOrDefaultAsync(x => x.Id == previousId && x.CompanyId == row.CompanyId);
+                if (previous is not null) await ReconcilePurchaseAsync(db, previous, row, false, now);
+            }
+            else
+            {
+                var previous = await db.Invoices.FirstOrDefaultAsync(x => x.Id == previousId && x.CompanyId == row.CompanyId);
+                if (previous is not null) await ReconcileInvoiceAsync(db, previous, row, false, now);
+            }
         }
-        if (linkedInvoice.Invoice is not null)
-            await ReconcileInvoiceAsync(db, linkedInvoice.Invoice, row, includeCurrent: true, now);
+        if (linked.Invoice is not null) await ReconcileInvoiceAsync(db, linked.Invoice, row, true, now);
+        if (linked.Purchase is not null) await ReconcilePurchaseAsync(db, linked.Purchase, row, true, now);
         LocalSyncQueueWriter.Enqueue(db, "Payment", row.Id, row.CompanyId, SyncOperation.Update, Payload(row), now);
         await db.SaveChangesAsync();
         return (true, null);
@@ -103,12 +109,15 @@ public sealed class LocalPaymentService : IPaymentService
         if (row is null || !Allows(row.CompanyId))
             return (false, "Payment not found.");
 
-        var linkedInvoice = row.InvoiceId is Guid invoiceId
-            ? await db.Invoices.FirstOrDefaultAsync(i => i.Id == invoiceId && i.CompanyId == row.CompanyId)
-            : null;
+        var linkedInvoice = !row.IsSupplier && row.InvoiceId is Guid invoiceId
+            ? await db.Invoices.FirstOrDefaultAsync(i => i.Id == invoiceId && i.CompanyId == row.CompanyId) : null;
+        var linkedPurchase = row.IsSupplier && row.InvoiceId is Guid purchaseId
+            ? await db.Purchases.FirstOrDefaultAsync(i => i.Id == purchaseId && i.CompanyId == row.CompanyId) : null;
         db.Payments.Remove(row);
         if (linkedInvoice is not null)
             await ReconcileInvoiceAsync(db, linkedInvoice, row, includeCurrent: false, DateTime.UtcNow);
+        if (linkedPurchase is not null)
+            await ReconcilePurchaseAsync(db, linkedPurchase, row, includeCurrent: false, DateTime.UtcNow);
         LocalSyncQueueWriter.Enqueue(db, "Payment", row.Id, row.CompanyId, SyncOperation.Delete, new { row.Id }, DateTime.UtcNow);
         await db.SaveChangesAsync();
         return (true, null);
@@ -143,7 +152,7 @@ public sealed class LocalPaymentService : IPaymentService
         return null;
     }
 
-    private static async Task<(LocalInvoiceEntity? Invoice, string? Error)> ValidateAndPrepareInvoiceAsync(
+    private static async Task<(LocalInvoiceEntity? Invoice, LocalPurchaseEntity? Purchase, string? Error)> ValidateAndPrepareDocumentAsync(
         LocalAppDbContext db,
         PaymentModel payment,
         Guid? existingPaymentId = null)
@@ -151,31 +160,60 @@ public sealed class LocalPaymentService : IPaymentService
         if (payment.InvoiceId is not Guid invoiceId)
         {
             payment.InvoiceNumber = string.Empty;
-            return (null, null);
+            return (null, null, null);
         }
         if (payment.IsSupplier)
-            return (null, "Supplier payments cannot be linked to a sales invoice.");
+        {
+            var purchase = await db.Purchases.FirstOrDefaultAsync(x => x.Id == invoiceId && x.CompanyId == payment.CompanyId);
+            if (purchase is null) return (null, null, "Purchase not found.");
+            if (purchase.Status is (int)PurchaseStatus.Draft or (int)PurchaseStatus.Cancelled)
+                return (null, null, "Payments can only be applied to an ordered or received purchase.");
+            var otherPaid = await db.Payments.Where(p => p.CompanyId == payment.CompanyId && p.InvoiceId == invoiceId
+                && p.Id != existingPaymentId && p.IsSupplier && p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
+            var applied = payment.Status == PaymentStatus.Completed ? payment.Amount : 0m;
+            if (otherPaid + applied > LocalPurchaseService.Total(purchase))
+                return (null, null, "Payment exceeds the purchase outstanding balance.");
+            payment.PartyId = purchase.SupplierId;
+            payment.PartyName = purchase.SupplierName;
+            payment.InvoiceNumber = purchase.PurchaseNumber;
+            return (null, purchase, null);
+        }
 
         var invoice = await db.Invoices.FirstOrDefaultAsync(i => i.Id == invoiceId && i.CompanyId == payment.CompanyId);
         if (invoice is null)
-            return (null, "Invoice not found.");
+            return (null, null, "Invoice not found.");
         if (invoice.Status is (int)InvoiceStatus.Draft or (int)InvoiceStatus.Cancelled)
-            return (null, "Payments can only be applied to a posted invoice.");
+            return (null, null, "Payments can only be applied to a posted invoice.");
 
         var otherPaid = await db.Payments
             .Where(p => p.CompanyId == payment.CompanyId
                         && p.InvoiceId == invoiceId
                         && p.Id != existingPaymentId
+                        && !p.IsSupplier
                         && p.Status == (int)PaymentStatus.Completed)
             .SumAsync(p => p.Amount);
         var applied = payment.Status == PaymentStatus.Completed ? payment.Amount : 0m;
         if (otherPaid + applied > InvoiceTotal(invoice))
-            return (null, "Payment exceeds the invoice outstanding balance.");
+            return (null, null, "Payment exceeds the invoice outstanding balance.");
 
         payment.PartyId = invoice.CustomerId;
         payment.PartyName = invoice.CustomerName;
         payment.InvoiceNumber = invoice.InvoiceNumber;
-        return (invoice, null);
+        return (invoice, null, null);
+    }
+
+    private static async Task ReconcilePurchaseAsync(LocalAppDbContext db, LocalPurchaseEntity purchase,
+        LocalPaymentEntity current, bool includeCurrent, DateTime now)
+    {
+        var paid = await db.Payments.Where(p => p.CompanyId == purchase.CompanyId && p.InvoiceId == purchase.Id
+            && p.Id != current.Id && p.IsSupplier && p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
+        if (includeCurrent && current.IsSupplier && current.Status == (int)PaymentStatus.Completed) paid += current.Amount;
+        purchase.PaidAmount = Math.Min(LocalPurchaseService.Total(purchase), paid);
+        purchase.SyncStatus = (int)RecordSyncStatus.Pending;
+        purchase.SyncError = null;
+        purchase.UpdatedAtUtc = now;
+        LocalSyncQueueWriter.Enqueue(db, "Purchase", purchase.Id, purchase.CompanyId, SyncOperation.Update,
+            LocalPurchaseService.Payload(purchase), now);
     }
 
     private static async Task ReconcileInvoiceAsync(
@@ -189,6 +227,7 @@ public sealed class LocalPaymentService : IPaymentService
             .Where(p => p.CompanyId == invoice.CompanyId
                         && p.InvoiceId == invoice.Id
                         && p.Id != current.Id
+                        && !p.IsSupplier
                         && p.Status == (int)PaymentStatus.Completed)
             .SumAsync(p => p.Amount);
         if (includeCurrent && current.Status == (int)PaymentStatus.Completed)

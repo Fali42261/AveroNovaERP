@@ -19,7 +19,7 @@ namespace AveroNova.API.Controllers;
 public sealed class BusinessSyncController : ControllerBase
 {
     private static readonly HashSet<string> SupportedTypes =
-        new(["Invoice", "Payment"], StringComparer.OrdinalIgnoreCase);
+        new(["Invoice", "Purchase", "Payment", "Supplier", "Product", "StockMovement"], StringComparer.OrdinalIgnoreCase);
 
     private readonly AppDbContext _db;
 
@@ -37,8 +37,7 @@ public sealed class BusinessSyncController : ControllerBase
         if (request.Items.Any(i => string.IsNullOrWhiteSpace(i.EntityType)))
             return BadRequest(new { success = false, error = "Every sync item must specify an entity type." });
         foreach (var item in request.Items)
-            item.EntityType = item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase) ? "Invoice" :
-                item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? "Payment" : item.EntityType;
+            item.EntityType = SupportedTypes.FirstOrDefault(x => x.Equals(item.EntityType, StringComparison.OrdinalIgnoreCase)) ?? item.EntityType;
         if (request.Items.Any(i => i.CompanyId != companyId))
             return Forbid();
         if (request.Items.Any(i => !SupportedTypes.Contains(i.EntityType)))
@@ -54,7 +53,9 @@ public sealed class BusinessSyncController : ControllerBase
             var now = DateTime.UtcNow;
             var results = new List<BusinessSyncItemResult>(request.Items.Count);
             var ordered = request.Items
-                .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
+                              || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 0
+                    : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 2 : 1)
                 .ThenBy(i => i.ClientUpdatedAtUtc)
                 .ToList();
 
@@ -97,13 +98,19 @@ public sealed class BusinessSyncController : ControllerBase
 
         if (item.Operation == SyncOperation.Delete)
         {
-            if (item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
-                && await HasLinkedPaymentsAsync(item.CompanyId, item.EntityId, cancellationToken))
+            if ((item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
+                 || item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+                && await HasLinkedPaymentsAsync(item.CompanyId, item.EntityId,
+                    item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase), cancellationToken))
                 throw new BusinessSyncValidationException("Delete linked payments before deleting this invoice.");
 
             Guid? affectedInvoice = null;
+            var affectedType = "Invoice";
             if (record is not null && item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
+            {
                 affectedInvoice = ReadGuid(record.PayloadJson, "InvoiceId");
+                affectedType = ReadBool(record.PayloadJson, "IsSupplier") ? "Purchase" : "Invoice";
+            }
 
             if (record is not null)
             {
@@ -113,7 +120,7 @@ public sealed class BusinessSyncController : ControllerBase
                 await _db.SaveChangesAsync(cancellationToken);
             }
             if (affectedInvoice is Guid invoiceId)
-                await ReconcileInvoiceAsync(item.CompanyId, invoiceId, now, cancellationToken);
+                await ReconcileDocumentAsync(item.CompanyId, affectedType, invoiceId, now, cancellationToken);
             return;
         }
 
@@ -122,6 +129,8 @@ public sealed class BusinessSyncController : ControllerBase
 
         if (item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase))
             ValidateInvoice(payload);
+        else if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+            ValidatePurchase(payload);
         else if (item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
             await ValidatePaymentAsync(item, payload, cancellationToken);
 
@@ -139,6 +148,8 @@ public sealed class BusinessSyncController : ControllerBase
         Guid? oldInvoiceId = item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase)
             ? ReadGuid(record.PayloadJson, "InvoiceId")
             : null;
+        var oldDocumentType = item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase)
+                              && ReadBool(record.PayloadJson, "IsSupplier") ? "Purchase" : "Invoice";
         record.PayloadJson = payload.ToJsonString();
         record.IsDeleted = false;
         MarkSynced(record, item.Operation, now);
@@ -146,15 +157,20 @@ public sealed class BusinessSyncController : ControllerBase
 
         if (item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase))
         {
-            await ReconcileInvoiceAsync(item.CompanyId, item.EntityId, now, cancellationToken);
+            await ReconcileDocumentAsync(item.CompanyId, "Invoice", item.EntityId, now, cancellationToken);
+        }
+        else if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+        {
+            await ReconcileDocumentAsync(item.CompanyId, "Purchase", item.EntityId, now, cancellationToken);
         }
         else if (item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
         {
             var newInvoiceId = ReadGuid(record.PayloadJson, "InvoiceId");
-            if (oldInvoiceId is Guid previous && previous != newInvoiceId)
-                await ReconcileInvoiceAsync(item.CompanyId, previous, now, cancellationToken);
+            var newType = ReadBool(record.PayloadJson, "IsSupplier") ? "Purchase" : "Invoice";
+            if (oldInvoiceId is Guid previous && (previous != newInvoiceId || oldDocumentType != newType))
+                await ReconcileDocumentAsync(item.CompanyId, oldDocumentType, previous, now, cancellationToken);
             if (newInvoiceId is Guid current)
-                await ReconcileInvoiceAsync(item.CompanyId, current, now, cancellationToken);
+                await ReconcileDocumentAsync(item.CompanyId, newType, current, now, cancellationToken);
         }
     }
 
@@ -162,6 +178,15 @@ public sealed class BusinessSyncController : ControllerBase
     {
         if (ReadDecimal(payload, "GrandTotal") < 0)
             throw new BusinessSyncValidationException("Invoice total cannot be negative.");
+    }
+
+    private static void ValidatePurchase(JsonObject payload)
+    {
+        if (ReadDecimal(payload, "GrandTotal") < 0)
+            throw new BusinessSyncValidationException("Purchase total cannot be negative.");
+        var status = ReadInt(payload, "Status");
+        if (status is < 0 or > 4)
+            throw new BusinessSyncValidationException("Purchase status is invalid.");
     }
 
     private async Task ValidatePaymentAsync(
@@ -182,37 +207,40 @@ public sealed class BusinessSyncController : ControllerBase
         if (ReadBool(payload, "IsSupplier"))
             throw new BusinessSyncValidationException("Supplier payments cannot be linked to a sales invoice.");
 
-        var invoice = await FindRecordAsync(item.CompanyId, "Invoice", linkedInvoiceId, cancellationToken);
+        var isSupplier = ReadBool(payload, "IsSupplier");
+        var documentType = isSupplier ? "Purchase" : "Invoice";
+        var invoice = await FindRecordAsync(item.CompanyId, documentType, linkedInvoiceId, cancellationToken);
         if (invoice is null || invoice.IsDeleted || string.IsNullOrWhiteSpace(invoice.PayloadJson))
-            throw new BusinessSyncValidationException("Linked invoice does not exist on the server.");
+            throw new BusinessSyncValidationException($"Linked {documentType.ToLowerInvariant()} does not exist on the server.");
 
         var total = ReadDecimal(invoice.PayloadJson, "GrandTotal");
         var invoiceStatus = ReadInt(invoice.PayloadJson, "Status");
-        if (invoiceStatus is 0 or 5)
-            throw new BusinessSyncValidationException("Payments can only be applied to a posted invoice.");
+        if (invoiceStatus == 0 || (!isSupplier && invoiceStatus == 5) || (isSupplier && invoiceStatus == 4))
+            throw new BusinessSyncValidationException("Payments can only be applied to an active posted document.");
         var otherPaid = await CompletedPaymentTotalAsync(
-            item.CompanyId, linkedInvoiceId, item.EntityId, cancellationToken);
+            item.CompanyId, linkedInvoiceId, item.EntityId, isSupplier, cancellationToken);
         if (status == 1 && otherPaid + amount > total)
             throw new BusinessSyncValidationException("Payment exceeds the invoice outstanding balance.");
     }
 
-    private async Task ReconcileInvoiceAsync(
+    private async Task ReconcileDocumentAsync(
         Guid companyId,
+        string documentType,
         Guid invoiceId,
         DateTime now,
         CancellationToken cancellationToken)
     {
-        var invoice = await FindRecordAsync(companyId, "Invoice", invoiceId, cancellationToken);
+        var invoice = await FindRecordAsync(companyId, documentType, invoiceId, cancellationToken);
         if (invoice is null || invoice.IsDeleted || string.IsNullOrWhiteSpace(invoice.PayloadJson))
             return;
 
         var payload = ParseObject(invoice.PayloadJson);
         var total = ReadDecimal(payload, "GrandTotal");
-        var paid = await CompletedPaymentTotalAsync(companyId, invoiceId, null, cancellationToken);
+        var paid = await CompletedPaymentTotalAsync(companyId, invoiceId, null, documentType == "Purchase", cancellationToken);
         Set(payload, "PaidAmount", Math.Min(total, paid));
 
         var status = ReadInt(payload, "Status");
-        if (status is not 0 and not 5)
+        if (documentType == "Invoice" && status is not 0 and not 5)
         {
             var dueDate = ReadDateTime(payload, "DueDate");
             Set(payload, "Status", paid >= total && total > 0
@@ -231,6 +259,7 @@ public sealed class BusinessSyncController : ControllerBase
         Guid companyId,
         Guid invoiceId,
         Guid? excludingPaymentId,
+        bool isSupplier,
         CancellationToken cancellationToken)
     {
         var query = _db.SyncQueueItems.Where(x =>
@@ -240,16 +269,17 @@ public sealed class BusinessSyncController : ControllerBase
         var records = await query.ToListAsync(cancellationToken);
         return records
             .Where(x => ReadGuid(x.PayloadJson, "InvoiceId") == invoiceId
+                        && ReadBool(x.PayloadJson, "IsSupplier") == isSupplier
                         && ReadInt(x.PayloadJson, "Status") == 1)
             .Sum(x => ReadDecimal(x.PayloadJson, "Amount"));
     }
 
-    private async Task<bool> HasLinkedPaymentsAsync(Guid companyId, Guid invoiceId, CancellationToken cancellationToken)
+    private async Task<bool> HasLinkedPaymentsAsync(Guid companyId, Guid invoiceId, bool isSupplier, CancellationToken cancellationToken)
         => (await _db.SyncQueueItems
                 .Where(x => x.CompanyId == companyId && x.EntityType == "Payment" && !x.IsDeleted)
                 .Select(x => x.PayloadJson)
                 .ToListAsync(cancellationToken))
-            .Any(payload => ReadGuid(payload, "InvoiceId") == invoiceId);
+            .Any(payload => ReadGuid(payload, "InvoiceId") == invoiceId && ReadBool(payload, "IsSupplier") == isSupplier);
 
     private Task<SyncQueueItem?> FindRecordAsync(
         Guid companyId,
@@ -325,6 +355,11 @@ public sealed class BusinessSyncController : ControllerBase
             : null;
     private static bool ReadBool(JsonObject value, string name)
         => bool.TryParse(Find(value, name)?.ToString(), out var result) && result;
+    private static bool ReadBool(string? json, string name)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try { return ReadBool(ParseObject(json), name); } catch { return false; }
+    }
     private static void Set(JsonObject value, string name, decimal result) => SetNode(value, name, JsonValue.Create(result));
     private static void Set(JsonObject value, string name, int result) => SetNode(value, name, JsonValue.Create(result));
     private static void SetNode(JsonObject value, string name, JsonNode? result)

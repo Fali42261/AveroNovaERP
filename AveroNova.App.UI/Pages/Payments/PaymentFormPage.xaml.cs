@@ -7,18 +7,23 @@ namespace AveroNova.App.UI.Pages.Payments;
 
 [QueryProperty(nameof(EditId), "id")]
 [QueryProperty(nameof(InitialInvoiceId), "invoiceId")]
+[QueryProperty(nameof(InitialPurchaseId), "purchaseId")]
 public partial class PaymentFormPage : ContentPage
 {
     private readonly IPaymentService _svc;
     private readonly ICompanyService _company;
     private readonly IBillingService _billing;
+    private readonly IPurchaseService _purchasesService;
     private List<InvoiceModel> _invoices = [];
+    private List<PurchaseModel> _purchases = [];
+    private bool _supplierMode;
     private PaymentModel? _editing;
     public string? EditId { get; set; }
     public string? InitialInvoiceId { get; set; }
+    public string? InitialPurchaseId { get; set; }
 
-    public PaymentFormPage(IPaymentService svc, ICompanyService company, IBillingService billing)
-    { InitializeComponent(); _svc = svc; _company = company; _billing = billing; }
+    public PaymentFormPage(IPaymentService svc, ICompanyService company, IBillingService billing, IPurchaseService purchasesService)
+    { InitializeComponent(); _svc = svc; _company = company; _billing = billing; _purchasesService = purchasesService; }
 
     protected override async void OnAppearing()
     {
@@ -27,13 +32,29 @@ public partial class PaymentFormPage : ContentPage
         var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         if (!string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var id))
             _editing = await _svc.GetByIdAsync(id);
-        _invoices = (await _billing.GetAllAsync(companyId))
-            .Where(i => i.Status is not InvoiceStatus.Draft and not InvoiceStatus.Cancelled
-                        && (i.Status != InvoiceStatus.Paid || i.LocalId == _editing?.InvoiceId))
-            .OrderByDescending(i => i.InvoiceDate)
-            .ToList();
-        InvoicePicker.ItemsSource = _invoices;
-        InvoicePicker.ItemDisplayBinding = new Binding(nameof(InvoiceModel.InvoiceNumber));
+        _supplierMode = _editing?.IsSupplier == true || Guid.TryParse(InitialPurchaseId, out _);
+        if (_supplierMode)
+        {
+            DocumentLabel.Text = "Purchase *";
+            var editingPurchaseId = _editing?.InvoiceId;
+            _purchases = (await _purchasesService.GetAllAsync(companyId))
+                .Where(p => (p.Status is not PurchaseStatus.Draft and not PurchaseStatus.Cancelled && p.DueAmount > 0)
+                            || p.LocalId == editingPurchaseId)
+                .OrderByDescending(p => p.PurchaseDate).ToList();
+            InvoicePicker.ItemsSource = _purchases;
+            InvoicePicker.ItemDisplayBinding = new Binding(nameof(PurchaseModel.PurchaseNumber));
+            var selectedId = _editing?.InvoiceId ?? (Guid.TryParse(InitialPurchaseId, out var purchaseId) ? purchaseId : null);
+            InvoicePicker.SelectedItem = _purchases.FirstOrDefault(p => p.LocalId == selectedId);
+        }
+        else
+        {
+            _invoices = (await _billing.GetAllAsync(companyId))
+                .Where(i => i.Status is not InvoiceStatus.Draft and not InvoiceStatus.Cancelled
+                            && (i.Status != InvoiceStatus.Paid || i.LocalId == _editing?.InvoiceId))
+                .OrderByDescending(i => i.InvoiceDate).ToList();
+            InvoicePicker.ItemsSource = _invoices;
+            InvoicePicker.ItemDisplayBinding = new Binding(nameof(InvoiceModel.InvoiceNumber));
+        }
         if (_editing is not null)
         {
             EntryParty.Text      = _editing.PartyName;
@@ -42,16 +63,22 @@ public partial class PaymentFormPage : ContentPage
             EntryRef.Text        = _editing.Reference;
             EditorNotes.Text     = _editing.Notes;
             MethodPicker.SelectedIndex = MethodIndex(_editing.Method);
-            InvoicePicker.SelectedItem = _editing.InvoiceId is Guid invoiceId
-                ? _invoices.FirstOrDefault(i => i.LocalId == invoiceId)
-                : null;
+            if (!_supplierMode)
+                InvoicePicker.SelectedItem = _editing.InvoiceId is Guid invoiceId
+                    ? _invoices.FirstOrDefault(i => i.LocalId == invoiceId) : null;
         }
-        else if (Guid.TryParse(InitialInvoiceId, out var initialInvoiceId))
+        else if (!_supplierMode && Guid.TryParse(InitialInvoiceId, out var initialInvoiceId))
             InvoicePicker.SelectedItem = _invoices.FirstOrDefault(i => i.LocalId == initialInvoiceId);
     }
 
     private void OnInvoiceChanged(object? sender, EventArgs e)
     {
+        if (InvoicePicker.SelectedItem is PurchaseModel purchase)
+        {
+            EntryParty.Text = purchase.SupplierName;
+            if (_editing is null) EntryAmount.Text = Math.Max(0, purchase.DueAmount).ToString("N2");
+            return;
+        }
         if (InvoicePicker.SelectedItem is not InvoiceModel invoice)
             return;
         EntryParty.Text = invoice.CustomerName;
@@ -69,10 +96,11 @@ public partial class PaymentFormPage : ContentPage
         var m   = _editing ?? new PaymentModel { CompanyId = cid };
         m.PartyName      = EntryParty.Text.Trim();
         var invoice = InvoicePicker.SelectedItem as InvoiceModel;
-        m.InvoiceId      = invoice?.LocalId;
-        m.InvoiceNumber  = invoice?.InvoiceNumber ?? "";
-        m.PartyId        = invoice?.CustomerId ?? m.PartyId;
-        m.IsSupplier     = false;
+        var purchase = InvoicePicker.SelectedItem as PurchaseModel;
+        m.InvoiceId      = purchase?.LocalId ?? invoice?.LocalId;
+        m.InvoiceNumber  = purchase?.PurchaseNumber ?? invoice?.InvoiceNumber ?? "";
+        m.PartyId        = purchase?.SupplierId ?? invoice?.CustomerId ?? m.PartyId;
+        m.IsSupplier     = purchase is not null;
         m.Amount         = amt;
         m.PaymentDate     = DatePayment.Date ?? DateTime.Today;
         m.Reference      = EntryRef.Text?.Trim() ?? "";

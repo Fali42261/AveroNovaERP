@@ -61,6 +61,12 @@ public partial class PurchaseViewPage : ContentPage, IHostedPage
         };
 
         Content.Children.Add(card);
+        if (p.Status is not PurchaseStatus.Draft and not PurchaseStatus.Cancelled && p.DueAmount > 0)
+        {
+            var paymentBtn = new Button { Text = "Record Supplier Payment", Style = (Style)Resources["PrimaryButton"], HorizontalOptions = LayoutOptions.Fill };
+            paymentBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PaymentAdd}?purchaseId={p.LocalId:D}");
+            Content.Children.Add(paymentBtn);
+        }
         Content.Children.Add(deleteBtn);
     }
 

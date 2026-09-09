@@ -51,8 +51,8 @@
                             <VerticalStackLayout Grid.Column="1"><Label Text="Unit Price" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryUnitPrice" Keyboard="Numeric" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="2"><Label Text="Tax %" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryTax" Keyboard="Numeric" Text="0" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
                         </Grid>
-                        <Label Text="Paid Amount" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPaid" Keyboard="Numeric" Text="0" HorizontalTextAlignment="Center"/></Border>
+                        <Label Text="Paid Amount (calculated from supplier payments)" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPaid" IsReadOnly="True" Text="0" HorizontalTextAlignment="Center"/></Border>
                         <Label Text="Notes" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}" HeightRequest="80">
                             <Editor x:Name="EditorNotes" Placeholder="Additional notes..." AutoSize="TextChanges"/>

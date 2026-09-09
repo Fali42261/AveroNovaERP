@@ -19,7 +19,7 @@ namespace AveroNova.App.UI.Services;
 public sealed class RegistrationSyncService : ISyncService
 {
     private static readonly string[] RegistrationEntityTypes = ["User", "Company", "UserCompany", "Subscription"];
-    private static readonly string[] BusinessEntityTypes = ["Invoice", "Payment"];
+    private static readonly string[] BusinessEntityTypes = ["Invoice", "Purchase", "Payment", "Supplier", "Product", "StockMovement"];
 
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAuthApiClient _authApi;
@@ -317,7 +317,9 @@ public sealed class RegistrationSyncService : ISyncService
         var latest = items
             .GroupBy(i => new { Type = i.EntityType.ToUpperInvariant(), i.EntityId })
             .Select(g => g.OrderByDescending(i => i.CreatedAt).ThenByDescending(i => i.Id).First())
-            .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
+                          || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 0
+                : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 2 : 1)
             .ThenBy(i => i.CreatedAt)
             .ToList();
 
@@ -416,6 +418,27 @@ public sealed class RegistrationSyncService : ISyncService
             });
         }
 
+        if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Purchases.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(LocalPurchaseService.Payload(row));
+        }
+        if (item.EntityType.Equals("Supplier", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Suppliers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new { row.Id,row.CompanyId,row.Name,row.Email,row.Phone,row.Address,row.TaxNumber,row.Notes,row.IsActive,row.UpdatedAtUtc });
+        }
+        if (item.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new { row.Id,row.CompanyId,row.Name,row.SKU,row.Barcode,row.Category,row.Brand,row.Unit,row.PurchasePrice,row.SellingPrice,row.TaxPercent,row.Stock,row.MinimumStock,row.Status,row.UpdatedAtUtc });
+        }
+        if (item.EntityType.Equals("StockMovement", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.StockMovements.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new { row.Id,row.CompanyId,row.ProductId,row.ProductName,row.SKU,row.Type,row.Quantity,row.StockBefore,row.StockAfter,row.Reference,row.Notes,row.CreatedBy,row.UpdatedAtUtc });
+        }
+
         return item.PayloadJson;
     }
 
@@ -445,6 +468,26 @@ public sealed class RegistrationSyncService : ISyncService
                 row.SyncError = null;
                 row.LastSyncedAtUtc = syncedAt;
             }
+        }
+        else if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Purchases.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("Supplier", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Suppliers.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Products.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("StockMovement", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.StockMovements.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
         }
     }
 

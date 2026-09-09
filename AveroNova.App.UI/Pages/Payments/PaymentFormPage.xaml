@@ -22,9 +22,9 @@
                         <BoxView Style="{StaticResource Divider}"/>
                         <Label Text="Customer / Supplier Name *" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryParty" Placeholder="Customer or supplier name"/></Border>
-                        <Label Text="Invoice (optional)" Style="{StaticResource InputLabel}"/>
+                        <Label x:Name="DocumentLabel" Text="Invoice (optional)" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}">
-                            <Picker x:Name="InvoicePicker" Title="Select invoice..." SelectedIndexChanged="OnInvoiceChanged"/>
+                            <Picker x:Name="InvoicePicker" Title="Select invoice or purchase..." SelectedIndexChanged="OnInvoiceChanged"/>
                         </Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <VerticalStackLayout Spacing="4">
