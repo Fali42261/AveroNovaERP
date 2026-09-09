@@ -168,10 +168,10 @@ public sealed class LocalPaymentService : IPaymentService
             if (purchase is null) return (null, null, "Purchase not found.");
             if (purchase.Status is (int)PurchaseStatus.Draft or (int)PurchaseStatus.Cancelled)
                 return (null, null, "Payments can only be applied to an ordered or received purchase.");
-            var otherPaid = await db.Payments.Where(p => p.CompanyId == payment.CompanyId && p.InvoiceId == invoiceId
+            var supplierOtherPaid = await db.Payments.Where(p => p.CompanyId == payment.CompanyId && p.InvoiceId == invoiceId
                 && p.Id != existingPaymentId && p.IsSupplier && p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
-            var applied = payment.Status == PaymentStatus.Completed ? payment.Amount : 0m;
-            if (otherPaid + applied > LocalPurchaseService.Total(purchase))
+            var supplierApplied = payment.Status == PaymentStatus.Completed ? payment.Amount : 0m;
+            if (supplierOtherPaid + supplierApplied > LocalPurchaseService.Total(purchase))
                 return (null, null, "Payment exceeds the purchase outstanding balance.");
             payment.PartyId = purchase.SupplierId;
             payment.PartyName = purchase.SupplierName;

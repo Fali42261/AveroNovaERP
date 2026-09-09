@@ -204,9 +204,6 @@ public sealed class BusinessSyncController : ControllerBase
         var invoiceId = ReadGuid(payload, "InvoiceId");
         if (invoiceId is not Guid linkedInvoiceId)
             return;
-        if (ReadBool(payload, "IsSupplier"))
-            throw new BusinessSyncValidationException("Supplier payments cannot be linked to a sales invoice.");
-
         var isSupplier = ReadBool(payload, "IsSupplier");
         var documentType = isSupplier ? "Purchase" : "Invoice";
         var invoice = await FindRecordAsync(item.CompanyId, documentType, linkedInvoiceId, cancellationToken);
