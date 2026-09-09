@@ -45,6 +45,7 @@ public static class AppRoutes
     public const string Payments       = "Payments";
     public const string PaymentAdd     = "PaymentAdd";
     public const string PaymentView    = "PaymentView";
+    public const string PaymentEdit    = "PaymentEdit";
     public const string SalesReturns   = "SalesReturns";
     public const string SalesReturnNew = "SalesReturnNew";
     public const string PurchaseReturns   = "PurchaseReturns";

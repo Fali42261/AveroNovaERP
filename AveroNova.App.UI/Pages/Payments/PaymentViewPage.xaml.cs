@@ -1,5 +1,6 @@
 using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -53,6 +54,12 @@ public partial class PaymentViewPage : ContentPage
         if (!await DialogHelper.ConfirmDeleteAsync("Payment", $"Delete {_payment.PaymentNumber}?")) return;
         await _svc.DeleteAsync(_payment.LocalId);
         await Shell.Current.GoToAsync("..");
+    }
+
+    private async void OnEditClicked(object s, EventArgs e)
+    {
+        if (_payment is not null)
+            await Shell.Current.GoToAsync($"{AppRoutes.PaymentEdit}?id={_payment.LocalId}");
     }
 
     private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");

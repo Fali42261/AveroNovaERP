@@ -42,7 +42,10 @@ public partial class InvoiceViewPage : ContentPage
         AddAction("Edit",           async () => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceEdit}?id={inv.LocalId}"));
         AddAction("Print",          async () => await DisplayAlert("Print", "Print functionality coming soon.", "OK"));
         AddAction("Share",          async () => await DisplayAlert("Share", "Share functionality coming soon.", "OK"));
-        AddAction("Record Payment", async () => await DisplayAlert("Payment", "Record payment functionality coming soon.", "OK"), "SmallButton");
+        if (inv.Status is not InvoiceStatus.Draft and not InvoiceStatus.Cancelled and not InvoiceStatus.Paid
+            && inv.DueAmount > 0)
+            AddAction("Record Payment", async () => await Shell.Current.GoToAsync(
+                $"{AppRoutes.PaymentAdd}?invoiceId={inv.LocalId}"), "SmallButton");
         if (inv.Status != InvoiceStatus.Cancelled)
             AddAction("Cancel Invoice", async () => await CancelInvoice(), "DangerButton");
         Content.Children.Add(actions);

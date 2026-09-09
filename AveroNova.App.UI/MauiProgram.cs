@@ -233,6 +233,7 @@ public static class MauiProgram
 #endif
         builder.Services.AddSingleton<IApiClient, ApiClient>();
         builder.Services.AddSingleton<IAuthApiClient, AuthApiClient>();
+        builder.Services.AddSingleton<IBusinessSyncApiClient, BusinessSyncApiClient>();
         builder.Services.AddSingleton<ILicenseApiClient, LicenseApiClient>();
         builder.Services.AddSingleton<ILicenseAnchorStore, MauiLicenseAnchorStore>();
         builder.Services.AddSingleton<ILocalCredentialStore, MauiLocalCredentialStore>();

@@ -46,6 +46,7 @@ public sealed class LocalBillingService : IBillingService
         await using var db = await _dbFactory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
         invoice.LocalId = invoice.LocalId == Guid.Empty ? Guid.NewGuid() : invoice.LocalId;
+        invoice.PaidAmount = 0;
         if (string.IsNullOrWhiteSpace(invoice.InvoiceNumber))
             invoice.InvoiceNumber = await NextNumberAsync(db, invoice.CompanyId);
 
@@ -64,8 +65,16 @@ public sealed class LocalBillingService : IBillingService
         if (row is null || !Allows(row.CompanyId))
             return (false, "Invoice not found.");
 
+        var paid = await db.Payments
+            .Where(p => p.CompanyId == row.CompanyId && p.InvoiceId == row.Id && p.Status == (int)PaymentStatus.Completed)
+            .SumAsync(p => p.Amount);
+        if (paid > invoice.GrandTotal)
+            return (false, "Invoice total cannot be less than payments already applied.");
+
         var now = DateTime.UtcNow;
         Apply(row, invoice, now);
+        row.PaidAmount = paid;
+        ApplyReconciledStatus(row, invoice.GrandTotal);
         row.SyncStatus = (int)RecordSyncStatus.Pending;
         LocalSyncQueueWriter.Enqueue(db, "Invoice", row.Id, row.CompanyId, SyncOperation.Update, Payload(row), now);
         await db.SaveChangesAsync();
@@ -79,6 +88,9 @@ public sealed class LocalBillingService : IBillingService
         if (row is null || !Allows(row.CompanyId))
             return (false, "Invoice not found.");
 
+        if (await db.Payments.AnyAsync(p => p.CompanyId == row.CompanyId && p.InvoiceId == row.Id))
+            return (false, "Delete linked payments before deleting this invoice.");
+
         db.Invoices.Remove(row);
         LocalSyncQueueWriter.Enqueue(db, "Invoice", row.Id, row.CompanyId, SyncOperation.Delete, new { row.Id }, DateTime.UtcNow);
         await db.SaveChangesAsync();
@@ -91,6 +103,9 @@ public sealed class LocalBillingService : IBillingService
         var row = await db.Invoices.FirstOrDefaultAsync(i => i.Id == id);
         if (row is null || !Allows(row.CompanyId))
             return (false, "Invoice not found.");
+
+        if (row.PaidAmount > 0)
+            return (false, "An invoice with applied payments cannot be cancelled.");
 
         row.Status = (int)InvoiceStatus.Cancelled;
         row.UpdatedAtUtc = DateTime.UtcNow;
@@ -202,7 +217,6 @@ public sealed class LocalBillingService : IBillingService
         row.PaymentMethod = (int)model.PaymentMethod;
         row.Notes = model.Notes;
         row.Status = (int)model.Status;
-        row.PaidAmount = model.PaidAmount;
         row.UpdatedAtUtc = now;
         row.SyncError = null;
     }
@@ -219,8 +233,34 @@ public sealed class LocalBillingService : IBillingService
         }
     }
 
+    private static void ApplyReconciledStatus(LocalInvoiceEntity row, decimal total)
+    {
+        if (row.Status == (int)InvoiceStatus.Cancelled)
+            return;
+        row.Status = row.PaidAmount >= total && total > 0
+            ? (int)InvoiceStatus.Paid
+            : row.PaidAmount > 0
+                ? (int)InvoiceStatus.PartialPaid
+                : row.Status;
+    }
+
     private static object Payload(LocalInvoiceEntity row)
-        => new { row.Id, row.CompanyId, row.InvoiceNumber, row.CustomerId, row.Status };
+        => new
+        {
+            row.Id, row.CompanyId, row.InvoiceNumber, row.CustomerId, row.CustomerName,
+            row.InvoiceDate, row.DueDate, row.ItemsJson, row.DiscountPct, row.TaxPct,
+            row.PaymentMethod, row.Notes, row.Status, row.PaidAmount,
+            GrandTotal = InvoiceTotal(row), row.UpdatedAtUtc
+        };
+
+    private static decimal InvoiceTotal(LocalInvoiceEntity row)
+    {
+        var items = DeserializeItems(row.ItemsJson);
+        var subtotal = items.Sum(i => i.LineTotal);
+        return subtotal + items.Sum(i => i.TaxAmount)
+            + subtotal * row.TaxPct / 100
+            - subtotal * row.DiscountPct / 100;
+    }
 
     private static SyncStatus ToUiStatus(int status) => (RecordSyncStatus)status switch
     {

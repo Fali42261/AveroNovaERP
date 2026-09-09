@@ -56,6 +56,7 @@ public partial class AppShell : Shell
 
         Routing.RegisterRoute(AppRoutes.PaymentAdd, typeof(PaymentFormPage));
         Routing.RegisterRoute(AppRoutes.PaymentView, typeof(PaymentViewPage));
+        Routing.RegisterRoute(AppRoutes.PaymentEdit, typeof(PaymentFormPage));
 
         Routing.RegisterRoute(AppRoutes.SalesReturnNew, typeof(SalesReturnFormPage));
         Routing.RegisterRoute(AppRoutes.PurchaseReturnNew, typeof(PurchaseReturnFormPage));

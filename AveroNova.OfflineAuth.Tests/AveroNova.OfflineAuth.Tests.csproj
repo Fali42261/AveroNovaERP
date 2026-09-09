@@ -42,6 +42,7 @@
     <Compile Include="..\AveroNova.App.UI\Services\RegistrationSyncService.cs" Link="Linked\Services\RegistrationSyncService.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Api\ApiClient.cs" Link="Linked\Services\Api\ApiClient.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Api\AuthApiClient.cs" Link="Linked\Services\Api\AuthApiClient.cs" />
+    <Compile Include="..\AveroNova.App.UI\Services\Api\BusinessSyncApiClient.cs" Link="Linked\Services\Api\BusinessSyncApiClient.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Api\ApiSettings.cs" Link="Linked\Services\Api\ApiSettings.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Security\ISecureTokenStore.cs" Link="Linked\Services\Security\ISecureTokenStore.cs" />
     <Compile Include="..\AveroNova.App.UI\Services\Security\IPendingRegistrationSecretStore.cs" Link="Linked\Services\Security\IPendingRegistrationSecretStore.cs" />
