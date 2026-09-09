@@ -76,7 +76,7 @@ public sealed class LocalReportingService : IReportingService
                 PurchaseReturns = completedPurchaseReturns,
                 OperatingExpenses = expenses.Where(x => x.Status == (int)ExpenseStatus.Approved || x.Status == (int)ExpenseStatus.Paid).Sum(x => x.Amount),
                 OutstandingReceivables = activeInvoices.Sum(x => Math.Max(0, InvoiceTotal(x) - x.PaidAmount)),
-                OutstandingPayables = activePurchases.Sum(x => Math.Max(0, PurchaseTotal(x) - x.PaidAmount)),
+                OutstandingPayables = activePurchases.Sum(x => Math.Max(0, PurchaseTotal(x) - x.PaidAmount - x.ReturnCreditAmount)),
                 PaymentsReceived = completedPayments.Where(x => !x.IsSupplier).Sum(x => x.Amount),
                 PaymentsPaid = completedPayments.Where(x => x.IsSupplier).Sum(x => x.Amount),
                 InvoiceCount = activeInvoices.Count,

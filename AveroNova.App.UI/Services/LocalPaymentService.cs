@@ -171,7 +171,7 @@ public sealed class LocalPaymentService : IPaymentService
             var supplierOtherPaid = await db.Payments.Where(p => p.CompanyId == payment.CompanyId && p.InvoiceId == invoiceId
                 && p.Id != existingPaymentId && p.IsSupplier && p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
             var supplierApplied = payment.Status == PaymentStatus.Completed ? payment.Amount : 0m;
-            if (supplierOtherPaid + supplierApplied > LocalPurchaseService.Total(purchase))
+            if (supplierOtherPaid + supplierApplied > Math.Max(0, LocalPurchaseService.Total(purchase) - purchase.ReturnCreditAmount))
                 return (null, null, "Payment exceeds the purchase outstanding balance.");
             payment.PartyId = purchase.SupplierId;
             payment.PartyName = purchase.SupplierName;
@@ -208,7 +208,7 @@ public sealed class LocalPaymentService : IPaymentService
         var paid = await db.Payments.Where(p => p.CompanyId == purchase.CompanyId && p.InvoiceId == purchase.Id
             && p.Id != current.Id && p.IsSupplier && p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
         if (includeCurrent && current.IsSupplier && current.Status == (int)PaymentStatus.Completed) paid += current.Amount;
-        purchase.PaidAmount = Math.Min(LocalPurchaseService.Total(purchase), paid);
+        purchase.PaidAmount = paid;
         purchase.SyncStatus = (int)RecordSyncStatus.Pending;
         purchase.SyncError = null;
         purchase.UpdatedAtUtc = now;

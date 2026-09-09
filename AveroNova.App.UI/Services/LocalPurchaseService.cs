@@ -71,6 +71,8 @@ public sealed class LocalPurchaseService
             return (false, "Purchase number already exists.");
 
         var linked = db.Payments.Where(p => p.CompanyId == row.CompanyId && p.InvoiceId == row.Id && p.IsSupplier);
+        if (await db.PurchaseReturns.AnyAsync(r => r.CompanyId == row.CompanyId && r.PurchaseId == row.Id))
+            return (false, "Delete purchase returns before editing or cancelling this purchase.");
         var paid = await linked.Where(p => p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
         if (paid > model.GrandTotal) return (false, "Purchase total cannot be less than supplier payments already applied.");
         if (model.Status == PurchaseStatus.Cancelled && await linked.AnyAsync())
@@ -99,6 +101,8 @@ public sealed class LocalPurchaseService
         if (row is null || !Allows(row.CompanyId)) return (false, "Purchase not found.");
         if (await db.Payments.AnyAsync(p => p.CompanyId == row.CompanyId && p.InvoiceId == row.Id && p.IsSupplier))
             return (false, "Delete linked supplier payments before deleting this purchase.");
+        if (await db.PurchaseReturns.AnyAsync(r => r.CompanyId == row.CompanyId && r.PurchaseId == row.Id))
+            return (false, "Delete purchase returns before deleting this purchase.");
         if (row.Status == (int)PurchaseStatus.Received)
         {
             var error = await ApplyStockChangesAsync(db, row.CompanyId, row.Id, row.PurchaseNumber, Deserialize(row.ItemsJson), [], DateTime.UtcNow);
@@ -172,10 +176,10 @@ public sealed class LocalPurchaseService
 
     private bool Allows(Guid id) => id != Guid.Empty && _session.CurrentCompanyId == id;
     private static List<PurchaseLineItem> Deserialize(string json) => JsonSerializer.Deserialize<List<PurchaseLineItem>>(json) ?? [];
-    private static PurchaseModel Map(LocalPurchaseEntity x) => new() { LocalId=x.Id,ServerId=x.ServerId?.ToString("D"),CompanyId=x.CompanyId,PurchaseNumber=x.PurchaseNumber,SupplierId=x.SupplierId,SupplierName=x.SupplierName,PurchaseDate=x.PurchaseDate,DueDate=x.DueDate,Items=Deserialize(x.ItemsJson),PaymentMethod=(PaymentMethod)x.PaymentMethod,Reference=x.Reference,Notes=x.Notes,Status=(PurchaseStatus)x.Status,PaidAmount=x.PaidAmount,SyncStatus=ToUi(x.SyncStatus),CreatedAt=x.CreatedAtUtc,UpdatedAt=x.UpdatedAtUtc,LastSyncedAt=x.LastSyncedAtUtc };
+    private static PurchaseModel Map(LocalPurchaseEntity x) => new() { LocalId=x.Id,ServerId=x.ServerId?.ToString("D"),CompanyId=x.CompanyId,PurchaseNumber=x.PurchaseNumber,SupplierId=x.SupplierId,SupplierName=x.SupplierName,PurchaseDate=x.PurchaseDate,DueDate=x.DueDate,Items=Deserialize(x.ItemsJson),PaymentMethod=(PaymentMethod)x.PaymentMethod,Reference=x.Reference,Notes=x.Notes,Status=(PurchaseStatus)x.Status,PaidAmount=x.PaidAmount,ReturnCreditAmount=x.ReturnCreditAmount,SyncStatus=ToUi(x.SyncStatus),CreatedAt=x.CreatedAtUtc,UpdatedAt=x.UpdatedAtUtc,LastSyncedAt=x.LastSyncedAtUtc };
     private static LocalPurchaseEntity ToEntity(PurchaseModel m,DateTime now)=>new(){Id=m.LocalId,CompanyId=m.CompanyId,PurchaseNumber=m.PurchaseNumber.Trim(),SupplierId=m.SupplierId,SupplierName=m.SupplierName.Trim(),PurchaseDate=m.PurchaseDate.Date,DueDate=m.DueDate.Date,ItemsJson=JsonSerializer.Serialize(m.Items),PaymentMethod=(int)m.PaymentMethod,Reference=m.Reference.Trim(),Notes=m.Notes.Trim(),Status=(int)m.Status,PaidAmount=m.PaidAmount,SyncStatus=(int)RecordSyncStatus.Pending,CreatedAtUtc=now,UpdatedAtUtc=now};
     private static void Apply(LocalPurchaseEntity x,PurchaseModel m,DateTime now){x.PurchaseNumber=m.PurchaseNumber.Trim();x.SupplierId=m.SupplierId;x.SupplierName=m.SupplierName.Trim();x.PurchaseDate=m.PurchaseDate.Date;x.DueDate=m.DueDate.Date;x.ItemsJson=JsonSerializer.Serialize(m.Items);x.PaymentMethod=(int)m.PaymentMethod;x.Reference=m.Reference.Trim();x.Notes=m.Notes.Trim();x.Status=(int)m.Status;x.SyncStatus=(int)RecordSyncStatus.Pending;x.SyncError=null;x.UpdatedAtUtc=now;}
-    internal static object Payload(LocalPurchaseEntity x)=>new{x.Id,x.CompanyId,x.PurchaseNumber,x.SupplierId,x.SupplierName,x.PurchaseDate,x.DueDate,x.ItemsJson,x.PaymentMethod,x.Reference,x.Notes,x.Status,x.PaidAmount,GrandTotal=Total(x),x.UpdatedAtUtc};
+    internal static object Payload(LocalPurchaseEntity x)=>new{x.Id,x.CompanyId,x.PurchaseNumber,x.SupplierId,x.SupplierName,x.PurchaseDate,x.DueDate,x.ItemsJson,x.PaymentMethod,x.Reference,x.Notes,x.Status,x.PaidAmount,x.ReturnCreditAmount,GrandTotal=Total(x),x.UpdatedAtUtc};
     internal static decimal Total(LocalPurchaseEntity x)=>Deserialize(x.ItemsJson).Sum(i=>i.GrandTotal);
     private static SyncStatus ToUi(int s)=>(RecordSyncStatus)s==RecordSyncStatus.Synced?SyncStatus.Synced:(RecordSyncStatus)s==RecordSyncStatus.Failed?SyncStatus.SyncFailed:SyncStatus.PendingSync;
 }

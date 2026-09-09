@@ -31,7 +31,9 @@ public class PurchaseModel : BaseModel
     public decimal TaxTotal   => Items.Sum(i => i.TaxAmount);
     public decimal GrandTotal => Subtotal + TaxTotal;
     public decimal PaidAmount { get; set; }
-    public decimal DueAmount  => GrandTotal - PaidAmount;
+    public decimal ReturnCreditAmount { get; set; }
+    public decimal DueAmount  => Math.Max(0, GrandTotal - PaidAmount - ReturnCreditAmount);
+    public decimal SupplierRefundDueAmount => Math.Max(0, PaidAmount + ReturnCreditAmount - GrandTotal);
 
     public string StatusLabel => Status switch
     {

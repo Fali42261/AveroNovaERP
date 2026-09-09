@@ -146,6 +146,50 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
     }
 
+    [Fact]
+    public async Task PurchaseReturn_ReconcilesCredit_AndRejectsOverReturnAndPaymentBeyondNetPayable()
+    {
+        var (client, companyId) = await AuthenticatedClientAsync("purchase-return");
+        var purchaseId = Guid.NewGuid();
+        var supplierId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var returnId = Guid.NewGuid();
+        var response = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items =
+            [
+                PurchaseItem(companyId, purchaseId, supplierId, 100m, productId, 5),
+                PurchaseReturnItem(companyId, returnId, purchaseId, supplierId, productId, 2, 40m)
+            ]
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var purchase = await db.SyncQueueItems.SingleAsync(x => x.CompanyId == companyId && x.EntityType == "Purchase" && x.EntityId == purchaseId);
+        Assert.Equal(40m, ReadDecimal(purchase.PayloadJson!, "ReturnCreditAmount"));
+
+        var overReturn = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [PurchaseReturnItem(companyId, Guid.NewGuid(), purchaseId, supplierId, productId, 4, 60m)]
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, overReturn.StatusCode);
+
+        var overPayment = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [PaymentItem(companyId, Guid.NewGuid(), purchaseId, supplierId, 61m, isSupplier: true)]
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, overPayment.StatusCode);
+
+        var deleted = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [new BusinessSyncItemRequest { QueueId=Guid.NewGuid(),EntityType="PurchaseReturn",EntityId=returnId,CompanyId=companyId,Operation=SyncOperation.Delete,ClientUpdatedAtUtc=DateTime.UtcNow }]
+        });
+        Assert.Equal(HttpStatusCode.OK, deleted.StatusCode);
+        await db.Entry(purchase).ReloadAsync();
+        Assert.Equal(0m, ReadDecimal(purchase.PayloadJson!, "ReturnCreditAmount"));
+    }
+
     private async Task<(HttpClient Client, Guid CompanyId)> AuthenticatedClientAsync(string prefix)
     {
         var client = _factory.CreateClient();
@@ -203,7 +247,8 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
             })
         };
 
-    private static BusinessSyncItemRequest PurchaseItem(Guid companyId, Guid purchaseId, Guid supplierId, decimal total)
+    private static BusinessSyncItemRequest PurchaseItem(Guid companyId, Guid purchaseId, Guid supplierId, decimal total,
+        Guid? productId = null, int quantity = 1)
         => new()
         {
             QueueId=Guid.NewGuid(),EntityType="Purchase",EntityId=purchaseId,CompanyId=companyId,
@@ -212,8 +257,22 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
             {
                 Id=purchaseId,CompanyId=companyId,PurchaseNumber="PO-SYNC-1",SupplierId=supplierId,
                 SupplierName="Supplier",PurchaseDate=DateTime.Today,DueDate=DateTime.Today.AddDays(30),
-                ItemsJson="[]",PaymentMethod=0,Reference="",Notes="",Status=3,PaidAmount=999m,
+                ItemsJson=JsonSerializer.Serialize(new[]{new{ProductId=productId??Guid.NewGuid(),ProductName="Part",Quantity=quantity,UnitPrice=total/quantity,TaxPct=0m}}),PaymentMethod=0,Reference="",Notes="",Status=3,PaidAmount=999m,ReturnCreditAmount=999m,
                 GrandTotal=total,UpdatedAtUtc=DateTime.UtcNow
+            })
+        };
+
+    private static BusinessSyncItemRequest PurchaseReturnItem(Guid companyId, Guid returnId, Guid purchaseId,
+        Guid supplierId, Guid productId, int quantity, decimal refund)
+        => new()
+        {
+            QueueId=Guid.NewGuid(),EntityType="PurchaseReturn",EntityId=returnId,CompanyId=companyId,
+            Operation=SyncOperation.Update,ClientUpdatedAtUtc=DateTime.UtcNow,
+            PayloadJson=JsonSerializer.Serialize(new
+            {
+                Id=returnId,CompanyId=companyId,ReturnNumber="PR-SYNC-1",PurchaseId=purchaseId,SupplierId=supplierId,
+                ReturnDate=DateTime.Today,ItemsJson=JsonSerializer.Serialize(new[]{new{ProductId=productId,ProductName="Part",Quantity=quantity,UnitPrice=20m}}),
+                Reason="Defective",Notes="",RefundAmount=refund,Status=3,UpdatedAtUtc=DateTime.UtcNow
             })
         };
 

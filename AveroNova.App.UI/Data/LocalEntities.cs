@@ -271,6 +271,7 @@ public class LocalPurchaseEntity
     public string Notes { get; set; } = string.Empty;
     public int Status { get; set; }
     public decimal PaidAmount { get; set; }
+    public decimal ReturnCreditAmount { get; set; }
     public int SyncStatus { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
