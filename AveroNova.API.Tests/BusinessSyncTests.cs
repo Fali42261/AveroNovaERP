@@ -79,7 +79,9 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         await db.Entry(invoice).ReloadAsync();
         Assert.Equal(0m, ReadDecimal(invoice.PayloadJson!, "PaidAmount"));
         Assert.Equal(1, ReadInt(invoice.PayloadJson!, "Status"));
-        Assert.True((await db.SyncQueueItems.SingleAsync(x => x.EntityId == paymentId)).IsDeleted);
+        var paymentRecord = records.Single(x => x.EntityId == paymentId);
+        await db.Entry(paymentRecord).ReloadAsync();
+        Assert.True(paymentRecord.IsDeleted);
     }
 
     [Fact]
