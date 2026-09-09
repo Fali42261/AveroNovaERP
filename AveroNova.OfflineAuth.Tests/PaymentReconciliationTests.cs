@@ -115,7 +115,7 @@ public sealed class PaymentReconciliationTests : IAsyncLifetime
         supplier.IsSupplier = true;
         var result = await _payments.CreateAsync(supplier);
         Assert.False(result.Ok);
-        Assert.Contains("Supplier", result.Error);
+        Assert.Contains("Purchase", result.Error);
     }
 
     [Fact]
