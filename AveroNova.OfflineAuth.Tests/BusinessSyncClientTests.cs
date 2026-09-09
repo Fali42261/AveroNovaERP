@@ -173,7 +173,7 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
         public bool IsOnline => true;
         public int PendingCount => 0;
         public event EventHandler<ConnectivityStatus>? StatusChanged;
-        public void SetOnline(bool online) { }
+        public void UpdateStatus(ConnectivityStatus status) { }
         public void IncrementPending() { }
         public void DecrementPending(int count = 1) { }
     }
