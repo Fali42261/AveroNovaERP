@@ -39,8 +39,9 @@ public sealed class LocalPaymentService : IPaymentService
 
     public async Task<(bool Ok, string? Error)> CreateAsync(PaymentModel payment)
     {
-        if (!Allows(payment.CompanyId))
-            return (false, "You do not have access to this company.");
+        var validationError = Validate(payment);
+        if (validationError is not null)
+            return (false, validationError);
 
         await using var db = await _dbFactory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
@@ -58,6 +59,10 @@ public sealed class LocalPaymentService : IPaymentService
 
     public async Task<(bool Ok, string? Error)> UpdateAsync(PaymentModel payment)
     {
+        var validationError = Validate(payment);
+        if (validationError is not null)
+            return (false, validationError);
+
         await using var db = await _dbFactory.CreateDbContextAsync();
         var row = await db.Payments.FirstOrDefaultAsync(p => p.Id == payment.LocalId);
         if (row is null || !Allows(row.CompanyId))
@@ -86,6 +91,9 @@ public sealed class LocalPaymentService : IPaymentService
 
     public async Task<string> GetNextPaymentNumberAsync(Guid companyId)
     {
+        if (!Allows(companyId))
+            return string.Empty;
+
         await using var db = await _dbFactory.CreateDbContextAsync();
         return await NextNumberAsync(db, companyId);
     }
@@ -93,10 +101,35 @@ public sealed class LocalPaymentService : IPaymentService
     private bool Allows(Guid companyId)
         => _session.CurrentCompanyId is Guid current && current != Guid.Empty && current == companyId;
 
+    private string? Validate(PaymentModel payment)
+    {
+        if (!Allows(payment.CompanyId))
+            return "You do not have access to this company.";
+        if (string.IsNullOrWhiteSpace(payment.PartyName))
+            return "Party name is required.";
+        if (payment.Amount <= 0)
+            return "Amount must be greater than zero.";
+        if (payment.PaymentDate.Date > DateTime.Today)
+            return "Payment date cannot be in the future.";
+        if (!Enum.IsDefined(payment.Method))
+            return "Invalid payment method.";
+        if (!Enum.IsDefined(payment.Status))
+            return "Invalid payment status.";
+        return null;
+    }
+
     private static async Task<string> NextNumberAsync(LocalAppDbContext db, Guid companyId)
     {
-        var count = await db.Payments.CountAsync(p => p.CompanyId == companyId);
-        return $"PAY-{DateTime.UtcNow:yyyy}-{(count + 1):D4}";
+        var prefix = $"PAY-{DateTime.UtcNow:yyyy}-";
+        var numbers = await db.Payments.AsNoTracking()
+            .Where(p => p.CompanyId == companyId && p.PaymentNumber.StartsWith(prefix))
+            .Select(p => p.PaymentNumber)
+            .ToListAsync();
+        var next = numbers
+            .Select(number => int.TryParse(number[prefix.Length..], out var sequence) ? sequence : 0)
+            .DefaultIfEmpty()
+            .Max() + 1;
+        return $"{prefix}{next:D4}";
     }
 
     private static PaymentModel Map(LocalPaymentEntity row)

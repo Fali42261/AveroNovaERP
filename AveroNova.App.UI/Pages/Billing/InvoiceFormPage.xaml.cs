@@ -127,8 +127,10 @@ public partial class InvoiceFormPage : ContentPage
     {
         decimal sub  = _lineItems.Sum(i => i.LineTotal);
         decimal disc = decimal.TryParse(EntryDiscount.Text, out var d) ? sub * d / 100 : 0;
-        decimal tax  = decimal.TryParse(EntryTax.Text,      out var t) ? (sub - disc) * t / 100 : 0;
-        decimal total = sub - disc + tax;
+        decimal lineTax = _lineItems.Sum(i => i.TaxAmount);
+        decimal headerTax = decimal.TryParse(EntryTax.Text, out var t) ? sub * t / 100 : 0;
+        decimal tax = lineTax + headerTax;
+        decimal total = sub + tax - disc;
         LblSubtotal.Text   = $"${sub:N2}";
         LblDiscount.Text   = $"-${disc:N2}";
         LblTax.Text        = $"+${tax:N2}";
@@ -150,8 +152,8 @@ public partial class InvoiceFormPage : ContentPage
         inv.InvoiceNumber = LblInvoiceNumber.Text;
         inv.CustomerId    = customer.LocalId;
         inv.CustomerName  = customer.Name;
-        //inv.InvoiceDate   = DateInvoice.Date;
-        //inv.DueDate       = DateDue.Date;
+        inv.InvoiceDate   = DateInvoice.Date ?? DateTime.Today;
+        inv.DueDate       = DateDue.Date ?? inv.InvoiceDate.AddDays(30);
         inv.Items         = [.._lineItems];
         inv.DiscountPct   = decimal.TryParse(EntryDiscount.Text, out var dp) ? dp : 0;
         inv.TaxPct        = decimal.TryParse(EntryTax.Text,      out var tp) ? tp : 0;

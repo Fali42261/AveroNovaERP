@@ -13,6 +13,7 @@ public sealed class PasswordPolicyTests
     [InlineData("ABCDEF1!")]
     [InlineData("Abcdef!")]
     [InlineData("Abcdef1")]
+    [InlineData("Abc1 x")]
     public void WeakPasswordsAreRejected(string? password) => Assert.False(PasswordPolicy.IsStrong(password));
 
     [Theory]

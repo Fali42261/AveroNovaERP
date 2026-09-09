@@ -188,6 +188,41 @@ public sealed class OfflineLicenseAndBusinessTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task InvoiceAndPaymentNumbers_DoNotReuseDeletedSequences_AndAreCompanyScoped()
+    {
+        var userId = Guid.NewGuid();
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+        await SeedUserWithCompaniesAsync(userId, companyA, companyB);
+        _session.SetFromLocal(
+            new LocalUserEntity { Id = userId, FullName = "Owner", Email = "o@t.local", IsActive = true },
+            new LocalCompanyEntity { Id = companyA, CompanyName = "A", IsActive = true },
+            ["Company Owner"],
+            OfflineRegistrationStore.OwnerPermissions,
+            Guid.NewGuid());
+
+        var year = DateTime.UtcNow.Year;
+        await using (var db = await _dbFactory.CreateDbContextAsync())
+        {
+            db.Invoices.AddRange(
+                new LocalInvoiceEntity { Id = Guid.NewGuid(), CompanyId = companyA, InvoiceNumber = $"INV-{year}-0001" },
+                new LocalInvoiceEntity { Id = Guid.NewGuid(), CompanyId = companyA, InvoiceNumber = $"INV-{year}-0003" });
+            db.Payments.AddRange(
+                new LocalPaymentEntity { Id = Guid.NewGuid(), CompanyId = companyA, PaymentNumber = $"PAY-{year}-0001" },
+                new LocalPaymentEntity { Id = Guid.NewGuid(), CompanyId = companyA, PaymentNumber = $"PAY-{year}-0003" });
+            await db.SaveChangesAsync();
+        }
+
+        var billing = new LocalBillingService(_dbFactory, _session);
+        var payments = new LocalPaymentService(_dbFactory, _session);
+
+        Assert.Equal($"INV-{year}-0004", await billing.GetNextInvoiceNumberAsync(companyA));
+        Assert.Equal($"PAY-{year}-0004", await payments.GetNextPaymentNumberAsync(companyA));
+        Assert.Empty(await billing.GetNextInvoiceNumberAsync(companyB));
+        Assert.Empty(await payments.GetNextPaymentNumberAsync(companyB));
+    }
+
+    [Fact]
     public async Task CompanySwitch_Offline_ReloadsPermissions_AndScopesData()
     {
         var userId = Guid.NewGuid();

@@ -26,6 +26,8 @@ public sealed class LocalReportingService : IReportingService
             return (null, "You do not have access to this company.");
         if (period.From.Date > period.To.Date)
             return (null, "From date cannot be after To date.");
+        if (period.To.Date == DateTime.MaxValue.Date)
+            return (null, "To date exceeds the supported reporting range.");
 
         var from = period.From.Date;
         var through = period.To.Date.AddDays(1);
@@ -50,8 +52,12 @@ public sealed class LocalReportingService : IReportingService
             .Where(x => x.CompanyId == companyId && x.PaymentDate >= from && x.PaymentDate < through)
             .ToListAsync(cancellationToken);
 
-        var activeInvoices = invoices.Where(x => x.Status != (int)InvoiceStatus.Cancelled).ToList();
-        var activePurchases = purchases.Where(x => x.Status != (int)PurchaseStatus.Cancelled).ToList();
+        var activeInvoices = invoices.Where(x =>
+            x.Status != (int)InvoiceStatus.Draft &&
+            x.Status != (int)InvoiceStatus.Cancelled).ToList();
+        var activePurchases = purchases.Where(x =>
+            x.Status != (int)PurchaseStatus.Draft &&
+            x.Status != (int)PurchaseStatus.Cancelled).ToList();
         var completedSalesReturns = salesReturns.Where(x => x.Status == (int)ReturnStatus.Completed).Sum(x => x.RefundAmount);
         var completedPurchaseReturns = purchaseReturns.Where(x => x.Status == (int)ReturnStatus.Completed).Sum(x => x.RefundAmount);
         var completedPayments = payments.Where(x => x.Status == (int)PaymentStatus.Completed).ToList();
@@ -59,26 +65,36 @@ public sealed class LocalReportingService : IReportingService
         var customers = db.Customers.AsNoTracking().Where(x => x.CompanyId == companyId);
         var products = db.Products.AsNoTracking().Where(x => x.CompanyId == companyId);
 
-        return (new FinancialReportSummary
+        try
         {
-            GrossSales = activeInvoices.Sum(InvoiceTotal),
-            SalesReturns = completedSalesReturns,
-            GrossPurchases = activePurchases.Sum(PurchaseTotal),
-            PurchaseReturns = completedPurchaseReturns,
-            OperatingExpenses = expenses.Where(x => x.Status == (int)ExpenseStatus.Approved || x.Status == (int)ExpenseStatus.Paid).Sum(x => x.Amount),
-            OutstandingReceivables = activeInvoices.Sum(x => Math.Max(0, InvoiceTotal(x) - x.PaidAmount)),
-            OutstandingPayables = activePurchases.Sum(x => Math.Max(0, PurchaseTotal(x) - x.PaidAmount)),
-            PaymentsReceived = completedPayments.Where(x => !x.IsSupplier).Sum(x => x.Amount),
-            PaymentsPaid = completedPayments.Where(x => x.IsSupplier).Sum(x => x.Amount),
-            InvoiceCount = activeInvoices.Count,
-            PurchaseCount = activePurchases.Count,
-            CustomerCount = await customers.CountAsync(cancellationToken),
-            ActiveCustomerCount = await customers.CountAsync(x => x.Status == 0, cancellationToken),
-            ProductCount = await products.CountAsync(cancellationToken),
-            LowStockCount = await products.CountAsync(x => x.Status == 0 && x.Stock <= x.MinimumStock, cancellationToken),
-            SupplierCount = await db.Suppliers.CountAsync(x => x.CompanyId == companyId && x.IsActive, cancellationToken),
-            OverdueInvoiceCount = activeInvoices.Count(x => x.Status == (int)InvoiceStatus.Overdue || x.DueDate.Date < DateTime.Today && InvoiceTotal(x) > x.PaidAmount)
-        }, null);
+            var cutoff = period.To.Date;
+            return (new FinancialReportSummary
+            {
+                GrossSales = activeInvoices.Sum(InvoiceTotal),
+                SalesReturns = completedSalesReturns,
+                GrossPurchases = activePurchases.Sum(PurchaseTotal),
+                PurchaseReturns = completedPurchaseReturns,
+                OperatingExpenses = expenses.Where(x => x.Status == (int)ExpenseStatus.Approved || x.Status == (int)ExpenseStatus.Paid).Sum(x => x.Amount),
+                OutstandingReceivables = activeInvoices.Sum(x => Math.Max(0, InvoiceTotal(x) - x.PaidAmount)),
+                OutstandingPayables = activePurchases.Sum(x => Math.Max(0, PurchaseTotal(x) - x.PaidAmount)),
+                PaymentsReceived = completedPayments.Where(x => !x.IsSupplier).Sum(x => x.Amount),
+                PaymentsPaid = completedPayments.Where(x => x.IsSupplier).Sum(x => x.Amount),
+                InvoiceCount = activeInvoices.Count,
+                PurchaseCount = activePurchases.Count,
+                CustomerCount = await customers.CountAsync(cancellationToken),
+                ActiveCustomerCount = await customers.CountAsync(x => x.Status == 0, cancellationToken),
+                ProductCount = await products.CountAsync(cancellationToken),
+                LowStockCount = await products.CountAsync(x => x.Status == 0 && x.Stock <= x.MinimumStock, cancellationToken),
+                SupplierCount = await db.Suppliers.CountAsync(x => x.CompanyId == companyId && x.IsActive, cancellationToken),
+                OverdueInvoiceCount = activeInvoices.Count(x =>
+                    InvoiceTotal(x) > x.PaidAmount &&
+                    (x.Status == (int)InvoiceStatus.Overdue || x.DueDate.Date < cutoff))
+            }, null);
+        }
+        catch (JsonException)
+        {
+            return (null, "Report data contains an invalid invoice or purchase record.");
+        }
     }
 
     private static decimal InvoiceTotal(LocalInvoiceEntity row)

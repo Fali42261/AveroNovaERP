@@ -47,7 +47,7 @@ public partial class PaymentFormPage : ContentPage
         m.PartyName      = EntryParty.Text.Trim();
         m.InvoiceNumber  = EntryInvoice.Text?.Trim() ?? "";
         m.Amount         = amt;
-        //m.PaymentDate    = DatePayment.Date.ToString("dd/MM/yyyy");
+        m.PaymentDate     = DatePayment.Date ?? DateTime.Today;
         m.Reference      = EntryRef.Text?.Trim() ?? "";
         m.Notes          = EditorNotes.Text?.Trim() ?? "";
         m.Status         = PaymentStatus.Completed;

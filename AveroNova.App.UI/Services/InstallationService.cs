@@ -36,7 +36,7 @@ public sealed class InstallationService : IInstallationService
 
     public LocalInstallationStatus Status => _cached?.Status ?? LocalInstallationStatus.NotRegistered;
 
-    public bool CanCreateAccount => true;
+    public bool CanCreateAccount => !IsRegistered;
 
     public async Task EnsureInitializedAsync(CancellationToken cancellationToken = default)
     {

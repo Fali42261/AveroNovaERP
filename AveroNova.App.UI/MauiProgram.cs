@@ -24,6 +24,7 @@ using AveroNova.App.UI.Pages.Expenses;
 using AveroNova.App.UI.Pages.Help;
 using AveroNova.App.UI.Pages.Inventory;
 using AveroNova.App.UI.Pages.License;
+using AveroNova.App.UI.Pages.Notifications;
 using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Pages.Products;
 using AveroNova.App.UI.Pages.Purchases;
@@ -158,6 +159,9 @@ public static class MauiProgram
 
         builder.Services.AddTransient<ReportsPage>();
         builder.Services.AddTransient<Func<ReportsPage>>(sp => () => sp.GetRequiredService<ReportsPage>());
+
+        builder.Services.AddTransient<NotificationsPage>();
+        builder.Services.AddTransient<Func<NotificationsPage>>(sp => () => sp.GetRequiredService<NotificationsPage>());
 
         builder.Services.AddTransient<UsersListPage>();
         builder.Services.AddTransient<Func<UsersListPage>>(sp => () => sp.GetRequiredService<UsersListPage>());

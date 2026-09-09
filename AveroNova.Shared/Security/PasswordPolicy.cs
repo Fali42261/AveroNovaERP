@@ -10,5 +10,5 @@ public static class PasswordPolicy
            && password.Any(char.IsUpper)
            && password.Any(char.IsLower)
            && password.Any(char.IsDigit)
-           && password.Any(ch => !char.IsLetterOrDigit(ch));
+           && password.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
 }

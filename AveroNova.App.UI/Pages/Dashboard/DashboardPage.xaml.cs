@@ -11,6 +11,7 @@ public partial class DashboardPage : ContentPage
     private readonly ICompanyService   _company;
     private readonly ILicenseService   _licenses;
     private readonly IReportingService _reporting;
+    private int _loadVersion;
 
     public DashboardPage(
         IBillingService  billing,
@@ -43,15 +44,20 @@ public partial class DashboardPage : ContentPage
 
     private async Task LoadDataAsync()
     {
-        await LoadLicenseBannerAsync();
+        var loadVersion = Interlocked.Increment(ref _loadVersion);
+        var cid = _company.CurrentCompany?.LocalId ?? Guid.Empty;
+        ClearBusinessData();
 
-        var cid       = _company.CurrentCompany?.LocalId ?? Guid.Empty;
-        var invoices  = await _billing.GetAllAsync(cid);
-        var products  = await _product.GetAllAsync(cid);
-        var (summary, _) = await _reporting.GetSummaryAsync(cid, ReportPeriod.CurrentMonth(DateTime.Today));
-
-        if (summary is not null)
+        try
         {
+            await LoadLicenseBannerAsync();
+            var invoices = await _billing.GetAllAsync(cid);
+            var products = await _product.GetAllAsync(cid);
+            var (summary, _) = await _reporting.GetSummaryAsync(cid, ReportPeriod.CurrentMonth(DateTime.Today));
+
+            if (!IsCurrentLoad(loadVersion, cid) || summary is null)
+                return;
+
             LblTotalSales.Text = Money(summary.NetRevenue);
             LblTotalPurchases.Text = Money(summary.NetPurchases);
             LblOutstanding.Text = Money(summary.OutstandingReceivables);
@@ -64,30 +70,52 @@ public partial class DashboardPage : ContentPage
             LblActiveCustomers.Text = $"{summary.ActiveCustomerCount} active";
             LblLowStockCount.Text = $"{summary.LowStockCount} low stock";
             LblLowStockHeaderCount.Text = $"{summary.LowStockCount} items";
-        }
 
-        // Recent invoices (last 4)
+            bool first = true;
+            foreach (var inv in invoices.OrderByDescending(i => i.InvoiceDate).Take(4))
+            {
+                if (!first) InvoiceList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
+                InvoiceList.Children.Add(BuildInvoiceRow(inv));
+                first = false;
+            }
+
+            first = true;
+            foreach (var p in products.Where(p => p.IsLowStock).Take(4))
+            {
+                if (!first) LowStockList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
+                LowStockList.Children.Add(BuildLowStockRow(p));
+                first = false;
+            }
+
+            if (!products.Any(p => p.IsLowStock))
+                LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
+        }
+        catch
+        {
+            if (IsCurrentLoad(loadVersion, cid))
+                ClearBusinessData();
+        }
+    }
+
+    private bool IsCurrentLoad(int loadVersion, Guid companyId)
+        => loadVersion == _loadVersion && _company.CurrentCompany?.LocalId == companyId;
+
+    private void ClearBusinessData()
+    {
+        LblTotalSales.Text = Money(0);
+        LblTotalPurchases.Text = Money(0);
+        LblOutstanding.Text = Money(0);
+        LblCustomers.Text = "0";
+        LblProducts.Text = "0";
+        LblPayments.Text = Money(0);
+        LblSalesCount.Text = "0 invoices";
+        LblPurchaseCount.Text = "0 orders";
+        LblOverdueCount.Text = "0 invoices";
+        LblActiveCustomers.Text = "0 active";
+        LblLowStockCount.Text = "0 low stock";
+        LblLowStockHeaderCount.Text = "0 items";
         InvoiceList.Children.Clear();
-        bool first = true;
-        foreach (var inv in invoices.OrderByDescending(i => i.InvoiceDate).Take(4))
-        {
-            if (!first) InvoiceList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
-            InvoiceList.Children.Add(BuildInvoiceRow(inv));
-            first = false;
-        }
-
-        // Low stock
         LowStockList.Children.Clear();
-        first = true;
-        foreach (var p in products.Where(p => p.IsLowStock).Take(4))
-        {
-            if (!first) LowStockList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
-            LowStockList.Children.Add(BuildLowStockRow(p));
-            first = false;
-        }
-
-        if (!products.Any(p => p.IsLowStock))
-            LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
     }
 
     private static string Money(decimal amount) => "$" + amount.ToString("N0");

@@ -61,7 +61,137 @@ public sealed class ReportingCalculationTests : IAsyncLifetime
         Assert.Equal(200m, summary.PaymentsReceived);
         Assert.Equal(75m, summary.PaymentsPaid);
         Assert.Equal(1, summary.InvoiceCount);
+        Assert.Equal(1, summary.PurchaseCount);
+        Assert.Equal(1, summary.CustomerCount);
+        Assert.Equal(1, summary.ActiveCustomerCount);
+        Assert.Equal(1, summary.ProductCount);
         Assert.Equal(1, summary.LowStockCount);
+        Assert.Equal(1, summary.SupplierCount);
+        Assert.Equal(1, summary.OverdueInvoiceCount);
+    }
+
+    [Fact]
+    public async Task Summary_UsesReportEndDateForOverdueCutoff()
+    {
+        var invoiceDate = DateTime.Today.AddDays(-20);
+        await using (var db = await _factory.CreateDbContextAsync())
+        {
+            db.Invoices.Add(new LocalInvoiceEntity
+            {
+                Id = Guid.NewGuid(), CompanyId = _companyId, InvoiceNumber = "INV-HISTORICAL",
+                CustomerId = Guid.NewGuid(), InvoiceDate = invoiceDate,
+                DueDate = invoiceDate.AddDays(10), Status = (int)InvoiceStatus.Sent,
+                ItemsJson = JsonSerializer.Serialize(new[]
+                {
+                    new InvoiceLineItem { ProductId = Guid.NewGuid(), UnitPrice = 100, Quantity = 1 }
+                })
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var (summary, error) = await _service.GetSummaryAsync(
+            _companyId, new ReportPeriod(invoiceDate, invoiceDate.AddDays(5)));
+
+        Assert.Null(error);
+        Assert.NotNull(summary);
+        Assert.Equal(0, summary.OverdueInvoiceCount);
+    }
+
+    [Fact]
+    public async Task Summary_DoesNotCountFullyPaidInvoiceAsOverdue()
+    {
+        await using (var db = await _factory.CreateDbContextAsync())
+        {
+            db.Invoices.Add(new LocalInvoiceEntity
+            {
+                Id = Guid.NewGuid(), CompanyId = _companyId, InvoiceNumber = "INV-PAID-OVERDUE",
+                CustomerId = Guid.NewGuid(), InvoiceDate = DateTime.Today,
+                DueDate = DateTime.Today.AddDays(-5), Status = (int)InvoiceStatus.Overdue,
+                PaidAmount = 100,
+                ItemsJson = JsonSerializer.Serialize(new[]
+                {
+                    new InvoiceLineItem { ProductId = Guid.NewGuid(), UnitPrice = 100, Quantity = 1 }
+                })
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var (summary, error) = await _service.GetSummaryAsync(
+            _companyId, new ReportPeriod(DateTime.Today, DateTime.Today));
+
+        Assert.Null(error);
+        Assert.NotNull(summary);
+        Assert.Equal(1, summary.OverdueInvoiceCount);
+    }
+
+    [Fact]
+    public async Task Summary_DoesNotRecognizeDraftInvoicesOrPurchases()
+    {
+        await using (var db = await _factory.CreateDbContextAsync())
+        {
+            db.Invoices.Add(new LocalInvoiceEntity
+            {
+                Id = Guid.NewGuid(), CompanyId = _companyId, InvoiceNumber = "INV-DRAFT",
+                CustomerId = Guid.NewGuid(), InvoiceDate = DateTime.Today, DueDate = DateTime.Today,
+                Status = (int)InvoiceStatus.Draft,
+                ItemsJson = JsonSerializer.Serialize(new[]
+                {
+                    new InvoiceLineItem { ProductId = Guid.NewGuid(), UnitPrice = 500, Quantity = 1 }
+                })
+            });
+            db.Purchases.Add(new LocalPurchaseEntity
+            {
+                Id = Guid.NewGuid(), CompanyId = _companyId, PurchaseNumber = "PO-DRAFT",
+                SupplierId = Guid.NewGuid(), PurchaseDate = DateTime.Today, DueDate = DateTime.Today,
+                Status = (int)PurchaseStatus.Draft,
+                ItemsJson = JsonSerializer.Serialize(new[]
+                {
+                    new PurchaseLineItem { ProductId = Guid.NewGuid(), UnitPrice = 300, Quantity = 1 }
+                })
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var (summary, error) = await _service.GetSummaryAsync(
+            _companyId, new ReportPeriod(DateTime.Today, DateTime.Today));
+
+        Assert.Null(error);
+        Assert.NotNull(summary);
+        Assert.Equal(1100m, summary.GrossSales);
+        Assert.Equal(550m, summary.GrossPurchases);
+        Assert.Equal(1, summary.InvoiceCount);
+        Assert.Equal(1, summary.PurchaseCount);
+    }
+
+    [Fact]
+    public async Task Summary_RejectsUnsupportedMaximumDate()
+    {
+        var result = await _service.GetSummaryAsync(
+            _companyId, new ReportPeriod(DateTime.Today, DateTime.MaxValue));
+
+        Assert.Null(result.Summary);
+        Assert.Contains("supported reporting range", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Summary_ReturnsControlledErrorForMalformedFinancialData()
+    {
+        await using (var db = await _factory.CreateDbContextAsync())
+        {
+            db.Invoices.Add(new LocalInvoiceEntity
+            {
+                Id = Guid.NewGuid(), CompanyId = _companyId, InvoiceNumber = "INV-BROKEN",
+                CustomerId = Guid.NewGuid(), InvoiceDate = DateTime.Today, DueDate = DateTime.Today,
+                Status = (int)InvoiceStatus.Sent, ItemsJson = "not-json"
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var result = await _service.GetSummaryAsync(
+            _companyId, new ReportPeriod(DateTime.Today, DateTime.Today));
+
+        Assert.Null(result.Summary);
+        Assert.Contains("invalid invoice or purchase", result.Error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

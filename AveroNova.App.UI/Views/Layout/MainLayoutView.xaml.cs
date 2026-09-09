@@ -7,6 +7,7 @@ using AveroNova.App.UI.Pages.Dashboard;
 using AveroNova.App.UI.Pages.Expenses;
 using AveroNova.App.UI.Pages.Help;
 using AveroNova.App.UI.Pages.Inventory;
+using AveroNova.App.UI.Pages.Notifications;
 using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Pages.Products;
 using AveroNova.App.UI.Pages.Purchases;
@@ -45,6 +46,7 @@ public partial class MainLayoutView : ContentView
     private readonly Func<PurchaseReturnsListPage> _purchaseReturnsFactory;
     private readonly Func<ExpensesListPage> _expensesFactory;
     private readonly Func<ReportsPage> _reportsFactory;
+    private readonly Func<NotificationsPage> _notificationsFactory;
     private readonly Func<UsersListPage> _usersFactory;
     private readonly Func<RolesListPage> _rolesFactory;
     private readonly Func<PermissionsPage> _permissionsFactory;
@@ -72,6 +74,7 @@ public partial class MainLayoutView : ContentView
         Func<PurchaseReturnsListPage> purchaseReturnsFactory,
         Func<ExpensesListPage> expensesFactory,
         Func<ReportsPage> reportsFactory,
+        Func<NotificationsPage> notificationsFactory,
         Func<UsersListPage> usersFactory,
         Func<RolesListPage> rolesFactory,
         Func<PermissionsPage> permissionsFactory,
@@ -102,6 +105,7 @@ public partial class MainLayoutView : ContentView
         _purchaseReturnsFactory = purchaseReturnsFactory;
         _expensesFactory = expensesFactory;
         _reportsFactory = reportsFactory;
+        _notificationsFactory = notificationsFactory;
         _usersFactory = usersFactory;
         _rolesFactory = rolesFactory;
         _permissionsFactory = permissionsFactory;
@@ -527,7 +531,7 @@ public partial class MainLayoutView : ContentView
 
         if (ReferenceEquals(button, BtnNotifications))
         {
-            factory = () => _dashboardFactory();
+            factory = () => _notificationsFactory();
             title = "Notifications";
             breadcrumb = "Home / Notifications";
             return true;

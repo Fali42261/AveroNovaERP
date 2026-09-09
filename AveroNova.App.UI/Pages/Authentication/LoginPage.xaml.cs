@@ -2,7 +2,6 @@ using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Services.Interfaces;
-using AveroNova.Shared.Security;
 using System.Text.RegularExpressions;
 
 namespace AveroNova.App.UI.Pages.Authentication;
@@ -28,7 +27,7 @@ public partial class LoginPage : ContentPage
         base.OnAppearing();
         ApplyLayout();
         await _installation.EnsureInitializedAsync();
-        CreateAccountRow.IsVisible = true;
+        CreateAccountRow.IsVisible = _installation.CanCreateAccount;
         HideFieldErrors();
     }
 
@@ -115,12 +114,6 @@ public partial class LoginPage : ContentPage
             ShowFieldError(LblEmailError, "Enter a valid Company Email ID");
             return;
         }
-        if (!PasswordPolicy.IsStrong(EntryPassword.Text))
-        {
-            ShowFieldError(LblPasswordError, PasswordPolicy.RequirementMessage);
-            return;
-        }
-
         SetLoading(true);
 
         try
@@ -153,7 +146,7 @@ public partial class LoginPage : ContentPage
         => await Shell.Current.GoToAsync(AppRoutes.Register);
 
     private async void OnResetPasswordTapped(object? sender, TappedEventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.ResetPassword);
+        => await Shell.Current.GoToAsync(AppRoutes.ForgotPassword);
 
     private static void ShowFieldError(Label label, string message)
     {

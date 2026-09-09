@@ -7,6 +7,7 @@ public partial class ReportsPage : ContentPage
 {
     private readonly IReportingService _reporting;
     private readonly ICompanyService _company;
+    private int _loadVersion;
 
     public ReportsPage(IReportingService reporting, ICompanyService company)
     {
@@ -33,32 +34,58 @@ public partial class ReportsPage : ContentPage
 
     private async Task LoadAsync()
     {
+        var loadVersion = Interlocked.Increment(ref _loadVersion);
         ErrorBanner.IsVisible = false;
         var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         var from = FromDate.Date ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         var to = ToDate.Date ?? DateTime.Today;
-        var (summary, error) = await _reporting.GetSummaryAsync(companyId, new ReportPeriod(from, to));
-        if (summary is null)
+        ClearReport();
+
+        try
         {
-            LblError.Text = error ?? "Report could not be loaded.";
-            ErrorBanner.IsVisible = true;
-            return;
+            var (summary, error) = await _reporting.GetSummaryAsync(companyId, new ReportPeriod(from, to));
+            if (loadVersion != _loadVersion || _company.CurrentCompany?.LocalId != companyId)
+                return;
+            if (summary is null)
+            {
+                ShowError(error ?? "Report could not be loaded.");
+                return;
+            }
+
+            LblRevenue.Text = Money(summary.NetRevenue);
+            LblExpenses.Text = Money(summary.OperatingExpenses);
+            LblProfit.Text = Money(summary.NetProfit);
+            LblOutstanding.Text = Money(summary.OutstandingReceivables);
+
+            AddRow("Sales", $"{summary.InvoiceCount} invoices", summary.GrossSales);
+            AddRow("Sales returns", "Completed refunds", -summary.SalesReturns);
+            AddRow("Purchases", $"{summary.PurchaseCount} orders", summary.GrossPurchases);
+            AddRow("Purchase returns", "Completed refunds", -summary.PurchaseReturns);
+            AddRow("Operating expenses", "Approved / paid", summary.OperatingExpenses);
+            AddRow("Payments received", "Completed", summary.PaymentsReceived);
+            AddRow("Payments paid", "Completed supplier payments", summary.PaymentsPaid);
+            AddRow("Outstanding payables", "Pending supplier payment", summary.OutstandingPayables);
         }
+        catch
+        {
+            if (loadVersion == _loadVersion && _company.CurrentCompany?.LocalId == companyId)
+                ShowError("Report could not be loaded.");
+        }
+    }
 
-        LblRevenue.Text = Money(summary.NetRevenue);
-        LblExpenses.Text = Money(summary.OperatingExpenses);
-        LblProfit.Text = Money(summary.NetProfit);
-        LblOutstanding.Text = Money(summary.OutstandingReceivables);
-
+    private void ClearReport()
+    {
+        LblRevenue.Text = Money(0);
+        LblExpenses.Text = Money(0);
+        LblProfit.Text = Money(0);
+        LblOutstanding.Text = Money(0);
         ReportsList.Children.Clear();
-        AddRow("Sales", $"{summary.InvoiceCount} invoices", summary.GrossSales);
-        AddRow("Sales returns", "Completed refunds", -summary.SalesReturns);
-        AddRow("Purchases", $"{summary.PurchaseCount} orders", summary.GrossPurchases);
-        AddRow("Purchase returns", "Completed refunds", -summary.PurchaseReturns);
-        AddRow("Operating expenses", "Approved / paid", summary.OperatingExpenses);
-        AddRow("Payments received", "Completed", summary.PaymentsReceived);
-        AddRow("Payments paid", "Completed supplier payments", summary.PaymentsPaid);
-        AddRow("Outstanding payables", "Pending supplier payment", summary.OutstandingPayables);
+    }
+
+    private void ShowError(string message)
+    {
+        LblError.Text = message;
+        ErrorBanner.IsVisible = true;
     }
 
     private void AddRow(string title, string detail, decimal amount)

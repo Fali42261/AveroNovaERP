@@ -73,6 +73,9 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         await _installation.EnsureInitializedAsync();
 
+        if (!_installation.CanCreateAccount)
+            return (false, "This installation is already registered. Please sign in instead.");
+
         if (!PasswordPolicy.IsStrong(request.Password))
             return (false, PasswordPolicy.RequirementMessage);
 
@@ -134,36 +137,9 @@ public sealed class AuthenticationService : IAuthenticationService
     public Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
         => Task.FromResult<(bool, string?)>((false, "Password reset will be available in a later update."));
 
-    public async Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            return (false, "Email address is required.");
-        if (!PasswordPolicy.IsStrong(newPassword))
-            return (false, PasswordPolicy.RequirementMessage);
-
-        await _installation.EnsureInitializedAsync();
-
-        var normalizedEmail = email.Trim();
-        var userId = await _credentials.FindUserIdByEmailAsync(normalizedEmail);
-        if (userId is null)
-            userId = (await _sessions.FindUserByEmailAsync(normalizedEmail))?.Id;
-
-        if (userId is null)
-            return (false, "No local account was found for this email.");
-
-        await StoreLocalCredentialAsync(userId.Value, normalizedEmail, newPassword);
-
-        // An account created offline has not reached the server yet. Keep its
-        // pending registration secret aligned with the newly chosen password.
-        if (await _pendingSecrets.GetPendingPasswordAsync(userId.Value) is not null)
-            await _pendingSecrets.SetPendingPasswordAsync(userId.Value, newPassword);
-
-        await _tokens.ClearAsync();
-        await _sessions.ClearAuthSessionAsync();
-        _context.Clear();
-        _logger.LogInformation("Local password reset completed for UserId={UserId}.", userId.Value);
-        return (true, null);
-    }
+    public Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword)
+        => Task.FromResult<(bool, string?)>((false,
+            "Password reset requires secure online verification and is not available yet."));
 
     public Task<(bool Success, string? Error)> VerifyOtpAsync(string otp)
         => Task.FromResult<(bool, string?)>((false, "Verification codes are not used."));
