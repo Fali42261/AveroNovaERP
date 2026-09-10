@@ -244,8 +244,8 @@ public sealed class AuthenticationService : IAuthenticationService
         if (!_connectivity.IsOnline)
             return (false, "Internet connection is required to refresh your session.");
 
-        var ok = await TryRefreshAccessTokenAsync();
-        return ok
+        var outcome = await TryRefreshAccessTokenAsync();
+        return outcome == RefreshOutcome.Valid
             ? (true, null)
             : (false, "Your session could not be refreshed. Please sign in again.");
     }
