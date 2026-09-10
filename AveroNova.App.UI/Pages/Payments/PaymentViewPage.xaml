@@ -7,11 +7,12 @@
         <Border Grid.Row="0" Padding="20,14"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
                 <Button Text="&#x2190;" Style="{StaticResource GhostButton}" Padding="0" WidthRequest="40" Clicked="OnBackClicked"/>
                 <Label Grid.Column="1" Text="Payment Details" FontSize="18" FontAttributes="Bold" VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
-                <Button Grid.Column="2" Text="Delete" Style="{StaticResource DangerButton}" HeightRequest="36" FontSize="12" Clicked="OnDeleteClicked"/>
+                <Button Grid.Column="2" Text="Edit" Style="{StaticResource SecondaryButton}" HeightRequest="36" FontSize="12" Clicked="OnEditClicked"/>
+                <Button Grid.Column="3" Text="Delete" Style="{StaticResource DangerButton}" HeightRequest="36" FontSize="12" Clicked="OnDeleteClicked"/>
             </Grid>
         </Border>
         <ScrollView Grid.Row="1"><VerticalStackLayout Padding="20,16" Spacing="14" x:Name="Content"/></ScrollView>

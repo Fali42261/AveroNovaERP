@@ -33,7 +33,7 @@ public sealed class PurchaseSupplierPersistenceTests : IAsyncLifetime
         Assert.True((await _suppliers.CreateAsync(supplier)).Ok);
         var purchase=new PurchaseModel{CompanyId=_company,PurchaseNumber=await _purchases.GetNextPurchaseNumberAsync(_company),SupplierId=supplier.LocalId,SupplierName=supplier.Name,PurchaseDate=DateTime.Today,DueDate=DateTime.Today.AddDays(7),Items=[new PurchaseLineItem{ProductId=Guid.NewGuid(),ProductName="Bearing",SKU="BR-1",Quantity=2,UnitPrice=50,TaxPct=10}],PaidAmount=20};
         Assert.True((await _purchases.CreateAsync(purchase)).Ok);
-        var saved=await _purchases.GetByIdAsync(purchase.LocalId); Assert.NotNull(saved); Assert.Equal(110,saved.GrandTotal); Assert.Equal(90,saved.DueAmount);
+        var saved=await _purchases.GetByIdAsync(purchase.LocalId); Assert.NotNull(saved); Assert.Equal(110,saved.GrandTotal); Assert.Equal(110,saved.DueAmount);
         saved.Notes="Checked"; Assert.True((await _purchases.UpdateAsync(saved)).Ok);
         Assert.False((await _suppliers.DeleteAsync(supplier.LocalId)).Ok);
         Assert.True((await _purchases.DeleteAsync(purchase.LocalId)).Ok);

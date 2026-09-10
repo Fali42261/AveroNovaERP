@@ -1,6 +1,8 @@
 using AveroNova.App.UI.Layout;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Services.Interfaces;
+using AveroNova.Shared.Security;
 
 namespace AveroNova.App.UI.Pages.Authentication;
 
@@ -105,12 +107,14 @@ public partial class ResetPasswordPage : ContentPage
             ShowFieldError(LblEmailError, "Email address is required");
         if (passwordMissing)
             ShowFieldError(LblPasswordError, "New password is required");
+        else if (!PasswordPolicy.IsStrong(EntryPassword.Text))
+            ShowFieldError(LblPasswordError, PasswordPolicy.RequirementMessage);
         if (confirmMissing)
             ShowFieldError(LblConfirmError, "Confirm password is required");
         else if (mismatch)
             ShowFieldError(LblConfirmError, "Passwords do not match");
 
-        if (emailMissing || passwordMissing || confirmMissing || mismatch)
+        if (emailMissing || passwordMissing || confirmMissing || mismatch || !PasswordPolicy.IsStrong(EntryPassword.Text))
             return;
 
         SetLoading(true);
@@ -123,7 +127,7 @@ public partial class ResetPasswordPage : ContentPage
 
             if (success)
             {
-                SuccessBanner.IsVisible = true;
+                await AppToast.ShowAsync(this, "Password reset successfully.", AppToastKind.Success);
                 await Task.Delay(800);
                 await Shell.Current.GoToAsync(AppRoutes.Login);
             }
@@ -168,8 +172,8 @@ public partial class ResetPasswordPage : ContentPage
 
     private void ShowBanner(string message)
     {
-        LblError.Text = message;
-        ErrorBanner.IsVisible = true;
+        ErrorBanner.IsVisible = false;
+        _ = AppToast.ShowAsync(this, message, AppToastKind.Error);
     }
 
     private void SetLoading(bool loading)

@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 13;
+    public const int CurrentSchemaVersion = 14;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -34,6 +34,7 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await EnsureSyncAndSubscriptionTablesAsync(cancellationToken);
         await EnsureLicenseTableAsync(cancellationToken);
         await EnsureBusinessTablesAsync(cancellationToken);
+        await TryAddColumnAsync("LocalPurchases", "ReturnCreditAmount", "TEXT NOT NULL DEFAULT '0'", cancellationToken);
 
         var info = await _db.SchemaInfo.FirstOrDefaultAsync(cancellationToken);
         if (info is null)
@@ -325,7 +326,7 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
                 "SupplierName" TEXT NOT NULL, "PurchaseDate" TEXT NOT NULL, "DueDate" TEXT NOT NULL,
                 "ItemsJson" TEXT NOT NULL, "PaymentMethod" INTEGER NOT NULL,
                 "Reference" TEXT NOT NULL, "Notes" TEXT NOT NULL, "Status" INTEGER NOT NULL,
-                "PaidAmount" TEXT NOT NULL, "SyncStatus" INTEGER NOT NULL,
+                "PaidAmount" TEXT NOT NULL, "ReturnCreditAmount" TEXT NOT NULL DEFAULT '0', "SyncStatus" INTEGER NOT NULL,
                 "CreatedAtUtc" TEXT NOT NULL, "UpdatedAtUtc" TEXT NOT NULL,
                 "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL
             );

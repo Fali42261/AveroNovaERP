@@ -47,6 +47,8 @@ public partial class PurchaseViewPage : ContentPage, IHostedPage
         Row("Grand Total",   $"${p.GrandTotal:N2}");
         Row("Paid",          $"${p.PaidAmount:N2}");
         Row("Due",           $"${p.DueAmount:N2}");
+        if (p.ReturnCreditAmount > 0) Row("Return credit", $"-${p.ReturnCreditAmount:N2}");
+        if (p.SupplierRefundDueAmount > 0) Row("Supplier refund due", $"${p.SupplierRefundDueAmount:N2}");
         foreach (var item in p.Items) Row(item.ProductName, $"{item.Quantity} × ${item.UnitPrice:N2} + {item.TaxPct:N2}% = ${item.GrandTotal:N2}");
         if (!string.IsNullOrEmpty(p.Notes)) Row("Notes", p.Notes);
         card.Content = vsl;
@@ -61,6 +63,12 @@ public partial class PurchaseViewPage : ContentPage, IHostedPage
         };
 
         Content.Children.Add(card);
+        if (p.Status is not PurchaseStatus.Draft and not PurchaseStatus.Cancelled && p.DueAmount > 0)
+        {
+            var paymentBtn = new Button { Text = "Record Supplier Payment", Style = (Style)Resources["PrimaryButton"], HorizontalOptions = LayoutOptions.Fill };
+            paymentBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PaymentAdd}?purchaseId={p.LocalId:D}");
+            Content.Children.Add(paymentBtn);
+        }
         Content.Children.Add(deleteBtn);
     }
 

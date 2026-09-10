@@ -62,7 +62,6 @@ public partial class PurchaseFormPage : ContentPage, IHostedPage
         if (!int.TryParse(EntryQuantity.Text, out var quantity) || quantity <= 0) { ShowError("Enter a valid quantity."); return; }
         if (!decimal.TryParse(EntryUnitPrice.Text, out var unitPrice) || unitPrice < 0) { ShowError("Enter a valid unit price."); return; }
         if (!decimal.TryParse(EntryTax.Text, out var tax) || tax < 0 || tax > 100) { ShowError("Tax must be between 0 and 100."); return; }
-        if (!decimal.TryParse(EntryPaid.Text, out var paid) || paid < 0) { ShowError("Enter a valid paid amount."); return; }
         var cid   = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         var model = _editing ?? new PurchaseModel { CompanyId = cid };
         var supplier = _supplierItems[SupplierPicker.SelectedIndex];
@@ -74,7 +73,7 @@ public partial class PurchaseFormPage : ContentPage, IHostedPage
         model.PaymentMethod = (PaymentMethod)Math.Max(0, PaymentPicker.SelectedIndex);
         model.Status = (PurchaseStatus)Math.Max(0, StatusPicker.SelectedIndex);
         model.Items = [new PurchaseLineItem { ProductId=product.LocalId, ProductName=product.Name, SKU=product.SKU, Quantity=quantity, UnitPrice=unitPrice, TaxPct=tax }];
-        model.PaidAmount = paid;
+        model.PaidAmount = _editing?.PaidAmount ?? 0;
         model.Reference     = EntryRef.Text?.Trim() ?? "";
         model.Notes         = EditorNotes.Text?.Trim() ?? "";
         if (string.IsNullOrEmpty(model.PurchaseNumber)) model.PurchaseNumber = await _svc.GetNextPurchaseNumberAsync(cid);

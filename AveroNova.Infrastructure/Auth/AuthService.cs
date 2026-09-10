@@ -622,6 +622,8 @@ public sealed class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(request.Email)) errors.Add("Email is required.");
         if (string.IsNullOrWhiteSpace(request.MobileNumber)) errors.Add("Mobile number is required.");
         if (string.IsNullOrWhiteSpace(request.Password)) errors.Add("Password is required.");
+        else if (!AveroNova.Shared.Security.PasswordPolicy.IsStrong(request.Password))
+            errors.Add(AveroNova.Shared.Security.PasswordPolicy.RequirementMessage);
         if (string.IsNullOrWhiteSpace(request.ConfirmPassword)) errors.Add("Confirm password is required.");
         if (!string.IsNullOrWhiteSpace(request.Password) &&
             !string.Equals(request.Password, request.ConfirmPassword, StringComparison.Ordinal))

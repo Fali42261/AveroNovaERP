@@ -9,8 +9,8 @@ namespace AveroNova.App.UI.Services.Interfaces;
 //           The invoice is stored locally and marked PendingSync.
 //  ONLINE:  Invoice is synchronized with the server API.
 //
-//  TODO: Implement offline invoice persistence and synchronization
-//        during backend phase.
+//  Invoice records are persisted locally and uploaded through the shared
+//  authenticated business-sync endpoint.
 // ═══════════════════════════════════════════════════════════════
 
 public interface IBillingService

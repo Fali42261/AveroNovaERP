@@ -8,32 +8,31 @@ public partial class DashboardPage : ContentPage
 {
     private readonly IBillingService   _billing;
     private readonly IProductService   _product;
-    private readonly ICustomerService  _customer;
-    private readonly IPaymentService   _payment;
     private readonly ICompanyService   _company;
     private readonly ILicenseService   _licenses;
+    private readonly IReportingService _reporting;
+    private int _loadVersion;
 
     public DashboardPage(
         IBillingService  billing,
         IProductService  product,
-        ICustomerService customer,
-        IPaymentService  payment,
         ICompanyService  company,
-        ILicenseService  licenses)
+        ILicenseService  licenses,
+        IReportingService reporting)
     {
         InitializeComponent();
         _billing  = billing;
         _product  = product;
-        _customer = customer;
-        _payment  = payment;
         _company  = company;
         _licenses = licenses;
+        _reporting = reporting;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         LblDate.Text = DateTime.Today.ToString("dddd, dd MMMM yyyy");
+        LblFiscalYear.Text = $"FY {DateTime.Today:yyyy}";
         await LoadDataAsync();
     }
 
@@ -45,44 +44,81 @@ public partial class DashboardPage : ContentPage
 
     private async Task LoadDataAsync()
     {
-        await LoadLicenseBannerAsync();
+        var loadVersion = Interlocked.Increment(ref _loadVersion);
+        var cid = _company.CurrentCompany?.LocalId ?? Guid.Empty;
+        ClearBusinessData();
 
-        var cid       = _company.CurrentCompany?.LocalId ?? Guid.Empty;
-        var invoices  = await _billing.GetAllAsync(cid);
-        var products  = await _product.GetAllAsync(cid);
-        var customers = await _customer.GetAllAsync(cid);
-        var payments  = await _payment.GetAllAsync(cid);
-
-        // KPI
-        LblTotalSales.Text    = "$" + invoices.Where(i => i.Status == InvoiceStatus.Paid).Sum(i => i.GrandTotal).ToString("N0");
-        LblOutstanding.Text   = "$" + invoices.Where(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled).Sum(i => i.DueAmount).ToString("N0");
-        LblCustomers.Text     = customers.Count.ToString();
-        LblProducts.Text      = products.Count.ToString();
-        LblPayments.Text      = "$" + payments.Sum(p => p.Amount).ToString("N0");
-
-        // Recent invoices (last 4)
-        InvoiceList.Children.Clear();
-        bool first = true;
-        foreach (var inv in invoices.OrderByDescending(i => i.InvoiceDate).Take(4))
+        try
         {
-            if (!first) InvoiceList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
-            InvoiceList.Children.Add(BuildInvoiceRow(inv));
-            first = false;
-        }
+            await LoadLicenseBannerAsync();
+            var invoices = await _billing.GetAllAsync(cid);
+            var products = await _product.GetAllAsync(cid);
+            var (summary, _) = await _reporting.GetSummaryAsync(cid, ReportPeriod.CurrentMonth(DateTime.Today));
 
-        // Low stock
-        LowStockList.Children.Clear();
-        first = true;
-        foreach (var p in products.Where(p => p.IsLowStock).Take(4))
+            if (!IsCurrentLoad(loadVersion, cid) || summary is null)
+                return;
+
+            LblTotalSales.Text = Money(summary.NetRevenue);
+            LblTotalPurchases.Text = Money(summary.NetPurchases);
+            LblOutstanding.Text = Money(summary.OutstandingReceivables);
+            LblCustomers.Text = summary.CustomerCount.ToString();
+            LblProducts.Text = summary.ProductCount.ToString();
+            LblPayments.Text = Money(summary.PaymentsReceived);
+            LblSalesCount.Text = $"{summary.InvoiceCount} invoices";
+            LblPurchaseCount.Text = $"{summary.PurchaseCount} orders";
+            LblOverdueCount.Text = $"{summary.OverdueInvoiceCount} invoices";
+            LblActiveCustomers.Text = $"{summary.ActiveCustomerCount} active";
+            LblLowStockCount.Text = $"{summary.LowStockCount} low stock";
+            LblLowStockHeaderCount.Text = $"{summary.LowStockCount} items";
+
+            bool first = true;
+            foreach (var inv in invoices.OrderByDescending(i => i.InvoiceDate).Take(4))
+            {
+                if (!first) InvoiceList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
+                InvoiceList.Children.Add(BuildInvoiceRow(inv));
+                first = false;
+            }
+
+            first = true;
+            foreach (var p in products.Where(p => p.IsLowStock).Take(4))
+            {
+                if (!first) LowStockList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
+                LowStockList.Children.Add(BuildLowStockRow(p));
+                first = false;
+            }
+
+            if (!products.Any(p => p.IsLowStock))
+                LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
+        }
+        catch
         {
-            if (!first) LowStockList.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill });
-            LowStockList.Children.Add(BuildLowStockRow(p));
-            first = false;
+            if (IsCurrentLoad(loadVersion, cid))
+                ClearBusinessData();
         }
-
-        if (!products.Any(p => p.IsLowStock))
-            LowStockList.Children.Add(new Label { Text = "  No low stock items.", FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(18, 14) });
     }
+
+    private bool IsCurrentLoad(int loadVersion, Guid companyId)
+        => loadVersion == _loadVersion && _company.CurrentCompany?.LocalId == companyId;
+
+    private void ClearBusinessData()
+    {
+        LblTotalSales.Text = Money(0);
+        LblTotalPurchases.Text = Money(0);
+        LblOutstanding.Text = Money(0);
+        LblCustomers.Text = "0";
+        LblProducts.Text = "0";
+        LblPayments.Text = Money(0);
+        LblSalesCount.Text = "0 invoices";
+        LblPurchaseCount.Text = "0 orders";
+        LblOverdueCount.Text = "0 invoices";
+        LblActiveCustomers.Text = "0 active";
+        LblLowStockCount.Text = "0 low stock";
+        LblLowStockHeaderCount.Text = "0 items";
+        InvoiceList.Children.Clear();
+        LowStockList.Children.Clear();
+    }
+
+    private static string Money(decimal amount) => "$" + amount.ToString("N0");
 
     private async Task LoadLicenseBannerAsync()
     {

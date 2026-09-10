@@ -80,13 +80,35 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task OnlineRegistration_MarksInstallationRegistered_WithoutHidingCreateAccount()
+    public async Task OnlineRegistration_MarksInstallationRegistered_AndDisablesCreateAccount()
     {
         _api.RegisterResult = ApiCallResult<RegisterResponse>.Ok(CreateRegisterResponse(), 200);
         var (ok, err) = await _auth.RegisterAsync(CreateRegisterRequest());
         Assert.True(ok, err);
         Assert.True(_installation.IsRegistered);
-        Assert.True(_installation.CanCreateAccount);
+        Assert.False(_installation.CanCreateAccount);
+    }
+
+    [Fact]
+    public async Task RegisteredInstallation_RejectsSecondOfflineRegistration_WithoutCreatingOrphans()
+    {
+        _connectivity.SetOnline(false);
+        Assert.True((await _auth.RegisterAsync(CreateRegisterRequest())).Success);
+
+        var second = CreateRegisterRequest();
+        second.Email = "second.owner@test.local";
+        second.CompanyEmail = "second.company@test.local";
+        var result = await _auth.RegisterAsync(second);
+
+        Assert.False(result.Success);
+        Assert.Contains("already registered", result.Error, StringComparison.OrdinalIgnoreCase);
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        Assert.Equal(1, await db.Users.CountAsync());
+        Assert.Equal(1, await db.Companies.CountAsync());
+        Assert.Equal(1, await db.UserCompanies.CountAsync());
+        Assert.Equal(1, await db.Subscriptions.CountAsync());
+        Assert.Equal(4, await db.SyncQueue.CountAsync());
     }
 
     [Fact]
@@ -204,31 +226,31 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task OfflineResetPassword_ChangesLocalCredential_AndRequiresNewPassword()
+    public async Task OfflineResetPassword_IsRejected_AndPreservesExistingCredential()
     {
         _connectivity.SetOnline(false);
         var request = CreateRegisterRequest();
         Assert.True((await _auth.RegisterAsync(request)).Success);
 
         var (resetOk, resetError) = await _auth.ResetPasswordAsync(request.Email, "NewPassword1!");
-        Assert.True(resetOk, resetError);
-        Assert.Equal("NewPassword1!", await _pendingSecrets.GetPendingPasswordAsync(request.ClientUserId!.Value));
+        Assert.False(resetOk);
+        Assert.Contains("secure online verification", resetError, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(request.Password, await _pendingSecrets.GetPendingPasswordAsync(request.ClientUserId!.Value));
 
         var oldLogin = await _auth.LoginAsync(request.Email, request.Password);
-        Assert.False(oldLogin.Success);
+        Assert.True(oldLogin.Success, oldLogin.Error);
 
         var newLogin = await _auth.LoginAsync(request.Email, "NewPassword1!");
-        Assert.True(newLogin.Success, newLogin.Error);
-        Assert.True(_auth.IsAuthenticated);
+        Assert.False(newLogin.Success);
     }
 
     [Fact]
-    public async Task OfflineResetPassword_RejectsUnknownLocalAccount()
+    public async Task OfflineResetPassword_DoesNotRevealWhetherAccountExists()
     {
         var (ok, error) = await _auth.ResetPasswordAsync("missing@test.local", "NewPassword1!");
 
         Assert.False(ok);
-        Assert.Equal("No local account was found for this email.", error);
+        Assert.Contains("secure online verification", error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

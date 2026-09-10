@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AveroNova.Application.DTOs.Auth;
+using AveroNova.Application.DTOs.Sync;
 using AveroNova.App.UI.Data;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Services.Api;
@@ -12,12 +13,13 @@ using Microsoft.Extensions.Logging;
 namespace AveroNova.App.UI.Services;
 
 /// <summary>
-/// Real sync transport for pending local registration (and later ERP) queue items.
-/// Calls POST /api/auth/register for offline registration creates — not a UI mock.
+/// Sync transport for registration plus invoice/payment business records.
+/// Business changes are coalesced by stable entity ID and acknowledged by the server.
 /// </summary>
 public sealed class RegistrationSyncService : ISyncService
 {
     private static readonly string[] RegistrationEntityTypes = ["User", "Company", "UserCompany", "Subscription"];
+    private static readonly string[] BusinessEntityTypes = ["Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"];
 
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAuthApiClient _authApi;
@@ -26,6 +28,8 @@ public sealed class RegistrationSyncService : ISyncService
     private readonly IAppSessionContext _session;
     private readonly ILogger<RegistrationSyncService> _logger;
     private readonly ILicenseService? _licenses;
+    private readonly IBusinessSyncApiClient? _businessApi;
+    private readonly ISecureTokenStore? _tokens;
     private readonly object _gate = new();
     private bool _isSyncing;
 
@@ -36,7 +40,9 @@ public sealed class RegistrationSyncService : ISyncService
         IConnectivityService connectivity,
         IAppSessionContext session,
         ILogger<RegistrationSyncService> logger,
-        ILicenseService? licenses = null)
+        ILicenseService? licenses = null,
+        IBusinessSyncApiClient? businessApi = null,
+        ISecureTokenStore? tokens = null)
     {
         _dbFactory = dbFactory;
         _authApi = authApi;
@@ -45,6 +51,8 @@ public sealed class RegistrationSyncService : ISyncService
         _session = session;
         _logger = logger;
         _licenses = licenses;
+        _businessApi = businessApi;
+        _tokens = tokens;
         _connectivity.StatusChanged += OnConnectivityChanged;
     }
 
@@ -106,7 +114,17 @@ public sealed class RegistrationSyncService : ISyncService
                 catch (Exception ex) { _logger.LogWarning(ex, "License sync during SyncNow failed."); }
             }
 
-            // Business-module APIs are not on the server yet. Keep Pending — never fake Synced.
+            var businessItems = pending
+                .Where(p => BusinessEntityTypes.Contains(p.EntityType, StringComparer.OrdinalIgnoreCase)
+                            && p.CompanyId == _session.CurrentCompanyId)
+                .ToList();
+            if (businessItems.Count > 0)
+            {
+                var (businessSucceeded, businessFailed) = await SyncBusinessBatchAsync(db, businessItems);
+                succeeded += businessSucceeded;
+                failed += businessFailed;
+            }
+
             await db.SaveChangesAsync();
             await RefreshCountsAsync();
             LastSyncAt = DateTime.UtcNow;
@@ -119,6 +137,24 @@ public sealed class RegistrationSyncService : ISyncService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SyncNow failed.");
+            try
+            {
+                await using var recoveryDb = await _dbFactory.CreateDbContextAsync();
+                var interrupted = await recoveryDb.SyncQueue
+                    .Where(q => q.Status == (int)RecordSyncStatus.Syncing)
+                    .ToListAsync();
+                foreach (var item in interrupted)
+                {
+                    item.Status = (int)RecordSyncStatus.Pending;
+                    item.Error = "Synchronization was interrupted; retry is required.";
+                }
+                await recoveryDb.SaveChangesAsync();
+                await RefreshCountsAsync();
+            }
+            catch (Exception recoveryError)
+            {
+                _logger.LogWarning(recoveryError, "Unable to recover interrupted sync queue items.");
+            }
             RaiseHistory(false, 0, "Unable to synchronize. Please try again.");
             return false;
         }
@@ -140,7 +176,7 @@ public sealed class RegistrationSyncService : ISyncService
                 SyncedAt = LastSyncAt ?? DateTime.UtcNow,
                 Success = FailedCount == 0,
                 ItemsSynced = Math.Max(0, PendingCount == 0 ? 1 : 0),
-                Module = "Registration",
+                Module = "Registration / Billing",
                 Message = PendingCount > 0
                     ? $"{PendingCount} pending, {FailedCount} failed."
                     : "Queue is clear."
@@ -264,6 +300,224 @@ public sealed class RegistrationSyncService : ISyncService
         }
     }
 
+    private async Task<(int Succeeded, int Failed)> SyncBusinessBatchAsync(
+        LocalAppDbContext db,
+        List<LocalSyncQueueEntity> items)
+    {
+        if (_businessApi is null || _tokens is null)
+            return (0, items.Count);
+
+        var accessToken = await _tokens.GetAccessTokenAsync();
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            MarkRetriable(items, "Sign in online before synchronizing business data.", networkFailure: true);
+            return (0, items.Count);
+        }
+
+        var latest = items
+            .GroupBy(i => new { Type = i.EntityType.ToUpperInvariant(), i.EntityId })
+            .Select(g => g.OrderByDescending(i => i.CreatedAt).ThenByDescending(i => i.Id).First())
+            .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
+                          || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 0
+                : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 2 : 1)
+            .ThenBy(i => i.CreatedAt)
+            .ToList();
+
+        foreach (var item in items)
+        {
+            item.Status = (int)RecordSyncStatus.Syncing;
+            item.LastAttemptAt = DateTime.UtcNow;
+        }
+        await db.SaveChangesAsync();
+
+        var request = new BusinessSyncBatchRequest();
+        foreach (var item in latest)
+        {
+            request.Items.Add(new BusinessSyncItemRequest
+            {
+                QueueId = item.Id,
+                EntityType = item.EntityType,
+                EntityId = item.EntityId,
+                CompanyId = item.CompanyId!.Value,
+                Operation = (SyncOperation)item.Operation,
+                PayloadJson = await CurrentPayloadAsync(db, item),
+                ClientUpdatedAtUtc = item.CreatedAt
+            });
+        }
+
+        var result = await _businessApi.PushAsync(request, accessToken);
+        if (!result.Success || result.Data is null)
+        {
+            MarkRetriable(items, result.Error ?? "Business sync failed.", result.IsNetworkError);
+            return (0, items.Count);
+        }
+
+        var acknowledged = result.Data.Items
+            .GroupBy(x => x.QueueId)
+            .ToDictionary(group => group.Key, group => group.Last());
+        var now = result.Data.ServerTimeUtc == default ? DateTime.UtcNow : result.Data.ServerTimeUtc;
+        var succeeded = 0;
+        var failed = 0;
+        foreach (var group in items.GroupBy(i => new { Type = i.EntityType.ToUpperInvariant(), i.EntityId }))
+        {
+            var newest = group.OrderByDescending(i => i.CreatedAt).ThenByDescending(i => i.Id).First();
+            if (!acknowledged.TryGetValue(newest.Id, out var acknowledgement) || !acknowledgement.Success)
+            {
+                MarkRetriable(
+                    group.ToList(),
+                    acknowledgement?.Error ?? "Server did not acknowledge the business record.",
+                    networkFailure: false);
+                failed += group.Count();
+                continue;
+            }
+
+            foreach (var item in group)
+            {
+                item.Status = (int)RecordSyncStatus.Synced;
+                item.Error = null;
+                item.SyncedAt = now;
+                item.LastAttemptAt = now;
+            }
+            await MarkLocalRecordSyncedAsync(db, newest, now);
+            succeeded += group.Count();
+        }
+        return (succeeded, failed);
+    }
+
+    private static async Task<string?> CurrentPayloadAsync(LocalAppDbContext db, LocalSyncQueueEntity item)
+    {
+        if ((SyncOperation)item.Operation == SyncOperation.Delete)
+            return null;
+
+        if (item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Invoices.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            if (row is null) return null;
+            var invoiceItems = JsonSerializer.Deserialize<List<InvoiceLineItem>>(row.ItemsJson) ?? [];
+            var subtotal = invoiceItems.Sum(i => i.LineTotal);
+            var total = subtotal + invoiceItems.Sum(i => i.TaxAmount)
+                        + subtotal * row.TaxPct / 100 - subtotal * row.DiscountPct / 100;
+            return JsonSerializer.Serialize(new
+            {
+                row.Id, row.CompanyId, row.InvoiceNumber, row.CustomerId, row.CustomerName,
+                row.InvoiceDate, row.DueDate, row.ItemsJson, row.DiscountPct, row.TaxPct,
+                row.PaymentMethod, row.Notes, row.Status, row.PaidAmount,
+                GrandTotal = total, row.UpdatedAtUtc
+            });
+        }
+
+        if (item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Payments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            if (row is null) return null;
+            return JsonSerializer.Serialize(new
+            {
+                row.Id, row.CompanyId, row.PaymentNumber, row.PartyId, row.PartyName,
+                row.IsSupplier, row.InvoiceId, row.InvoiceNumber, row.Amount, row.Method,
+                row.PaymentDate, row.Reference, row.Notes, row.Status, row.UpdatedAtUtc
+            });
+        }
+
+        if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Purchases.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(LocalPurchaseService.Payload(row));
+        }
+        if (item.EntityType.Equals("PurchaseReturn", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.PurchaseReturns.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(LocalReturnService.PurchasePayload(row));
+        }
+        if (item.EntityType.Equals("Supplier", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Suppliers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new { row.Id,row.CompanyId,row.Name,row.Email,row.Phone,row.Address,row.TaxNumber,row.Notes,row.IsActive,row.UpdatedAtUtc });
+        }
+        if (item.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new { row.Id,row.CompanyId,row.Name,row.SKU,row.Barcode,row.Category,row.Brand,row.Unit,row.PurchasePrice,row.SellingPrice,row.TaxPercent,row.Stock,row.MinimumStock,row.Status,row.UpdatedAtUtc });
+        }
+        if (item.EntityType.Equals("StockMovement", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.StockMovements.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new { row.Id,row.CompanyId,row.ProductId,row.ProductName,row.SKU,row.Type,row.Quantity,row.StockBefore,row.StockAfter,row.Reference,row.Notes,row.CreatedBy,row.UpdatedAtUtc });
+        }
+
+        return item.PayloadJson;
+    }
+
+    private static async Task MarkLocalRecordSyncedAsync(
+        LocalAppDbContext db,
+        LocalSyncQueueEntity item,
+        DateTime syncedAt)
+    {
+        if (item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Invoices.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null)
+            {
+                row.ServerId = row.Id;
+                row.SyncStatus = (int)RecordSyncStatus.Synced;
+                row.SyncError = null;
+                row.LastSyncedAtUtc = syncedAt;
+            }
+        }
+        else if (item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Payments.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null)
+            {
+                row.ServerId = row.Id;
+                row.SyncStatus = (int)RecordSyncStatus.Synced;
+                row.SyncError = null;
+                row.LastSyncedAtUtc = syncedAt;
+            }
+        }
+        else if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Purchases.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("PurchaseReturn", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.PurchaseReturns.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("Supplier", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Suppliers.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Products.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+        else if (item.EntityType.Equals("StockMovement", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.StockMovements.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null) { row.ServerId=row.Id; row.SyncStatus=(int)RecordSyncStatus.Synced; row.SyncError=null; row.LastSyncedAtUtc=syncedAt; }
+        }
+    }
+
+    private static void MarkRetriable(
+        List<LocalSyncQueueEntity> items,
+        string error,
+        bool networkFailure)
+    {
+        var now = DateTime.UtcNow;
+        foreach (var item in items)
+        {
+            item.RetryCount++;
+            item.LastAttemptAt = now;
+            item.Error = error;
+            item.Status = (int)(networkFailure && item.RetryCount < 5
+                ? RecordSyncStatus.Pending
+                : RecordSyncStatus.Failed);
+        }
+    }
+
     private async Task RefreshCountsAsync()
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
@@ -283,7 +537,7 @@ public sealed class RegistrationSyncService : ISyncService
             SyncedAt = DateTime.UtcNow,
             Success = success,
             ItemsSynced = items,
-            Module = "Registration",
+            Module = "Registration / Billing",
             Message = message
         });
 }

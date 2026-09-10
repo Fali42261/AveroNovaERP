@@ -21,7 +21,9 @@
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <BoxView Style="{StaticResource Divider}"/>
                         <Label Text="Purchase Order *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="PurchasePicker" Title="Select purchase" HorizontalTextAlignment="Center"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Picker x:Name="PurchasePicker" Title="Select received purchase" HorizontalTextAlignment="Center" SelectedIndexChanged="OnPurchaseChanged"/></Border>
+                        <Label Text="Items to return *" Style="{StaticResource InputLabel}"/>
+                        <VerticalStackLayout x:Name="ItemsContainer" Spacing="8"/>
                         <Label Text="Return Date" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}"><DatePicker x:Name="DateReturn" Format="dd MMM yyyy" HorizontalOptions="Center"/></Border>
                         <Label Text="Refund Amount *" Style="{StaticResource InputLabel}"/>

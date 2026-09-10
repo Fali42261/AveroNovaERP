@@ -7,8 +7,8 @@ namespace AveroNova.App.UI.Services.Interfaces;
 //
 //  OFFLINE: Cash/payment records may be created locally
 //           and synchronized when connectivity is restored.
-//  TODO: Implement PaymentService + local persistence + SyncQueue
-//        during backend phase.
+//  Linked customer payments reconcile invoice PaidAmount/Status in the same
+//  local transaction and are uploaded through the shared sync queue.
 // ═══════════════════════════════════════════════════════════════
 
 public interface IPaymentService

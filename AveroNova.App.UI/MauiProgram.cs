@@ -24,6 +24,7 @@ using AveroNova.App.UI.Pages.Expenses;
 using AveroNova.App.UI.Pages.Help;
 using AveroNova.App.UI.Pages.Inventory;
 using AveroNova.App.UI.Pages.License;
+using AveroNova.App.UI.Pages.Notifications;
 using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Pages.Products;
 using AveroNova.App.UI.Pages.Purchases;
@@ -159,6 +160,9 @@ public static class MauiProgram
         builder.Services.AddTransient<ReportsPage>();
         builder.Services.AddTransient<Func<ReportsPage>>(sp => () => sp.GetRequiredService<ReportsPage>());
 
+        builder.Services.AddTransient<NotificationsPage>();
+        builder.Services.AddTransient<Func<NotificationsPage>>(sp => () => sp.GetRequiredService<NotificationsPage>());
+
         builder.Services.AddTransient<UsersListPage>();
         builder.Services.AddTransient<Func<UsersListPage>>(sp => () => sp.GetRequiredService<UsersListPage>());
         builder.Services.AddTransient<UserFormPage>();
@@ -229,6 +233,7 @@ public static class MauiProgram
 #endif
         builder.Services.AddSingleton<IApiClient, ApiClient>();
         builder.Services.AddSingleton<IAuthApiClient, AuthApiClient>();
+        builder.Services.AddSingleton<IBusinessSyncApiClient, BusinessSyncApiClient>();
         builder.Services.AddSingleton<ILicenseApiClient, LicenseApiClient>();
         builder.Services.AddSingleton<ILicenseAnchorStore, MauiLicenseAnchorStore>();
         builder.Services.AddSingleton<ILocalCredentialStore, MauiLocalCredentialStore>();
@@ -250,6 +255,7 @@ public static class MauiProgram
         builder.Services.AddTransient<IPurchaseService, LocalPurchaseService>();
         builder.Services.AddTransient<ISupplierService, LocalSupplierService>();
         builder.Services.AddTransient<IReturnService, LocalReturnService>();
+        builder.Services.AddTransient<IReportingService, LocalReportingService>();
         builder.Services.AddTransient<ISettingsService, LocalSettingsService>();
         builder.Services.AddTransient<ISubscriptionService, LocalSubscriptionService>();
         builder.Services.AddSingleton<ISyncService, RegistrationSyncService>();
