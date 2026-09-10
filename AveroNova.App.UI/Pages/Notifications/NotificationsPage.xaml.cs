@@ -303,6 +303,13 @@ public partial class NotificationsPage : ContentPage
         // UNREAD DOT
         // =========================================================
 
+        var actions = new VerticalStackLayout
+        {
+            Spacing = 6,
+            VerticalOptions = LayoutOptions.Start,
+            HorizontalOptions = LayoutOptions.Center
+        };
+
         if (!notification.IsRead)
         {
             var dot =
@@ -330,11 +337,30 @@ public partial class NotificationsPage : ContentPage
                         new Thickness(0, 6, 0, 0)
                 };
 
-            grid.Add(dot, 2, 0);
+            actions.Children.Add(dot);
         }
+
+        var deleteButton = new Button
+        {
+            Text = "✕",
+            FontSize = 12,
+            WidthRequest = 30,
+            HeightRequest = 30,
+            Padding = 0,
+            BackgroundColor = Colors.Transparent,
+            TextColor = Color.FromArgb("#DC2626"),
+            AutomationId = $"DeleteNotification_{notification.Id}"
+        };
+        deleteButton.Clicked += async (_, _) =>
+        {
+            await _svc.DeleteAsync(notification.Id);
+            await LoadAsync();
+        };
+        actions.Children.Add(deleteButton);
 
         grid.Add(iconBorder, 0, 0);
         grid.Add(info, 1, 0);
+        grid.Add(actions, 2, 0);
 
         border.Content = grid;
 
