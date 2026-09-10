@@ -27,7 +27,9 @@ public sealed class LocalSessionPolicy : ILocalSessionPolicy
         return await db.Sessions.AsNoTracking().AnyAsync(
             s => s.IsActive
                  && s.InstallationId == installationId
-                 && s.OfflineExpiresAtUtc > now,
+                 && s.OfflineExpiresAtUtc > now
+                 && (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
+                    > now - AveroNova.Shared.Security.OfflineSessionDefaults.InactivityTimeout,
             cancellationToken);
     }
 }

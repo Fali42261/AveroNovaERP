@@ -18,11 +18,17 @@ public sealed class MauiSecureTokenStore : ISecureTokenStore
     public Task SetSessionIdAsync(Guid sessionId)
         => SecureStorage.Default.SetAsync(OfflineSessionDefaults.SecureSessionIdKey, sessionId.ToString("D"));
 
+    public Task SetPasswordRecoveryKeyAsync(string recoveryKey)
+        => SecureStorage.Default.SetAsync(OfflineSessionDefaults.SecurePasswordRecoveryKey, recoveryKey);
+
     public Task<string?> GetAccessTokenAsync()
         => SecureStorage.Default.GetAsync(OfflineSessionDefaults.SecureAccessTokenKey);
 
     public Task<string?> GetRefreshTokenAsync()
         => SecureStorage.Default.GetAsync(OfflineSessionDefaults.SecureRefreshTokenKey);
+
+    public Task<string?> GetPasswordRecoveryKeyAsync()
+        => SecureStorage.Default.GetAsync(OfflineSessionDefaults.SecurePasswordRecoveryKey);
 
     public async Task<DateTime?> GetAccessTokenExpiryAsync()
     {

@@ -59,15 +59,23 @@ public sealed class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(request.DeviceId))
             return ApiResult<RegisterResponse>.Fail("DeviceId is required.", 400);
 
-        var existingInstallation = await _db.ClientInstallations.AsNoTracking()
+        var existingInstallation = await _db.ClientInstallations
             .FirstOrDefaultAsync(x => x.InstallationId == request.InstallationId && !x.IsDeleted, cancellationToken);
         if (existingInstallation is not null)
         {
             // Idempotent retry of the same offline registration sync.
+            var existingInstallationUser = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(user => user.Id == existingInstallation.UserId && !user.IsDeleted, cancellationToken);
             if (request.ClientUserId is Guid clientUserId
                 && clientUserId != Guid.Empty
                 && existingInstallation.UserId == clientUserId)
             {
+                if (existingInstallationUser is null
+                    || !string.Equals(existingInstallation.DeviceId, request.DeviceId.Trim(), StringComparison.Ordinal)
+                    || !string.Equals(existingInstallationUser.Email, request.Email.Trim(), StringComparison.OrdinalIgnoreCase)
+                    || !_passwordHasher.VerifyPassword(request.Password, existingInstallationUser.PasswordHash))
+                    return ApiResult<RegisterResponse>.Fail("This installation is already registered. Please sign in instead.", 409);
+
                 var sub = await _db.Subscriptions.AsNoTracking()
                     .Where(s => s.CompanyId == existingInstallation.CompanyId && !s.IsDeleted)
                     .OrderByDescending(s => s.CreatedAt)
@@ -75,6 +83,10 @@ public sealed class AuthService : IAuthService
                 var existingPlan = sub is null
                     ? null
                     : await _db.Plans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == sub.PlanId, cancellationToken);
+                var recoveryKey = _refreshTokens.GenerateRefreshToken();
+                existingInstallation.RecoveryKeyHash = _refreshTokens.HashRefreshToken(recoveryKey);
+                existingInstallation.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync(cancellationToken);
                 return ApiResult<RegisterResponse>.Ok(new RegisterResponse
                 {
                     Success = true,
@@ -83,7 +95,8 @@ public sealed class AuthService : IAuthService
                     SubscriptionId = sub?.Id ?? Guid.Empty,
                     Plan = existingPlan?.Name ?? PlanNames.Starter,
                     TrialStartDate = sub?.StartDate ?? DateTime.UtcNow,
-                    TrialEndDate = sub?.EndDate ?? DateTime.UtcNow
+                    TrialEndDate = sub?.EndDate ?? DateTime.UtcNow,
+                    RecoveryKey = recoveryKey
                 });
             }
 
@@ -100,24 +113,47 @@ public sealed class AuthService : IAuthService
                 .FirstOrDefaultAsync(u => u.Id == existingUserId && !u.IsDeleted, cancellationToken);
             if (existingUser is not null)
             {
+                if (!string.Equals(existingUser.Email, email, StringComparison.OrdinalIgnoreCase)
+                    || !_passwordHasher.VerifyPassword(request.Password, existingUser.PasswordHash))
+                    return ApiResult<RegisterResponse>.Fail("The offline account conflicts with an existing server account.", 409);
+
                 // Same stable user id already on server — treat as successful idempotent create.
                 var membership = await _db.UserCompanies.AsNoTracking()
                     .FirstOrDefaultAsync(uc => uc.UserId == existingUser.Id && uc.IsActive && !uc.IsDeleted, cancellationToken);
-                var sub = membership is null
-                    ? null
-                    : await _db.Subscriptions.AsNoTracking()
-                        .Where(s => s.CompanyId == membership.CompanyId && !s.IsDeleted)
-                        .OrderByDescending(s => s.CreatedAt)
-                        .FirstOrDefaultAsync(cancellationToken);
+                if (membership is null)
+                    return ApiResult<RegisterResponse>.Fail("The existing account has no active company membership.", 409);
+                if (request.ClientCompanyId is Guid requestedCompanyId
+                    && requestedCompanyId != Guid.Empty
+                    && requestedCompanyId != membership.CompanyId)
+                    return ApiResult<RegisterResponse>.Fail("The offline account conflicts with an existing server company.", 409);
+                var sub = await _db.Subscriptions.AsNoTracking()
+                    .Where(s => s.CompanyId == membership.CompanyId && !s.IsDeleted)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .FirstOrDefaultAsync(cancellationToken);
+                var recoveryKey = _refreshTokens.GenerateRefreshToken();
+                _db.ClientInstallations.Add(new ClientInstallation
+                {
+                    Id = Guid.NewGuid(),
+                    InstallationId = request.InstallationId,
+                    DeviceId = request.DeviceId.Trim(),
+                    UserId = existingUser.Id,
+                    CompanyId = membership.CompanyId,
+                    RecoveryKeyHash = _refreshTokens.HashRefreshToken(recoveryKey),
+                    RegisteredAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    SyncStatus = RecordSyncStatus.Pending
+                });
+                await _db.SaveChangesAsync(cancellationToken);
                 return ApiResult<RegisterResponse>.Ok(new RegisterResponse
                 {
                     Success = true,
                     UserId = existingUser.Id,
-                    CompanyId = membership?.CompanyId ?? Guid.Empty,
+                    CompanyId = membership.CompanyId,
                     SubscriptionId = sub?.Id ?? Guid.Empty,
                     Plan = PlanNames.Starter,
                     TrialStartDate = sub?.StartDate ?? DateTime.UtcNow,
-                    TrialEndDate = sub?.EndDate ?? DateTime.UtcNow
+                    TrialEndDate = sub?.EndDate ?? DateTime.UtcNow,
+                    RecoveryKey = recoveryKey
                 });
             }
         }
@@ -205,6 +241,7 @@ public sealed class AuthService : IAuthService
                 SyncStatus = RecordSyncStatus.Pending
             };
 
+            var recoveryKey = _refreshTokens.GenerateRefreshToken();
             var clientInstallation = new ClientInstallation
             {
                 Id = Guid.NewGuid(),
@@ -212,6 +249,7 @@ public sealed class AuthService : IAuthService
                 DeviceId = request.DeviceId.Trim(),
                 UserId = user.Id,
                 CompanyId = company.Id,
+                RecoveryKeyHash = _refreshTokens.HashRefreshToken(recoveryKey),
                 RegisteredAt = now,
                 CreatedAt = now,
                 SyncStatus = RecordSyncStatus.Pending
@@ -234,7 +272,8 @@ public sealed class AuthService : IAuthService
                 SubscriptionId = subscription.Id,
                 Plan = plan.Name,
                 TrialStartDate = subscription.StartDate,
-                TrialEndDate = subscription.EndDate
+                TrialEndDate = subscription.EndDate,
+                RecoveryKey = recoveryKey
             });
         }
         catch
@@ -312,6 +351,25 @@ public sealed class AuthService : IAuthService
             request.DeviceName?.Trim() ?? string.Empty,
             request.Platform?.Trim() ?? string.Empty,
             cancellationToken);
+
+        if (request.InstallationId is Guid installationId && installationId != Guid.Empty)
+        {
+            var installation = await _db.ClientInstallations.FirstOrDefaultAsync(i =>
+                i.InstallationId == installationId
+                && i.UserId == user.Id
+                && i.CompanyId == membership.CompanyId
+                && i.DeviceId == request.DeviceId
+                && !i.IsDeleted,
+                cancellationToken);
+            if (installation is not null)
+            {
+                var recoveryKey = _refreshTokens.GenerateRefreshToken();
+                installation.RecoveryKeyHash = _refreshTokens.HashRefreshToken(recoveryKey);
+                installation.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync(cancellationToken);
+                response.RecoveryKey = recoveryKey;
+            }
+        }
 
         _attempts.Reset(email);
         _audit.LoginSuccess(user.Id, membership.CompanyId, response.Session.SessionId, request.DeviceId);
@@ -402,6 +460,88 @@ public sealed class AuthService : IAuthService
 
         _audit.TokenRefresh(user.Id, session.Id);
         return ApiResult<LoginResponse>.Ok(response);
+    }
+
+    public async Task<ApiResult<PasswordResetResponse>> ResetPasswordAsync(
+        PasswordResetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.UserEmail)
+            || string.IsNullOrWhiteSpace(request.CompanyEmail)
+            || string.IsNullOrWhiteSpace(request.NewPassword)
+            || string.IsNullOrWhiteSpace(request.ConfirmPassword)
+            || string.IsNullOrWhiteSpace(request.RecoveryKey)
+            || string.IsNullOrWhiteSpace(request.DeviceId)
+            || request.InstallationId == Guid.Empty)
+            return ApiResult<PasswordResetResponse>.Fail("All password reset fields are required.", 400);
+
+        if (!string.Equals(request.NewPassword, request.ConfirmPassword, StringComparison.Ordinal))
+            return ApiResult<PasswordResetResponse>.Fail("Passwords do not match.", 400);
+        if (!PasswordPolicy.IsStrong(request.NewPassword))
+            return ApiResult<PasswordResetResponse>.Fail(PasswordPolicy.RequirementMessage, 400);
+
+        var normalizedUserEmail = request.UserEmail.Trim().ToLowerInvariant();
+        var normalizedCompanyEmail = request.CompanyEmail.Trim().ToLowerInvariant();
+        if (_attempts.IsBlocked($"reset:{normalizedUserEmail}"))
+            return ApiResult<PasswordResetResponse>.Fail("Too many password reset attempts. Please try again later.", 429);
+
+        var recoveryHash = _refreshTokens.HashRefreshToken(request.RecoveryKey);
+        var installation = await _db.ClientInstallations.FirstOrDefaultAsync(i =>
+            i.InstallationId == request.InstallationId
+            && i.DeviceId == request.DeviceId
+            && i.RecoveryKeyHash == recoveryHash
+            && !i.IsDeleted,
+            cancellationToken);
+
+        var user = await _db.Users.FirstOrDefaultAsync(u =>
+            installation != null
+            && u.Id == installation.UserId
+            && u.Email == normalizedUserEmail
+            && u.IsActiveUser
+            && !u.IsDeleted,
+            cancellationToken);
+
+        var membership = await _db.UserCompanies.AsNoTracking()
+            .Include(uc => uc.Company)
+            .FirstOrDefaultAsync(uc =>
+                installation != null
+                && uc.UserId == installation.UserId
+                && uc.CompanyId == installation.CompanyId
+                && uc.IsActive
+                && !uc.IsDeleted,
+                cancellationToken);
+
+        if (installation is null || user is null || membership?.Company is null
+            || !string.Equals(membership.Company.Email, normalizedCompanyEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            _attempts.RecordFailure($"reset:{normalizedUserEmail}");
+            return ApiResult<PasswordResetResponse>.Fail("The user email, company email, and trusted device do not match.", 403);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+        user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        user.UpdatedAt = now;
+        user.SyncVersion++;
+        var nextRecoveryKey = _refreshTokens.GenerateRefreshToken();
+        installation.RecoveryKeyHash = _refreshTokens.HashRefreshToken(nextRecoveryKey);
+        installation.UpdatedAt = now;
+
+        var sessions = await _db.DeviceSessions
+            .Where(s => s.UserId == user.Id && s.IsActive && !s.IsDeleted)
+            .ToListAsync(cancellationToken);
+        foreach (var activeSession in sessions)
+        {
+            activeSession.IsActive = false;
+            activeSession.RevokedAt = now;
+            activeSession.UpdatedAt = now;
+            _audit.SessionRevoked(user.Id, activeSession.Id, "password_reset");
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        _attempts.Reset($"reset:{normalizedUserEmail}");
+        return ApiResult<PasswordResetResponse>.Ok(new PasswordResetResponse { RecoveryKey = nextRecoveryKey });
     }
 
     public async Task<ApiResult> LogoutAsync(

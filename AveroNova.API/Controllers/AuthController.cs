@@ -49,6 +49,19 @@ public sealed class AuthController : ControllerBase
         return Ok(new { success = true, data = result.Data });
     }
 
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] PasswordResetRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _auth.ResetPasswordAsync(request, cancellationToken);
+        if (!result.Success)
+            return StatusCode(result.StatusCode, new { success = false, error = result.Error, errors = result.Errors });
+        return Ok(new { success = true, data = result.Data });
+    }
+
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest? request, CancellationToken cancellationToken)

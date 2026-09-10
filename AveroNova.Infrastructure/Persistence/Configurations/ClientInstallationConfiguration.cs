@@ -13,6 +13,7 @@ public sealed class ClientInstallationConfiguration : IEntityTypeConfiguration<C
         builder.Property(x => x.InstallationId).IsRequired();
         builder.HasIndex(x => x.InstallationId).IsUnique();
         builder.Property(x => x.DeviceId).IsRequired().HasMaxLength(128);
+        builder.Property(x => x.RecoveryKeyHash).IsRequired().HasMaxLength(128);
         builder.HasIndex(x => x.UserId);
         builder.HasIndex(x => x.CompanyId);
 

@@ -105,6 +105,26 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
             q => Assert.Equal((int)RecordSyncStatus.Pending, q.Status));
     }
 
+    [Fact]
+    public async Task Conflict_IsPreserved_AndExplicitLocalOverrideUsesLatestServerVersion()
+    {
+        var invoice = await CreateInvoiceAndPaymentAsync();
+        var api = new FakeBusinessSyncApi { ConflictNextInvoice = true };
+        var sync = CreateSync(api, new FakeTokenStore("token"));
+
+        Assert.False(await sync.SyncNowAsync());
+        var conflict = Assert.Single(await sync.GetConflictsAsync());
+        Assert.Equal("Invoice", conflict.EntityType);
+        Assert.Equal(4, conflict.ServerVersion);
+        Assert.Contains("server", conflict.ServerPayloadJson, StringComparison.OrdinalIgnoreCase);
+
+        Assert.True(await sync.RetryConflictUsingLocalAsync(conflict.QueueId));
+        Assert.True(await sync.SyncNowAsync());
+        var retried = api.LastRequest!.Items.Single(item => item.EntityId == invoice.LocalId);
+        Assert.Equal(4, retried.ExpectedServerVersion);
+        Assert.Empty(await sync.GetConflictsAsync());
+    }
+
     private async Task<InvoiceModel> CreateInvoiceAndPaymentAsync()
     {
         var customerId = Guid.NewGuid();
@@ -145,6 +165,7 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
         public BusinessSyncBatchRequest? LastRequest { get; private set; }
         public bool NetworkFailure { get; init; }
         public bool ThrowUnexpectedly { get; init; }
+        public bool ConflictNextInvoice { get; set; }
 
         public Task<ApiCallResult<BusinessSyncBatchResponse>> PushAsync(
             BusinessSyncBatchRequest request, string accessToken, CancellationToken cancellationToken = default)
@@ -155,13 +176,20 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
             if (NetworkFailure)
                 return Task.FromResult(ApiCallResult<BusinessSyncBatchResponse>.Fail(0, "offline", network: true));
             var now = DateTime.UtcNow;
+            var conflictInvoice = ConflictNextInvoice;
+            ConflictNextInvoice = false;
             return Task.FromResult(ApiCallResult<BusinessSyncBatchResponse>.Ok(new BusinessSyncBatchResponse
             {
                 ServerTimeUtc = now,
                 Items = request.Items.Select(i => new BusinessSyncItemResult
                 {
                     QueueId = i.QueueId, EntityId = i.EntityId, EntityType = i.EntityType,
-                    Success = true, ServerUpdatedAtUtc = now
+                    Success = !(conflictInvoice && i.EntityType == "Invoice"),
+                    Conflict = conflictInvoice && i.EntityType == "Invoice",
+                    Error = conflictInvoice && i.EntityType == "Invoice" ? "server conflict" : null,
+                    ServerPayloadJson = conflictInvoice && i.EntityType == "Invoice" ? "{\"source\":\"server\"}" : null,
+                    ServerVersion = conflictInvoice && i.EntityType == "Invoice" ? 4 : 5,
+                    ServerUpdatedAtUtc = now
                 }).ToList()
             }, 200));
         }
@@ -183,8 +211,10 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
         public Task SetAccessTokenAsync(string token, DateTime expiresUtc) => Task.CompletedTask;
         public Task SetRefreshTokenAsync(string token) => Task.CompletedTask;
         public Task SetSessionIdAsync(Guid sessionId) => Task.CompletedTask;
+        public Task SetPasswordRecoveryKeyAsync(string recoveryKey) => Task.CompletedTask;
         public Task<string?> GetAccessTokenAsync() => Task.FromResult(accessToken);
         public Task<string?> GetRefreshTokenAsync() => Task.FromResult<string?>(null);
+        public Task<string?> GetPasswordRecoveryKeyAsync() => Task.FromResult<string?>(null);
         public Task<DateTime?> GetAccessTokenExpiryAsync() => Task.FromResult<DateTime?>(null);
         public Task<Guid?> GetSessionIdAsync() => Task.FromResult<Guid?>(null);
         public Task ClearAsync() => Task.CompletedTask;
@@ -203,6 +233,8 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
             => Task.FromResult(ApiCallResult<LoginResponse>.Fail(500, "unused"));
         public Task<ApiCallResult<LoginResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(ApiCallResult<LoginResponse>.Fail(500, "unused"));
+        public Task<ApiCallResult<PasswordResetResponse>> ResetPasswordAsync(PasswordResetRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(ApiCallResult<PasswordResetResponse>.Fail(500, "unused"));
         public Task<ApiCallResult> LogoutAsync(LogoutRequest request, string accessToken, CancellationToken cancellationToken = default)
             => Task.FromResult(ApiCallResult.Fail(500, "unused"));
         public Task<ApiCallResult<RegisterResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)

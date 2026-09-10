@@ -67,6 +67,26 @@ public partial class SyncCenterPage : ContentPage
         await BuildContentAsync();
     }
 
+    private async Task UseLocalVersionAsync(SyncConflictModel conflict)
+    {
+        var confirmed = await DisplayAlert(
+            "Resolve sync conflict",
+            $"Replace the newer server {conflict.EntityType} with this device's local version?",
+            "Use Local Version",
+            "Cancel");
+        if (!confirmed)
+            return;
+
+        if (!await _svc.RetryConflictUsingLocalAsync(conflict.QueueId))
+        {
+            await DisplayAlert("Conflict", "The conflict could not be prepared for retry.", "OK");
+            return;
+        }
+
+        await _svc.SyncNowAsync();
+        await BuildContentAsync();
+    }
+
     private async Task BuildContentAsync()
     {
         var connected = _conn.IsOnline;
@@ -132,9 +152,40 @@ public partial class SyncCenterPage : ContentPage
 
         var queueCard = new Border { Style = (Style)Resources["AppCard"] };
         var qVsl = new VerticalStackLayout { Spacing = 12 };
-        qVsl.Children.Add(new Label { Text = "Recent Activity", FontSize = 14, FontAttributes = FontAttributes.Bold });
+        qVsl.Children.Add(new Label { Text = "Conflicts requiring review", FontSize = 14, FontAttributes = FontAttributes.Bold });
         qVsl.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
-        qVsl.Children.Add(new Label { Text = "No recent sync activity.", FontSize = 13, TextColor = Color.FromArgb("#64748B") });
+        var conflicts = await _svc.GetConflictsAsync();
+        if (conflicts.Count == 0)
+        {
+            qVsl.Children.Add(new Label { Text = "No unresolved sync conflicts.", FontSize = 13, TextColor = Color.FromArgb("#64748B") });
+        }
+        else
+        {
+            foreach (var conflict in conflicts)
+            {
+                var row = new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitionCollection(
+                        new ColumnDefinition(GridLength.Star),
+                        new ColumnDefinition(GridLength.Auto)),
+                    ColumnSpacing = 12
+                };
+                row.Add(new VerticalStackLayout
+                {
+                    Spacing = 2,
+                    Children =
+                    {
+                        new Label { Text = $"{conflict.EntityType} conflict", FontSize = 13, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = conflict.Error, FontSize = 11, TextColor = Color.FromArgb("#B45309") },
+                        new Label { Text = $"Server version {conflict.ServerVersion} • {conflict.DetectedAtUtc.ToLocalTime():dd MMM HH:mm}", FontSize = 10, TextColor = Color.FromArgb("#64748B") }
+                    }
+                }, 0, 0);
+                var useLocal = new Button { Text = "Use Local", Style = (Style)Resources["SmallSecondaryButton"] };
+                useLocal.Clicked += async (_, _) => await UseLocalVersionAsync(conflict);
+                row.Add(useLocal, 1, 0);
+                qVsl.Children.Add(row);
+            }
+        }
         queueCard.Content = qVsl;
 
         SyncContent.Children.Add(connectivityCard);

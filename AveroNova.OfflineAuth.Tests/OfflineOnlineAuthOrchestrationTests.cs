@@ -232,9 +232,10 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
         var request = CreateRegisterRequest();
         Assert.True((await _auth.RegisterAsync(request)).Success);
 
-        var (resetOk, resetError) = await _auth.ResetPasswordAsync(request.Email, "NewPassword1!");
+        var (resetOk, resetError) = await _auth.ResetPasswordAsync(
+            request.Email, request.CompanyEmail, "NewPassword1!", "NewPassword1!");
         Assert.False(resetOk);
-        Assert.Contains("secure online verification", resetError, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Connect to the internet", resetError, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(request.Password, await _pendingSecrets.GetPendingPasswordAsync(request.ClientUserId!.Value));
 
         var oldLogin = await _auth.LoginAsync(request.Email, request.Password);
@@ -247,10 +248,11 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     [Fact]
     public async Task OfflineResetPassword_DoesNotRevealWhetherAccountExists()
     {
-        var (ok, error) = await _auth.ResetPasswordAsync("missing@test.local", "NewPassword1!");
+        var (ok, error) = await _auth.ResetPasswordAsync(
+            "missing@test.local", "missing-company@test.local", "NewPassword1!", "NewPassword1!");
 
         Assert.False(ok);
-        Assert.Contains("secure online verification", error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("trusted", error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -315,6 +317,37 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
         Assert.True(_auth.IsAuthenticated);
         Assert.Equal(0, _api.RefreshCalls);
         Assert.Equal(0, _api.LoginCalls);
+    }
+
+    [Fact]
+    public async Task TryAutoLogin_AfterFifteenMinutesInactivity_IsRejected()
+    {
+        await SeedRegisteredInstallationAsync();
+        await SeedLocalSessionFromLoginAsync(CreateLoginResponse("owner@test.local"));
+        await using (var db = await _dbFactory.CreateDbContextAsync())
+        {
+            var session = await db.Sessions.SingleAsync();
+            session.LastValidatedAtUtc = DateTime.UtcNow - OfflineSessionDefaults.InactivityTimeout - TimeSpan.FromSeconds(1);
+            await db.SaveChangesAsync();
+        }
+        _connectivity.SetOnline(false);
+
+        Assert.False(await _auth.TryAutoLoginAsync());
+        Assert.False(_auth.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task TryAutoLogin_ServerRejectsRefresh_ClearsLocalSession()
+    {
+        await SeedRegisteredInstallationAsync();
+        await SeedLocalSessionFromLoginAsync(CreateLoginResponse("owner@test.local"));
+        await _tokens.SetAccessTokenAsync("expired", DateTime.UtcNow.AddMinutes(-5));
+        await _tokens.SetRefreshTokenAsync("revoked");
+        _api.RefreshResult = ApiCallResult<LoginResponse>.Fail(401, "Unauthorized");
+
+        Assert.False(await _auth.TryAutoLoginAsync());
+        Assert.False(_auth.IsAuthenticated);
+        Assert.Null(await _sessions.LoadValidSessionAsync(_installation.InstallationId));
     }
 
     [Fact]
@@ -651,8 +684,10 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
         }
         public Task SetRefreshTokenAsync(string token) { _bag["r"] = token; return Task.CompletedTask; }
         public Task SetSessionIdAsync(Guid sessionId) { _bag["s"] = sessionId.ToString("D"); return Task.CompletedTask; }
+        public Task SetPasswordRecoveryKeyAsync(string recoveryKey) { _bag["recovery"] = recoveryKey; return Task.CompletedTask; }
         public Task<string?> GetAccessTokenAsync() => Task.FromResult(_bag.TryGetValue("a", out var v) ? v : null);
         public Task<string?> GetRefreshTokenAsync() => Task.FromResult(_bag.TryGetValue("r", out var v) ? v : null);
+        public Task<string?> GetPasswordRecoveryKeyAsync() => Task.FromResult(_bag.TryGetValue("recovery", out var v) ? v : null);
         public Task<DateTime?> GetAccessTokenExpiryAsync()
             => Task.FromResult(_bag.TryGetValue("e", out var raw) && DateTime.TryParse(raw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt)
                 ? dt.ToUniversalTime() : (DateTime?)null);
@@ -721,6 +756,8 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
         { LoginCalls++; return Task.FromResult(LoginResult); }
         public Task<ApiCallResult<LoginResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
         { RefreshCalls++; return Task.FromResult(RefreshResult); }
+        public Task<ApiCallResult<PasswordResetResponse>> ResetPasswordAsync(PasswordResetRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(ApiCallResult<PasswordResetResponse>.Fail(500, "unused"));
         public Task<ApiCallResult> LogoutAsync(LogoutRequest request, string accessToken, CancellationToken cancellationToken = default)
         { LogoutCalls++; return Task.FromResult(LogoutResult); }
         public Task<ApiCallResult<RegisterResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)

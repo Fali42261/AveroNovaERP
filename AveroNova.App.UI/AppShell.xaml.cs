@@ -29,9 +29,7 @@ public partial class AppShell : Shell
     private static void RegisterRoutes()
     {
         Routing.RegisterRoute(AppRoutes.Register, typeof(RegisterPage));
-        Routing.RegisterRoute(AppRoutes.ForgotPassword, typeof(ForgotPasswordPage));
         Routing.RegisterRoute(AppRoutes.ResetPassword, typeof(ResetPasswordPage));
-        Routing.RegisterRoute(AppRoutes.OtpVerify, typeof(OtpVerifyPage));
 
         Routing.RegisterRoute(AppRoutes.CompanyAdd, typeof(CompanyFormPage));
         Routing.RegisterRoute(AppRoutes.CompanyEdit, typeof(CompanyFormPage));

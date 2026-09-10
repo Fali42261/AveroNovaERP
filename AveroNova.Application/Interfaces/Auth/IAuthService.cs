@@ -9,6 +9,7 @@ public interface IAuthService
     Task<ApiResult<RegisterResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult<LoginResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult<LoginResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default);
+    Task<ApiResult<PasswordResetResponse>> ResetPasswordAsync(PasswordResetRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult> LogoutAsync(ClaimsPrincipal principal, LogoutRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult<MeResponse>> GetMeAsync(ClaimsPrincipal principal, CancellationToken cancellationToken = default);
 }

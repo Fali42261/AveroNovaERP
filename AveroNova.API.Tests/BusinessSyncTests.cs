@@ -85,7 +85,7 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Push_RejectsOverpayment_AndRollsBackBatch()
+    public async Task Push_IsolatesInvalidItem_AndCommitsIndependentRecords()
     {
         var (client, companyId) = await AuthenticatedClientAsync("overpay");
         var invoiceId = Guid.NewGuid();
@@ -99,11 +99,12 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
             ]
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("exceeds", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        Assert.False(await db.SyncQueueItems.AnyAsync(x => x.CompanyId == companyId && x.EntityId == invoiceId));
+        Assert.True(await db.SyncQueueItems.AnyAsync(x => x.CompanyId == companyId && x.EntityId == invoiceId));
+        Assert.False(await db.SyncQueueItems.AnyAsync(x => x.CompanyId == companyId && x.EntityType == "Payment"));
     }
 
     [Fact]
@@ -115,6 +116,46 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
             Items = [InvoiceItem(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 100m)]
         });
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Push_StaleExpectedVersion_ReturnsConflictAndRetainsServerCopy()
+    {
+        var (client, companyId) = await AuthenticatedClientAsync("conflict");
+        var invoiceId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+
+        var first = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [InvoiceItem(companyId, invoiceId, customerId, 100m)]
+        });
+        var firstBody = await first.Content.ReadFromJsonAsync<ApiEnvelope<BusinessSyncBatchResponse>>(_json);
+        var firstVersion = firstBody!.Data!.Items.Single().ServerVersion;
+        Assert.True(firstVersion > 0);
+
+        var currentUpdate = InvoiceItem(companyId, invoiceId, customerId, 120m);
+        currentUpdate.ExpectedServerVersion = firstVersion;
+        var current = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [currentUpdate]
+        });
+        var currentBody = await current.Content.ReadFromJsonAsync<ApiEnvelope<BusinessSyncBatchResponse>>(_json);
+        var currentVersion = currentBody!.Data!.Items.Single().ServerVersion;
+        Assert.True(currentVersion > firstVersion);
+
+        var staleUpdate = InvoiceItem(companyId, invoiceId, customerId, 90m);
+        staleUpdate.ExpectedServerVersion = firstVersion;
+        var stale = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [staleUpdate]
+        });
+        Assert.Equal(HttpStatusCode.OK, stale.StatusCode);
+        var staleBody = await stale.Content.ReadFromJsonAsync<ApiEnvelope<BusinessSyncBatchResponse>>(_json);
+        var conflict = staleBody!.Data!.Items.Single();
+        Assert.False(conflict.Success);
+        Assert.True(conflict.Conflict);
+        Assert.Equal(currentVersion, conflict.ServerVersion);
+        Assert.Contains("120", conflict.ServerPayloadJson);
     }
 
     [Fact]
@@ -143,7 +184,8 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         {
             Items = [PaymentItem(companyId, Guid.NewGuid(), purchaseId, supplierId, 51m, isSupplier: true)]
         });
-        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+        Assert.Contains("exceeds", await rejected.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -173,13 +215,15 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         {
             Items = [PurchaseReturnItem(companyId, Guid.NewGuid(), purchaseId, supplierId, productId, 4, 60m)]
         });
-        Assert.Equal(HttpStatusCode.BadRequest, overReturn.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, overReturn.StatusCode);
+        Assert.Contains("exceeds", await overReturn.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
         var overPayment = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
         {
             Items = [PaymentItem(companyId, Guid.NewGuid(), purchaseId, supplierId, 61m, isSupplier: true)]
         });
-        Assert.Equal(HttpStatusCode.BadRequest, overPayment.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, overPayment.StatusCode);
+        Assert.Contains("exceeds", await overPayment.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
         var deleted = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
         {

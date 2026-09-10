@@ -13,13 +13,17 @@ using Microsoft.Extensions.Logging;
 namespace AveroNova.App.UI.Services;
 
 /// <summary>
-/// Sync transport for registration plus invoice/payment business records.
+/// Production sync transport for registration and all offline ERP records.
 /// Business changes are coalesced by stable entity ID and acknowledged by the server.
 /// </summary>
 public sealed class RegistrationSyncService : ISyncService
 {
     private static readonly string[] RegistrationEntityTypes = ["User", "Company", "UserCompany", "Subscription"];
-    private static readonly string[] BusinessEntityTypes = ["Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"];
+    private static readonly string[] BusinessEntityTypes = [
+        "AppSettings", "Company", "CompanyUser", "Customer", "Expense", "Invoice",
+        "Notification", "Payment", "Product", "Purchase", "PurchaseReturn", "Role",
+        "SalesReturn", "StockMovement", "Subscription", "SubscriptionPayment", "Supplier"
+    ];
 
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAuthApiClient _authApi;
@@ -83,7 +87,8 @@ public sealed class RegistrationSyncService : ISyncService
 
             await using var db = await _dbFactory.CreateDbContextAsync();
             var pending = await db.SyncQueue
-                .Where(q => q.Status == (int)RecordSyncStatus.Pending || q.Status == (int)RecordSyncStatus.Failed)
+                .Where(q => q.Status == (int)RecordSyncStatus.Pending
+                            || (q.Status == (int)RecordSyncStatus.Failed && q.ConflictPayloadJson == null))
                 .OrderBy(q => q.CreatedAt)
                 .ToListAsync();
 
@@ -94,9 +99,8 @@ public sealed class RegistrationSyncService : ISyncService
                 return true;
             }
 
-            var registrationItems = pending
-                .Where(p => RegistrationEntityTypes.Contains(p.EntityType, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+            var registrationItems = pending.Where(IsRegistrationQueueItem).ToList();
+            var registrationQueueIds = registrationItems.Select(item => item.Id).ToHashSet();
 
             var succeeded = 0;
             var failed = 0;
@@ -115,7 +119,8 @@ public sealed class RegistrationSyncService : ISyncService
             }
 
             var businessItems = pending
-                .Where(p => BusinessEntityTypes.Contains(p.EntityType, StringComparer.OrdinalIgnoreCase)
+                .Where(p => !registrationQueueIds.Contains(p.Id)
+                            && BusinessEntityTypes.Contains(p.EntityType, StringComparer.OrdinalIgnoreCase)
                             && p.CompanyId == _session.CurrentCompanyId)
                 .ToList();
             if (businessItems.Count > 0)
@@ -165,6 +170,77 @@ public sealed class RegistrationSyncService : ISyncService
     }
 
     public Task<bool> RetryFailedAsync() => SyncNowAsync();
+
+    public async Task<List<SyncConflictModel>> GetConflictsAsync()
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var rows = await db.SyncQueue.AsNoTracking()
+            .Where(item => item.Status == (int)RecordSyncStatus.Failed
+                           && item.ConflictPayloadJson != null)
+            .ToListAsync();
+        return rows
+            .GroupBy(item => new { item.EntityType, item.EntityId })
+            .Select(group => group.OrderByDescending(item => item.LastAttemptAt ?? item.CreatedAt).First())
+            .OrderByDescending(item => item.LastAttemptAt ?? item.CreatedAt)
+            .Select(item => new SyncConflictModel
+            {
+                QueueId = item.Id,
+                EntityType = item.EntityType,
+                EntityId = item.EntityId,
+                LocalPayloadJson = item.PayloadJson,
+                ServerPayloadJson = item.ConflictPayloadJson,
+                ServerVersion = item.ServerVersion,
+                Error = item.Error ?? "The server record changed on another device.",
+                DetectedAtUtc = item.LastAttemptAt ?? item.CreatedAt
+            })
+            .ToList();
+    }
+
+    public async Task<bool> RetryConflictUsingLocalAsync(Guid queueId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var selected = await db.SyncQueue.FirstOrDefaultAsync(item => item.Id == queueId);
+        if (selected is null || selected.ConflictPayloadJson is null || selected.ServerVersion <= 0)
+            return false;
+        if (selected.CompanyId != _session.CurrentCompanyId)
+            return false;
+
+        var group = await db.SyncQueue
+            .Where(item => item.EntityType == selected.EntityType && item.EntityId == selected.EntityId)
+            .ToListAsync();
+        foreach (var item in group)
+        {
+            item.ExpectedServerVersion = selected.ServerVersion;
+            item.ServerVersion = selected.ServerVersion;
+            item.Status = (int)RecordSyncStatus.Pending;
+            item.Error = null;
+            item.ConflictPayloadJson = null;
+        }
+        await db.SaveChangesAsync();
+        await RefreshCountsAsync();
+        return true;
+    }
+
+    private static bool IsRegistrationQueueItem(LocalSyncQueueEntity item)
+    {
+        if (!RegistrationEntityTypes.Contains(item.EntityType, StringComparer.OrdinalIgnoreCase)
+            || string.IsNullOrWhiteSpace(item.PayloadJson))
+            return false;
+
+        try
+        {
+            var payload = JsonSerializer.Deserialize<OfflineRegistrationPayload>(item.PayloadJson);
+            return payload is not null
+                   && payload.ClientUserId != Guid.Empty
+                   && payload.ClientCompanyId != Guid.Empty
+                   && payload.ClientUserCompanyId != Guid.Empty
+                   && payload.ClientSubscriptionId != Guid.Empty;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 
     public async Task<List<SyncHistoryModel>> GetHistoryAsync()
     {
@@ -284,6 +360,8 @@ public sealed class RegistrationSyncService : ISyncService
         }
 
         await _pendingSecrets.ClearPendingPasswordAsync(meta.ClientUserId);
+        if (_tokens is not null && !string.IsNullOrWhiteSpace(result.Data.RecoveryKey))
+            await _tokens.SetPasswordRecoveryKeyAsync(result.Data.RecoveryKey);
         _ = _session; // auth context available for later ERP sync modules
         return true;
     }
@@ -341,7 +419,8 @@ public sealed class RegistrationSyncService : ISyncService
                 CompanyId = item.CompanyId!.Value,
                 Operation = (SyncOperation)item.Operation,
                 PayloadJson = await CurrentPayloadAsync(db, item),
-                ClientUpdatedAtUtc = item.CreatedAt
+                ClientUpdatedAtUtc = item.CreatedAt,
+                ExpectedServerVersion = item.ExpectedServerVersion
             });
         }
 
@@ -363,6 +442,19 @@ public sealed class RegistrationSyncService : ISyncService
             var newest = group.OrderByDescending(i => i.CreatedAt).ThenByDescending(i => i.Id).First();
             if (!acknowledged.TryGetValue(newest.Id, out var acknowledgement) || !acknowledgement.Success)
             {
+                if (acknowledgement?.Conflict == true)
+                {
+                    foreach (var item in group)
+                    {
+                        item.Status = (int)RecordSyncStatus.Failed;
+                        item.Error = acknowledgement.Error ?? "Sync conflict requires review.";
+                        item.ConflictPayloadJson = acknowledgement.ServerPayloadJson;
+                        item.ServerVersion = acknowledgement.ServerVersion;
+                        item.LastAttemptAt = now;
+                    }
+                    failed += group.Count();
+                    continue;
+                }
                 MarkRetriable(
                     group.ToList(),
                     acknowledgement?.Error ?? "Server did not acknowledge the business record.",
@@ -377,6 +469,9 @@ public sealed class RegistrationSyncService : ISyncService
                 item.Error = null;
                 item.SyncedAt = now;
                 item.LastAttemptAt = now;
+                item.ExpectedServerVersion = acknowledgement.ServerVersion;
+                item.ServerVersion = acknowledgement.ServerVersion;
+                item.ConflictPayloadJson = null;
             }
             await MarkLocalRecordSyncedAsync(db, newest, now);
             succeeded += group.Count();

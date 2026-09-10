@@ -8,6 +8,7 @@ public sealed class LoginRequest
     public string DeviceId { get; set; } = string.Empty;
     public string DeviceName { get; set; } = string.Empty;
     public string Platform { get; set; } = string.Empty;
+    public Guid? InstallationId { get; set; }
 }
 
 public sealed class RefreshRequest
@@ -21,6 +22,22 @@ public sealed class LogoutRequest
 {
     public Guid? SessionId { get; set; }
     public string? RefreshToken { get; set; }
+}
+
+/// <summary>
+/// Password reset without OTP. The reset is allowed only from an already trusted
+/// installation that still holds its recovery key. Passwords are sent
+/// only to this dedicated endpoint and are never placed in the sync queue.
+/// </summary>
+public sealed class PasswordResetRequest
+{
+    public string UserEmail { get; set; } = string.Empty;
+    public string CompanyEmail { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+    public Guid InstallationId { get; set; }
+    public string DeviceId { get; set; } = string.Empty;
+    public string RecoveryKey { get; set; } = string.Empty;
 }
 
 public sealed class RegisterRequest

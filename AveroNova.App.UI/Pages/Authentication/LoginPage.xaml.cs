@@ -146,7 +146,7 @@ public partial class LoginPage : ContentPage
         => await Shell.Current.GoToAsync(AppRoutes.Register);
 
     private async void OnResetPasswordTapped(object? sender, TappedEventArgs e)
-        => await Shell.Current.GoToAsync(AppRoutes.ForgotPassword);
+        => await Shell.Current.GoToAsync(AppRoutes.ResetPassword);
 
     private static void ShowFieldError(Label label, string message)
     {

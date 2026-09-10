@@ -9,7 +9,7 @@ namespace AveroNova.App.UI.Services.Interfaces;
 //  OFFLINE: Inventory operations are persisted locally and added
 //           to the pending synchronization queue.
 //
-//  TODO: Implement inventory synchronization during backend phase.
+//  Local-first implementations queue inventory changes for server synchronization.
 // ═══════════════════════════════════════════════════════════════
 
 public interface IInventoryService

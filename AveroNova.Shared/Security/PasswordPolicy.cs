@@ -2,11 +2,11 @@ namespace AveroNova.Shared.Security;
 
 public static class PasswordPolicy
 {
-    public const string RequirementMessage = "Password must be at least 6 characters and include uppercase, lowercase, number, and special character.";
+    public const string RequirementMessage = "Password must be 10 to 128 characters and include uppercase, lowercase, number, and special character.";
 
     public static bool IsStrong(string? password)
         => !string.IsNullOrWhiteSpace(password)
-           && password.Length >= 6
+           && password.Length is >= 10 and <= 128
            && password.Any(char.IsUpper)
            && password.Any(char.IsLower)
            && password.Any(char.IsDigit)

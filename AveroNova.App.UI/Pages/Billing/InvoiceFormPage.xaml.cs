@@ -11,7 +11,6 @@ namespace AveroNova.App.UI.Pages.Billing;
 //           → Pending Sync Queue
 //           → SyncService → API → Server Database
 //
-// TODO: Implement during backend phase.
 // ==================================================
 
 [QueryProperty(nameof(EditId), "id")]
@@ -86,7 +85,6 @@ public partial class InvoiceFormPage : ContentPage
             var prodPicker = new Picker { Title = "Product", BackgroundColor = Colors.Transparent };
             prodPicker.ItemsSource = _productList.Select(p => p.Name).ToList();
             var pi = _productList.FindIndex(p =>  p.LocalId == item.ProductId);
-            //p.ProductId == item.ProductId ||
             if (pi >= 0) prodPicker.SelectedIndex = pi;
             prodPicker.SelectedIndexChanged += (_, _) =>
             {
@@ -167,10 +165,4 @@ public partial class InvoiceFormPage : ContentPage
 
     private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
-}
-
-// Helper extension to resolve product by LocalId
-file static class InvoiceFormExtensions
-{
-    public static Guid ProductId(this ProductModel p) => p.LocalId;
 }

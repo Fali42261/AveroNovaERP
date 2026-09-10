@@ -9,7 +9,7 @@
     <!--
     ONLINE:  Inventory data loaded from API.
     OFFLINE: Inventory data served from local database.
-    TODO: Connect IInventoryService to API + local DB during backend phase.
+    Inventory uses the local database and queues writes for authenticated server sync.
     -->
 
     <Grid RowDefinitions="Auto,Auto,*">

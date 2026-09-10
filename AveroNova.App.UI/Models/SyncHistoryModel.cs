@@ -9,3 +9,15 @@ public class SyncHistoryModel
     public string Message { get; set; } = string.Empty;
     public string Module { get; set; } = string.Empty;
 }
+
+public sealed class SyncConflictModel
+{
+    public Guid QueueId { get; set; }
+    public string EntityType { get; set; } = string.Empty;
+    public Guid EntityId { get; set; }
+    public string? LocalPayloadJson { get; set; }
+    public string? ServerPayloadJson { get; set; }
+    public long ServerVersion { get; set; }
+    public string Error { get; set; } = string.Empty;
+    public DateTime DetectedAtUtc { get; set; }
+}

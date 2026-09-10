@@ -10,6 +10,7 @@ using AveroNova.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AveroNova.API.Controllers;
 
@@ -19,11 +20,20 @@ namespace AveroNova.API.Controllers;
 public sealed class BusinessSyncController : ControllerBase
 {
     private static readonly HashSet<string> SupportedTypes =
-        new(["Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"], StringComparer.OrdinalIgnoreCase);
+        new([
+            "AppSettings", "Company", "CompanyUser", "Customer", "Expense", "Invoice",
+            "Notification", "Payment", "Product", "Purchase", "PurchaseReturn", "Role",
+            "SalesReturn", "StockMovement", "Subscription", "SubscriptionPayment", "Supplier"
+        ], StringComparer.OrdinalIgnoreCase);
 
     private readonly AppDbContext _db;
+    private readonly ILogger<BusinessSyncController> _logger;
 
-    public BusinessSyncController(AppDbContext db) => _db = db;
+    public BusinessSyncController(AppDbContext db, ILogger<BusinessSyncController> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
 
     [HttpPost("push")]
     public async Task<IActionResult> Push(
@@ -47,44 +57,87 @@ public sealed class BusinessSyncController : ControllerBase
         if (request.Items.Any(i => !Enum.IsDefined(i.Operation)))
             return BadRequest(new { success = false, error = "Sync batch contains an invalid operation." });
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
-        try
-        {
-            var now = DateTime.UtcNow;
-            var results = new List<BusinessSyncItemResult>(request.Items.Count);
-            var ordered = request.Items
+        var now = DateTime.UtcNow;
+        var results = new List<BusinessSyncItemResult>(request.Items.Count);
+        var ordered = request.Items
                 .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
                               || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 0
                     : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 2 : 1)
                 .ThenBy(i => i.ClientUpdatedAtUtc)
                 .ToList();
 
-            foreach (var item in ordered)
+        foreach (var item in ordered)
+        {
+            await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+            try
             {
                 await ApplyAsync(item, now, cancellationToken);
+                await _db.SaveChangesAsync(cancellationToken);
+                var record = await FindRecordAsync(item.CompanyId, item.EntityType, item.EntityId, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
                 results.Add(new BusinessSyncItemResult
                 {
                     QueueId = item.QueueId,
                     EntityId = item.EntityId,
                     EntityType = item.EntityType,
                     Success = true,
+                    ServerUpdatedAtUtc = now,
+                    ServerVersion = record?.SyncVersion ?? 0
+                });
+            }
+            catch (BusinessSyncConflictException ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                _db.ChangeTracker.Clear();
+                results.Add(new BusinessSyncItemResult
+                {
+                    QueueId = item.QueueId,
+                    EntityId = item.EntityId,
+                    EntityType = item.EntityType,
+                    Success = false,
+                    Conflict = true,
+                    Error = "The server record changed after this device last synchronized.",
+                    ServerUpdatedAtUtc = ex.ServerUpdatedAtUtc,
+                    ServerVersion = ex.ServerVersion,
+                    ServerPayloadJson = ex.ServerPayloadJson
+                });
+            }
+            catch (BusinessSyncValidationException ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                _db.ChangeTracker.Clear();
+                results.Add(new BusinessSyncItemResult
+                {
+                    QueueId = item.QueueId,
+                    EntityId = item.EntityId,
+                    EntityType = item.EntityType,
+                    Success = false,
+                    Error = ex.Message,
                     ServerUpdatedAtUtc = now
                 });
             }
-
-            await _db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-            return Ok(new
+            catch (Exception ex)
             {
-                success = true,
-                data = new BusinessSyncBatchResponse { ServerTimeUtc = now, Items = results }
-            });
+                await transaction.RollbackAsync(cancellationToken);
+                _db.ChangeTracker.Clear();
+                _logger.LogError(ex, "Business sync failed for {EntityType}/{EntityId}.", item.EntityType, item.EntityId);
+                results.Add(new BusinessSyncItemResult
+                {
+                    QueueId = item.QueueId,
+                    EntityId = item.EntityId,
+                    EntityType = item.EntityType,
+                    Success = false,
+                    Error = "The record could not be synchronized.",
+                    ServerUpdatedAtUtc = now
+                });
+            }
         }
-        catch (BusinessSyncValidationException ex)
+
+        return Ok(new
         {
-            await transaction.RollbackAsync(cancellationToken);
-            return BadRequest(new { success = false, error = ex.Message });
-        }
+            success = true,
+            data = new BusinessSyncBatchResponse { ServerTimeUtc = now, Items = results }
+        });
     }
 
     private async Task ApplyAsync(BusinessSyncItemRequest item, DateTime now, CancellationToken cancellationToken)
@@ -95,6 +148,11 @@ public sealed class BusinessSyncController : ControllerBase
                         && x.EntityId == item.EntityId)
             .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (record is not null
+            && item.ExpectedServerVersion > 0
+            && item.ExpectedServerVersion != record.SyncVersion)
+            throw new BusinessSyncConflictException(record);
 
         if (item.Operation == SyncOperation.Delete)
         {
@@ -117,13 +175,20 @@ public sealed class BusinessSyncController : ControllerBase
             Guid? affectedPurchase = record is not null && item.EntityType.Equals("PurchaseReturn", StringComparison.OrdinalIgnoreCase)
                 ? ReadGuid(record.PayloadJson, "PurchaseId") : null;
 
-            if (record is not null)
+            record ??= new SyncQueueItem
             {
-                record.IsDeleted = true;
-                record.PayloadJson = null;
-                MarkSynced(record, item.Operation, now);
-                await _db.SaveChangesAsync(cancellationToken);
-            }
+                Id = Guid.NewGuid(),
+                EntityType = item.EntityType,
+                EntityId = item.EntityId,
+                CompanyId = item.CompanyId,
+                CreatedAt = now
+            };
+            if (_db.Entry(record).State == EntityState.Detached)
+                _db.SyncQueueItems.Add(record);
+            record.IsDeleted = true;
+            record.PayloadJson = null;
+            MarkSynced(record, item.Operation, now);
+            await _db.SaveChangesAsync(cancellationToken);
             if (affectedInvoice is Guid invoiceId)
                 await ReconcileDocumentAsync(item.CompanyId, affectedType, invoiceId, now, cancellationToken);
             if (affectedPurchase is Guid purchaseId)
@@ -460,4 +525,18 @@ public sealed class BusinessSyncController : ControllerBase
         => Guid.TryParse(user.FindFirstValue(JwtTokenService.CompanyIdClaim), out companyId);
 
     private sealed class BusinessSyncValidationException(string message) : Exception(message);
+
+    private sealed class BusinessSyncConflictException : Exception
+    {
+        public BusinessSyncConflictException(SyncQueueItem record)
+        {
+            ServerVersion = record.SyncVersion;
+            ServerUpdatedAtUtc = record.UpdatedAt ?? record.CreatedAt;
+            ServerPayloadJson = record.PayloadJson;
+        }
+
+        public long ServerVersion { get; }
+        public DateTime ServerUpdatedAtUtc { get; }
+        public string? ServerPayloadJson { get; }
+    }
 }

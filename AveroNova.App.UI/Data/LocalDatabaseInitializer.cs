@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 15;
+    public const int CurrentSchemaVersion = 16;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -118,6 +118,9 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 
         await TryAddColumnAsync("LocalSyncQueue", "SyncedAt", "TEXT NULL", cancellationToken);
         await TryAddColumnAsync("LocalSyncQueue", "PayloadJson", "TEXT NULL", cancellationToken);
+        await TryAddColumnAsync("LocalSyncQueue", "ExpectedServerVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await TryAddColumnAsync("LocalSyncQueue", "ServerVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await TryAddColumnAsync("LocalSyncQueue", "ConflictPayloadJson", "TEXT NULL", cancellationToken);
         await TryAddColumnAsync("LocalSubscriptions", "PlanId", "TEXT NOT NULL DEFAULT 'starter'", cancellationToken);
         await TryAddColumnAsync("LocalSubscriptions", "BillingCycle", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await TryAddColumnAsync("LocalSubscriptions", "Price", "TEXT NOT NULL DEFAULT '0'", cancellationToken);

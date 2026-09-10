@@ -20,6 +20,7 @@ public partial class BillingListPage : ContentPage
 
     private void BuildFilterTabs()
     {
+        FilterTabs.Children.Clear();
         var statuses = new[] { "All", "Draft", "Sent", "Partial", "Paid", "Overdue", "Cancelled" };
         foreach (var st in statuses)
         {
