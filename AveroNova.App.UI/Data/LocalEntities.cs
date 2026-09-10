@@ -374,6 +374,20 @@ public class LocalPaymentEntity
     public string? SyncError { get; set; }
 }
 
+public class LocalNotificationEntity
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid CompanyId { get; set; }
+    public Guid? UserId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public int Category { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsRead { get; set; }
+    public DateTime? ReadAtUtc { get; set; }
+    public string? ActionRoute { get; set; }
+}
+
 public class LocalSyncQueueEntity
 {
     public Guid Id { get; set; }

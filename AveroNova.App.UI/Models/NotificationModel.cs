@@ -3,11 +3,14 @@ namespace AveroNova.App.UI.Models;
 public class NotificationModel
 {
     public Guid                 Id          { get; set; } = Guid.NewGuid();
+    public Guid                 CompanyId   { get; set; }
+    public Guid?                UserId      { get; set; }
     public string               Title       { get; set; } = string.Empty;
     public string               Message     { get; set; } = string.Empty;
     public NotificationCategory Category    { get; set; }
     public DateTime             CreatedAt   { get; set; } = DateTime.UtcNow;
     public bool                 IsRead      { get; set; }
+    public DateTime?            ReadAt      { get; set; }
     public string?              ActionRoute { get; set; }
 
     public string TimeAgo

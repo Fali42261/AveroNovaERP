@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 14;
+    public const int CurrentSchemaVersion = 15;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -382,6 +382,12 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
               "LastSyncedAtUtc" TEXT NULL, "SyncError" TEXT NULL);
             """, cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "LocalNotifications" (
+              "Id" TEXT NOT NULL CONSTRAINT "PK_LocalNotifications" PRIMARY KEY, "CompanyId" TEXT NOT NULL,
+              "UserId" TEXT NULL, "Title" TEXT NOT NULL, "Message" TEXT NOT NULL, "Category" INTEGER NOT NULL,
+              "CreatedAtUtc" TEXT NOT NULL, "IsRead" INTEGER NOT NULL, "ReadAtUtc" TEXT NULL, "ActionRoute" TEXT NULL);
+            """, cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS "LocalSubscriptionPayments" (
               "Id" TEXT NOT NULL CONSTRAINT "PK_LocalSubscriptionPayments" PRIMARY KEY, "ServerId" TEXT NULL, "CompanyId" TEXT NOT NULL,
               "PaymentNumber" TEXT NOT NULL, "PlanName" TEXT NOT NULL, "Amount" TEXT NOT NULL, "PaymentDate" TEXT NOT NULL,
@@ -441,6 +447,8 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalCompanyRolePermissions_Key\" ON \"LocalCompanyRolePermissions\" (\"CompanyId\", \"RoleId\", \"PermissionKey\");", cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalAppSettings_CompanyId_UserId\" ON \"LocalAppSettings\" (\"CompanyId\", \"UserId\");", cancellationToken);
         await _db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"IX_LocalSubscriptionPayments_Number\" ON \"LocalSubscriptionPayments\" (\"CompanyId\", \"PaymentNumber\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LocalNotifications_CompanyId_CreatedAtUtc\" ON \"LocalNotifications\" (\"CompanyId\", \"CreatedAtUtc\");", cancellationToken);
+        await _db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LocalNotifications_CompanyId_UserId_IsRead\" ON \"LocalNotifications\" (\"CompanyId\", \"UserId\", \"IsRead\");", cancellationToken);
     }
 
     private async Task TryAddColumnAsync(string table, string column, string definition, CancellationToken cancellationToken)

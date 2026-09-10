@@ -25,17 +25,26 @@ public class MockNotificationService : INotificationService
     public Task<List<NotificationModel>> GetAllAsync()
         => Task.FromResult(_notifications.OrderByDescending(n => n.CreatedAt).ToList());
 
+    public Task<(bool Ok, string? Error)> CreateAsync(NotificationModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.Title) || string.IsNullOrWhiteSpace(model.Message))
+            return Task.FromResult<(bool, string?)>((false, "Title and message are required."));
+        _notifications.Add(model);
+        UnreadCountChanged?.Invoke(this, UnreadCount);
+        return Task.FromResult<(bool, string?)>((true, null));
+    }
+
     public Task MarkAsReadAsync(Guid id)
     {
         var n = _notifications.FirstOrDefault(x => x.Id == id);
-        if (n != null) n.IsRead = true;
+        if (n != null) { n.IsRead = true; n.ReadAt = DateTime.UtcNow; }
         UnreadCountChanged?.Invoke(this, UnreadCount);
         return Task.CompletedTask;
     }
 
     public Task MarkAllReadAsync()
     {
-        foreach (var n in _notifications) n.IsRead = true;
+        foreach (var n in _notifications) { n.IsRead = true; n.ReadAt = DateTime.UtcNow; }
         UnreadCountChanged?.Invoke(this, 0);
         return Task.CompletedTask;
     }

@@ -35,6 +35,7 @@ public sealed class LocalAppDbContext : DbContext
     public DbSet<LocalPurchaseReturnEntity> PurchaseReturns => Set<LocalPurchaseReturnEntity>();
     public DbSet<LocalInvoiceEntity> Invoices => Set<LocalInvoiceEntity>();
     public DbSet<LocalPaymentEntity> Payments => Set<LocalPaymentEntity>();
+    public DbSet<LocalNotificationEntity> Notifications => Set<LocalNotificationEntity>();
     public DbSet<LocalSyncQueueEntity> SyncQueue => Set<LocalSyncQueueEntity>();
     public DbSet<LocalSchemaInfoEntity> SchemaInfo => Set<LocalSchemaInfoEntity>();
 
@@ -185,6 +186,17 @@ public sealed class LocalAppDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.CompanyId);
             e.Property(x => x.PaymentNumber).HasMaxLength(64);
+        });
+
+        modelBuilder.Entity<LocalNotificationEntity>(e =>
+        {
+            e.ToTable("LocalNotifications");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CompanyId, x.CreatedAtUtc });
+            e.HasIndex(x => new { x.CompanyId, x.UserId, x.IsRead });
+            e.Property(x => x.Title).HasMaxLength(160);
+            e.Property(x => x.Message).HasMaxLength(1000);
+            e.Property(x => x.ActionRoute).HasMaxLength(256);
         });
 
         modelBuilder.Entity<LocalSyncQueueEntity>(e =>
