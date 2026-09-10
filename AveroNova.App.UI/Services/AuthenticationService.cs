@@ -211,11 +211,17 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         await _installation.EnsureInitializedAsync();
         if (!_installation.IsRegistered)
+        {
+            _context.Clear();
             return false;
+        }
 
         var snapshot = await _sessions.LoadValidSessionAsync(_installation.InstallationId);
         if (snapshot is null)
+        {
+            _context.Clear();
             return false;
+        }
 
         _context.SetFromLocal(
             snapshot.User,
