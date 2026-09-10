@@ -347,7 +347,7 @@ public partial class NotificationsPage : ContentPage
             WidthRequest = 30,
             HeightRequest = 30,
             Padding = 0,
-            BackgroundColor = Colors.Transparent,
+            BackgroundColor = Microsoft.Maui.Graphics.Colors.Transparent,
             TextColor = Color.FromArgb("#DC2626"),
             AutomationId = $"DeleteNotification_{notification.Id}"
         };
