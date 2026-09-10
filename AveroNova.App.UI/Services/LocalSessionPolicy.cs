@@ -24,12 +24,13 @@ public sealed class LocalSessionPolicy : ILocalSessionPolicy
         var now = DateTime.UtcNow;
         var installationId = _installation.InstallationId;
 
-        return await db.Sessions.AsNoTracking().AnyAsync(
-            s => s.IsActive
-                 && s.InstallationId == installationId
-                 && s.OfflineExpiresAtUtc > now
-                 && (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
-                    > now - AveroNova.Shared.Security.OfflineSessionDefaults.InactivityTimeout,
-            cancellationToken);
+        var sessions = await db.Sessions.AsNoTracking()
+            .Where(s => s.IsActive
+                        && s.InstallationId == installationId
+                        && s.OfflineExpiresAtUtc > now)
+            .ToListAsync(cancellationToken);
+        return sessions.Any(s =>
+            (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
+            > now - AveroNova.Shared.Security.OfflineSessionDefaults.InactivityTimeout);
     }
 }

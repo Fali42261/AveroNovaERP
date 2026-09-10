@@ -490,6 +490,7 @@ public sealed class OfflineOnlineAuthOrchestrationTests : IAsyncLifetime
     {
         await SeedRegisteredInstallationAsync();
         await SeedLocalSessionFromLoginAsync(CreateLoginResponse("owner@test.local"));
+        _connectivity.SetOnline(false);
         Assert.True(await _auth.TryAutoLoginAsync());
         Assert.True(_context.IsAuthenticated);
         Assert.NotNull(_context.CurrentUserId);

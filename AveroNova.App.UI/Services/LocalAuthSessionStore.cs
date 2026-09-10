@@ -248,14 +248,15 @@ public sealed class LocalAuthSessionStore : ILocalAuthSessionStore
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         var now = DateTime.UtcNow;
 
-        var session = await db.Sessions.AsNoTracking()
+        var candidates = await db.Sessions.AsNoTracking()
             .Where(s => s.IsActive
                         && s.InstallationId == installationId
-                        && s.OfflineExpiresAtUtc > now
-                        && (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
-                            > now - OfflineSessionDefaults.InactivityTimeout)
+                        && s.OfflineExpiresAtUtc > now)
             .OrderByDescending(s => s.LastAuthenticatedAtUtc)
-            .FirstOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+        var session = candidates.FirstOrDefault(s =>
+            (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
+            > now - OfflineSessionDefaults.InactivityTimeout);
 
         if (session is null)
             return null;
@@ -454,12 +455,12 @@ public sealed class LocalAuthSessionStore : ILocalAuthSessionStore
     {
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         var now = DateTime.UtcNow;
-        return await db.Sessions.AsNoTracking().AnyAsync(
-            s => s.InstallationId == installationId
-                 && (s.OfflineExpiresAtUtc <= now
-                     || (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
-                        <= now - OfflineSessionDefaults.InactivityTimeout),
-            cancellationToken);
+        var sessions = await db.Sessions.AsNoTracking()
+            .Where(s => s.InstallationId == installationId)
+            .ToListAsync(cancellationToken);
+        return sessions.Any(s => s.OfflineExpiresAtUtc <= now
+                                 || (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
+                                 <= now - OfflineSessionDefaults.InactivityTimeout);
     }
 
     public async Task TouchSessionAsync(Guid installationId, CancellationToken cancellationToken = default)
