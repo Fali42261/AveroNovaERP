@@ -31,7 +31,7 @@
                         <Label Text="Email *" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryEmail" Placeholder="email@example.com" Keyboard="Email"/></Border>
                         <Label Text="Phone" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="+1 555-0000" Keyboard="Telephone"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="Enter phone number" Keyboard="Telephone"/></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <VerticalStackLayout Spacing="4"><Label Text="Role" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PickerRole" Title="Select role" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Status" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Switch x:Name="SwitchActive" IsToggled="True" HorizontalOptions="Start"/></Border></VerticalStackLayout>
