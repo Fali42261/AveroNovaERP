@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <ApplicationTitle>SwapDigit</ApplicationTitle>
+    <Product>SwapDigit</Product>
+    <AssemblyTitle>SwapDigit</AssemblyTitle>
+  </PropertyGroup>
+</Project>
