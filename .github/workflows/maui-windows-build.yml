@@ -1,12 +1,12 @@
-name: MAUI Windows Build
+name: SwapDigit Windows Build
 
 on:
   pull_request:
     branches:
-      - AveroNovaERP
+      - swapDigit
   push:
     branches:
-      - AveroNovaERP
+      - swapDigit
 
 jobs:
   build-windows:
@@ -40,13 +40,13 @@ jobs:
           $publish = Get-ChildItem -Path 'AveroNova.App.UI/bin/Release/net10.0-windows10.0.19041.0/win-x64' -Directory -Recurse | Where-Object { $_.Name -eq 'publish' } | Select-Object -First 1
           if (-not $publish) { throw 'Windows publish directory not found.' }
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          Compress-Archive -Path "$($publish.FullName)/*" -DestinationPath 'artifacts/AveroNova-Windows-win-x64.zip' -Force
-          Get-Item 'artifacts/AveroNova-Windows-win-x64.zip'
+          Compress-Archive -Path "$($publish.FullName)/*" -DestinationPath 'artifacts/SwapDigit-Windows-win-x64.zip' -Force
+          Get-Item 'artifacts/SwapDigit-Windows-win-x64.zip'
 
-      - name: Upload Windows test package
+      - name: Upload SwapDigit Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: AveroNova-Windows-win-x64
-          path: artifacts/AveroNova-Windows-win-x64.zip
+          name: SwapDigit-Windows-win-x64
+          path: artifacts/SwapDigit-Windows-win-x64.zip
           if-no-files-found: error
           retention-days: 14
