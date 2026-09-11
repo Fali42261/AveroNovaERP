@@ -89,7 +89,7 @@ public partial class MainLayoutView
             var entries = BuildMobileMoreEntries().Where(x => MenuCatalog.IsAllowed(x.PermissionKey, permissions)).ToList();
             var stack = new VerticalStackLayout { Padding = new Thickness(16, 14), Spacing = 10 };
             stack.Children.Add(new Label { Text = "More", FontSize = 24, FontAttributes = FontAttributes.Bold });
-            stack.Children.Add(new Label { Text = "SwapDigit modules", FontSize = 12, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0,0,0,8) });
+            stack.Children.Add(new Label { Text = "Core business modules", FontSize = 12, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0,0,0,8) });
 
             foreach (var entry in entries)
             {
@@ -140,6 +140,8 @@ public partial class MainLayoutView
         }
     }
 
+    // Keep the full module implementations in code. Mobile More intentionally exposes
+    // only the modules needed for the simple day-to-day business workflow.
     private List<MobileMenuEntry> BuildMobileMoreEntries() =>
     [
         new("Company", "Company", "Company", "Home / Company", () => _companyFactory()),
@@ -147,13 +149,9 @@ public partial class MainLayoutView
         new("Inventory", "Inventory", "Inventory", "Home / Inventory", () => _inventoryFactory()),
         new("Purchases", "Purchases", "Purchases", "Home / Purchases", () => _purchasesFactory()),
         new("Payments", "Payments", "Payments", "Home / Payments", () => _paymentsFactory()),
-        new("SalesReturns", "Sales Returns", "Sales Returns", "Home / Sales Returns", () => _salesReturnsFactory()),
-        new("PurchaseReturns", "Purchase Returns", "Purchase Returns", "Home / Purchase Returns", () => _purchaseReturnsFactory()),
         new("Expenses", "Expenses", "Expenses", "Home / Expenses", () => _expensesFactory()),
         new("Users", "Users", "Users", "Home / Administration / Users", () => _usersFactory()),
         new("Roles", "Roles", "Roles", "Home / Administration / Roles", () => _rolesFactory()),
-        new("Permissions", "Permissions", "Permissions", "Home / Administration / Permissions", () => _permissionsFactory()),
-        new("Notifications", "Notifications", "Notifications", "Home / Notifications", () => _notificationsFactory()),
         new("Settings", "Settings", "Settings", "Home / Settings", () => _settingsFactory()),
         new("License", "Plan", "Plan", "Home / Plan", () => _licenseFactory()),
         new("Help", "Help & Support", "Help & Support", "Home / Help", () => _helpFactory())
