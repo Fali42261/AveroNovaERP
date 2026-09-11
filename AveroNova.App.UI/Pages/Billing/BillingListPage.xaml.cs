@@ -1,3 +1,4 @@
+using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
@@ -13,9 +14,12 @@ public partial class BillingListPage : ContentPage, IHostedPage
     private readonly ISettingsService _settings;
     private readonly IMainContentNavigator _navigator;
     private readonly IServiceProvider _services;
+    private readonly Dictionary<string, Button> _filterButtons = new(StringComparer.OrdinalIgnoreCase);
+
     private List<InvoiceModel> _all = [];
     private string _filter = "All";
     private string _currencySymbol = "₹";
+    private string _dateFormat = "dd MMM yyyy";
     private bool _loading;
 
     public BillingListPage(
@@ -50,7 +54,20 @@ public partial class BillingListPage : ContentPage, IHostedPage
             _currencySymbol = string.IsNullOrWhiteSpace(appSettings.CurrencySymbol)
                 ? (appSettings.Currency == "INR" ? "₹" : "$")
                 : appSettings.CurrencySymbol;
+            _dateFormat = string.IsNullOrWhiteSpace(appSettings.DateFormat)
+                ? AppRegionalPreferences.DateFormat
+                : appSettings.DateFormat;
+
+            AppRegionalPreferences.Apply(
+                appSettings.Language,
+                _dateFormat,
+                appSettings.Currency,
+                _currencySymbol,
+                appSettings.TimeZone,
+                persist: false);
+
             await LoadAsync();
+            UpdateFilterVisuals();
         }
         catch (Exception ex)
         {
@@ -79,29 +96,62 @@ public partial class BillingListPage : ContentPage, IHostedPage
     private void BuildFilterTabs()
     {
         FilterTabs.Children.Clear();
+        _filterButtons.Clear();
+
         var statuses = new[] { "All", "Draft", "Sent", "Partial", "Paid", "Overdue", "Cancelled" };
-        foreach (var st in statuses)
+        foreach (var status in statuses)
         {
-            var btn = new Button
+            var button = new Button
             {
-                Text = st,
+                Text = status,
                 FontSize = 12,
-                HeightRequest = 34,
+                FontAttributes = FontAttributes.None,
+                HeightRequest = 36,
+                MinimumWidthRequest = 66,
                 Padding = new Thickness(14, 0),
-                CornerRadius = 17,
-                BorderWidth = 1,
-                BorderColor = Color.FromArgb("#E2E8F0"),
-                BackgroundColor = st == _filter ? Color.FromArgb("#2563EB") : Colors.Transparent,
-                TextColor = st == _filter ? Colors.White : Color.FromArgb("#64748B")
+                CornerRadius = 18,
+                BorderWidth = 1
             };
-            var captured = st;
-            btn.Clicked += async (_, _) =>
-            {
-                _filter = captured;
-                BuildFilterTabs();
-                await LoadAsync();
-            };
-            FilterTabs.Children.Add(btn);
+
+            var captured = status;
+            button.Clicked += async (_, _) => await SetFilterAsync(captured);
+            _filterButtons[status] = button;
+            FilterTabs.Children.Add(button);
+        }
+
+        UpdateFilterVisuals();
+    }
+
+    private async Task SetFilterAsync(string filter)
+    {
+        if (string.Equals(_filter, filter, StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateFilterVisuals();
+            return;
+        }
+
+        _filter = filter;
+        UpdateFilterVisuals();
+
+        try
+        {
+            await RenderCurrentFilterAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Billing] Filter '{filter}' failed: {ex}");
+        }
+    }
+
+    private void UpdateFilterVisuals()
+    {
+        foreach (var pair in _filterButtons)
+        {
+            var selected = string.Equals(pair.Key, _filter, StringComparison.OrdinalIgnoreCase);
+            pair.Value.BackgroundColor = selected ? Color.FromArgb("#2563EB") : Colors.Transparent;
+            pair.Value.TextColor = selected ? Colors.White : Color.FromArgb("#64748B");
+            pair.Value.BorderColor = selected ? Color.FromArgb("#2563EB") : Color.FromArgb("#CBD5E1");
+            pair.Value.FontAttributes = selected ? FontAttributes.Bold : FontAttributes.None;
         }
     }
 
@@ -109,7 +159,12 @@ public partial class BillingListPage : ContentPage, IHostedPage
     {
         var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         _all = companyId == Guid.Empty ? [] : await _svc.GetAllAsync(companyId);
-        var shown = _filter == "All" ? _all : _all.Where(i => i.StatusLabel == _filter).ToList();
+        await RenderCurrentFilterAsync();
+    }
+
+    private Task RenderCurrentFilterAsync()
+    {
+        var shown = _all.Where(MatchesCurrentFilter).ToList();
         LblCount.Text = $"{shown.Count} invoice{(shown.Count == 1 ? string.Empty : "s")}";
         InvoiceList.Children.Clear();
 
@@ -117,18 +172,32 @@ public partial class BillingListPage : ContentPage, IHostedPage
         {
             InvoiceList.Children.Add(new Label
             {
-                Text = "No invoices found.",
+                Text = $"No {_filter.ToLowerInvariant()} invoices found.",
                 FontSize = 14,
                 TextColor = Color.FromArgb("#64748B"),
                 HorizontalOptions = LayoutOptions.Center,
                 Margin = new Thickness(0, 40)
             });
-            return;
+            return Task.CompletedTask;
         }
 
         foreach (var inv in shown.OrderByDescending(i => i.InvoiceDate))
             InvoiceList.Children.Add(BuildRow(inv));
+
+        return Task.CompletedTask;
     }
+
+    private bool MatchesCurrentFilter(InvoiceModel invoice) => _filter switch
+    {
+        "All" => true,
+        "Draft" => invoice.Status == InvoiceStatus.Draft,
+        "Sent" => invoice.Status == InvoiceStatus.Sent,
+        "Partial" => invoice.Status == InvoiceStatus.PartialPaid,
+        "Paid" => invoice.Status == InvoiceStatus.Paid,
+        "Overdue" => invoice.Status == InvoiceStatus.Overdue,
+        "Cancelled" => invoice.Status == InvoiceStatus.Cancelled,
+        _ => true
+    };
 
     private View BuildRow(InvoiceModel inv)
     {
@@ -164,7 +233,7 @@ public partial class BillingListPage : ContentPage, IHostedPage
         left.Children.Add(new Label { Text = inv.CustomerName, FontSize = 13, TextColor = Color.FromArgb("#64748B") });
         left.Children.Add(new Label
         {
-            Text = inv.InvoiceDate.ToString("dd MMM yyyy") + $"  •  Due: {inv.DueDate:dd MMM yyyy}",
+            Text = $"{inv.InvoiceDate.ToString(_dateFormat)}  •  Due: {inv.DueDate.ToString(_dateFormat)}",
             FontSize = 11,
             TextColor = Color.FromArgb("#94A3B8")
         });
