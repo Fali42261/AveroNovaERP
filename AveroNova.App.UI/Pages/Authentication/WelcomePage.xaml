@@ -34,7 +34,7 @@
                             StrokeShape="RoundRectangle 16"
                             Padding="18,10"
                             HorizontalOptions="Center">
-                        <Label Text="SW"
+                        <Label Text="SD"
                                FontSize="28"
                                FontAttributes="Bold"
                                TextColor="{StaticResource Primary400}"
@@ -42,7 +42,7 @@
                                VerticalOptions="Center"
                                LineBreakMode="NoWrap"/>
                     </Border>
-                    <Label Text="SwipeDigit ERP"
+                    <Label Text="SwapDigit ERP"
                            FontSize="28"
                            FontAttributes="Bold"
                            TextColor="{StaticResource White}"
@@ -87,7 +87,7 @@
                                      Spacing="0"
                                      MaximumWidthRequest="440">
 
-                    <Label Text="Welcome to SwipeDigit"
+                    <Label Text="Welcome to SwapDigit"
                            FontSize="26"
                            FontAttributes="Bold"
                            TextColor="{StaticResource TextPrimary}"
@@ -124,7 +124,7 @@
                             helpers:CursorBehavior.Cursor="Hand"
                             Clicked="OnRegisterClicked"/>
 
-                    <Label Text="SwipeDigit ERP v1.0"
+                    <Label Text="SwapDigit ERP v1.0"
                            FontSize="11"
                            TextColor="{StaticResource TextTertiary}"
                            HorizontalOptions="Center"
