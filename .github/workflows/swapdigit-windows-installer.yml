@@ -1,0 +1,101 @@
+name: SwapDigit Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - swapDigit
+    paths:
+      - 'AveroNova.App.UI/**'
+      - '.github/workflows/swapdigit-windows-installer.yml'
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workload
+        shell: pwsh
+        run: dotnet workload install maui
+
+      - name: Restore Windows target
+        shell: pwsh
+        run: dotnet restore AveroNova.App.UI/AveroNova.App.UI.csproj -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -r win-x64
+
+      - name: Publish Windows x64 app
+        shell: pwsh
+        run: dotnet publish AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -p:WindowsPackageType=None -p:SelfContained=true -p:PublishReadyToRun=false --no-restore
+
+      - name: Locate publish folder
+        shell: pwsh
+        run: |
+          $publish = Get-ChildItem -Path 'AveroNova.App.UI/bin/Release/net10.0-windows10.0.19041.0/win-x64' -Directory -Recurse | Where-Object { $_.Name -eq 'publish' } | Select-Object -First 1
+          if (-not $publish) { throw 'Windows publish directory not found.' }
+          "PUBLISH_DIR=$($publish.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Create installer script
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path installer | Out-Null
+          $iss = @"
+          [Setup]
+          AppId={{7B8D6A8B-3D07-4F1A-AB12-8C3F93B0D761}
+          AppName=SwapDigit
+          AppVersion=1.0.0
+          AppPublisher=SwapDigit
+          DefaultDirName={autopf}\SwapDigit
+          DefaultGroupName=SwapDigit
+          UninstallDisplayName=SwapDigit
+          OutputDir=$env:GITHUB_WORKSPACE\installer
+          OutputBaseFilename=SwapDigit-Setup-win-x64
+          Compression=lzma2
+          SolidCompression=yes
+          WizardStyle=modern
+          PrivilegesRequired=admin
+          ArchitecturesAllowed=x64compatible
+          ArchitecturesInstallIn64BitMode=x64compatible
+
+          [Files]
+          Source: "$env:PUBLISH_DIR\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{group}\SwapDigit"; Filename: "{app}\AveroNova.App.UI.exe"
+          Name: "{autodesktop}\SwapDigit"; Filename: "{app}\AveroNova.App.UI.exe"; Tasks: desktopicon
+
+          [Tasks]
+          Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
+
+          [Run]
+          Filename: "{app}\AveroNova.App.UI.exe"; Description: "Launch SwapDigit"; Flags: nowait postinstall skipifsilent
+          "@
+          Set-Content -Path 'installer/SwapDigit.iss' -Value $iss -Encoding UTF8
+
+      - name: Build EXE installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+          & $iscc 'installer/SwapDigit.iss'
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
+          Get-Item 'installer/SwapDigit-Setup-win-x64.exe'
+
+      - name: Upload SwapDigit installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwapDigit-Windows-Installer
+          path: installer/SwapDigit-Setup-win-x64.exe
+          if-no-files-found: error
+          retention-days: 14
