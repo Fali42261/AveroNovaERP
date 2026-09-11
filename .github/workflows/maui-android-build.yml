@@ -6,7 +6,7 @@ on:
       - AveroNovaERP
   push:
     branches:
-      - fix/free-dashboard-navigation
+      - AveroNovaERP
 
 jobs:
   build-android:
