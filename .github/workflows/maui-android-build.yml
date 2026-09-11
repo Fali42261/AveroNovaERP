@@ -1,12 +1,12 @@
-name: MAUI Android Build
+name: SwapDigit Android Build
 
 on:
   pull_request:
     branches:
-      - AveroNovaERP
+      - swapDigit
   push:
     branches:
-      - AveroNovaERP
+      - swapDigit
 
 jobs:
   build-android:
@@ -40,10 +40,10 @@ jobs:
           find artifacts -maxdepth 1 -type f -name '*.apk' -print
           test -n "$(find artifacts -maxdepth 1 -type f -name '*.apk' -print -quit)"
 
-      - name: Upload Android test APK
+      - name: Upload SwapDigit Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: AveroNova-Android-Test-APK
+          name: SwapDigit-Android-Test-APK
           path: artifacts/*.apk
           if-no-files-found: error
           retention-days: 14
