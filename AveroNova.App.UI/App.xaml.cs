@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using AveroNova.App.UI.Pages;
+using AveroNova.App.UI.Helpers;
 
 namespace AveroNova.App.UI
 {
@@ -10,6 +11,7 @@ namespace AveroNova.App.UI
         public App(AppShell appShell)
         {
             InitializeComponent();
+            AppRegionalPreferences.ApplyStored();
             _appShell = appShell;
         }
 
