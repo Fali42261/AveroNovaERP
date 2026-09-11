@@ -7,8 +7,12 @@ namespace AveroNova.App.UI.Pages.Settings;
 
 public partial class SettingsPage : ContentPage, IHostedPage
 {
+    private const string RememberLoginPreferenceKey = "auth.remember_login";
+
     private readonly ISettingsService _service;
+    private readonly IConnectivityService _connectivity;
     private AppSettings _settings = new();
+    private bool _saving;
 
     private Picker _theme = null!;
     private Picker _language = null!;
@@ -22,6 +26,7 @@ public partial class SettingsPage : ContentPage, IHostedPage
     private Switch _offline = null!;
     private Switch _remember = null!;
     private Label _message = null!;
+    private Button _saveButton = null!;
 
     private static readonly string[] Themes = ["System", "Light", "Dark"];
     private static readonly string[] Languages = ["English", "Hindi", "Urdu"];
@@ -32,10 +37,12 @@ public partial class SettingsPage : ContentPage, IHostedPage
     private static readonly string[] CurrencySymbols = ["$", "₹", "€", "£", "د.إ"];
     private static readonly string[] TimeZones = ["UTC", "Asia/Kolkata", "Asia/Dubai", "Europe/London", "America/New_York"];
 
-    public SettingsPage(ISettingsService service)
+    public SettingsPage(ISettingsService service, IConnectivityService connectivity)
     {
         InitializeComponent();
         _service = service;
+        _connectivity = connectivity;
+        _connectivity.StatusChanged += OnConnectivityChanged;
     }
 
     protected override async void OnAppearing()
@@ -44,11 +51,20 @@ public partial class SettingsPage : ContentPage, IHostedPage
         await LoadForHostAsync();
     }
 
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _saving = false;
+    }
+
     public async Task LoadForHostAsync()
     {
         try
         {
             _settings = await _service.GetAsync() ?? new AppSettings();
+            _settings.RememberLogin = Microsoft.Maui.Storage.Preferences.Default.Get(
+                RememberLoginPreferenceKey,
+                _settings.RememberLogin);
             BuildContent();
         }
         catch (Exception ex)
@@ -70,48 +86,73 @@ public partial class SettingsPage : ContentPage, IHostedPage
         }
     }
 
+    private void OnConnectivityChanged(object? sender, ConnectivityStatus status)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_offline is not null)
+                _offline.IsToggled = status == ConnectivityStatus.Offline;
+        });
+    }
+
     private void BuildContent()
     {
         SettingsContent.Children.Clear();
 
-        _theme = MakePicker(Themes, ClampIndex((int)_settings.Theme, Themes.Length));
+        var dark = IsDark(_settings.Theme);
+        var primaryText = dark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#0F172A");
+        var secondaryText = dark ? Color.FromArgb("#CBD5E1") : Color.FromArgb("#334155");
+        var surface = dark ? Color.FromArgb("#111827") : Colors.White;
+        var border = dark ? Color.FromArgb("#334155") : Color.FromArgb("#E2E8F0");
+
+        _theme = MakePicker(Themes, ClampIndex((int)_settings.Theme, Themes.Length), primaryText);
         _accent = new Entry
         {
             Text = string.IsNullOrWhiteSpace(_settings.AccentColor) ? "#2563EB" : _settings.AccentColor,
             HorizontalTextAlignment = TextAlignment.Center,
-            WidthRequest = 210
+            WidthRequest = 210,
+            TextColor = primaryText
         };
         _compact = new Switch { IsToggled = _settings.CompactMode };
 
         SettingsContent.Children.Add(Card(
-            "Appearance",
-            Row("Theme", _theme),
-            Row("Accent color", _accent),
-            Row("Compact mode", _compact)));
+            "Appearance", surface, border, primaryText, secondaryText,
+            Row("Theme", _theme, secondaryText),
+            Row("Accent color", _accent, secondaryText),
+            Row("Compact mode", _compact, secondaryText)));
 
-        _language = MakePicker(Languages, FindIndex(LanguageCodes, _settings.Language));
-        _date = MakePicker(Dates, FindIndex(Dates, _settings.DateFormat));
-        _currency = MakePicker(Currencies, FindIndex(CurrencyCodes, _settings.Currency));
-        _timeZone = MakePicker(TimeZones, FindIndex(TimeZones, _settings.TimeZone));
+        _language = MakePicker(Languages, FindIndex(LanguageCodes, _settings.Language), primaryText);
+        _date = MakePicker(Dates, FindIndex(Dates, _settings.DateFormat), primaryText);
+        _currency = MakePicker(Currencies, FindIndex(CurrencyCodes, _settings.Currency), primaryText);
+        _timeZone = MakePicker(TimeZones, FindIndex(TimeZones, _settings.TimeZone), primaryText);
 
         SettingsContent.Children.Add(Card(
-            "Regional",
-            Row("Language", _language),
-            Row("Date format", _date),
-            Row("Currency", _currency),
-            Row("Time zone", _timeZone)));
+            "Regional", surface, border, primaryText, secondaryText,
+            Row("Language", _language, secondaryText),
+            Row("Date format", _date, secondaryText),
+            Row("Currency", _currency, secondaryText),
+            Row("Time zone", _timeZone, secondaryText)));
 
         _notifications = new Switch { IsToggled = _settings.Notifications };
         _autoSync = new Switch { IsToggled = _settings.AutoSync };
-        _offline = new Switch { IsToggled = _settings.OfflineMode };
-        _remember = new Switch { IsToggled = _settings.RememberLogin };
+        _offline = new Switch
+        {
+            IsToggled = !_connectivity.IsOnline,
+            IsEnabled = false
+        };
+        _remember = new Switch
+        {
+            IsToggled = Microsoft.Maui.Storage.Preferences.Default.Get(
+                RememberLoginPreferenceKey,
+                _settings.RememberLogin)
+        };
 
         SettingsContent.Children.Add(Card(
-            "Sync & Preferences",
-            Row("Notifications", _notifications),
-            Row("Auto-sync", _autoSync),
-            Row("Offline mode", _offline),
-            Row("Remember login", _remember)));
+            "Sync & Preferences", surface, border, primaryText, secondaryText,
+            Row("Notifications", _notifications, secondaryText),
+            Row("Auto-sync", _autoSync, secondaryText),
+            Row("Offline mode (current status)", _offline, secondaryText),
+            Row("Remember login", _remember, secondaryText)));
 
         _message = new Label
         {
@@ -121,19 +162,19 @@ public partial class SettingsPage : ContentPage, IHostedPage
         };
         SettingsContent.Children.Add(_message);
 
-        var save = new Button
+        _saveButton = new Button
         {
             Text = "Save Settings",
             HeightRequest = 46,
             CornerRadius = 10,
-            BackgroundColor = Color.FromArgb("#2563EB"),
+            BackgroundColor = SafeAccentColor(_settings.AccentColor),
             TextColor = Colors.White,
             FontAttributes = FontAttributes.Bold,
             HorizontalOptions = LayoutOptions.Fill,
             MaximumWidthRequest = 500
         };
-        save.Clicked += OnSaveClicked;
-        SettingsContent.Children.Add(save);
+        _saveButton.Clicked += OnSaveClicked;
+        SettingsContent.Children.Add(_saveButton);
     }
 
     private void BuildFallback(string detail)
@@ -161,10 +202,18 @@ public partial class SettingsPage : ContentPage, IHostedPage
 
     private async void OnSaveClicked(object? s, EventArgs e)
     {
+        if (_saving)
+            return;
+
+        _saving = true;
+        _saveButton.IsEnabled = false;
+        _saveButton.Text = "Saving...";
+        HideMessage();
+
         try
         {
             _settings.Theme = (ThemeMode)ClampIndex(_theme.SelectedIndex, Themes.Length);
-            _settings.AccentColor = _accent.Text?.Trim() ?? "#2563EB";
+            _settings.AccentColor = NormalizeAccent(_accent.Text);
             _settings.CompactMode = _compact.IsToggled;
             _settings.Language = LanguageCodes[ClampIndex(_language.SelectedIndex, LanguageCodes.Length)];
             _settings.DateFormat = Dates[ClampIndex(_date.SelectedIndex, Dates.Length)];
@@ -175,30 +224,98 @@ public partial class SettingsPage : ContentPage, IHostedPage
             _settings.TimeZone = TimeZones[ClampIndex(_timeZone.SelectedIndex, TimeZones.Length)];
             _settings.Notifications = _notifications.IsToggled;
             _settings.AutoSync = _autoSync.IsToggled;
-            _settings.OfflineMode = _offline.IsToggled;
+            _settings.OfflineMode = !_connectivity.IsOnline;
             _settings.RememberLogin = _remember.IsToggled;
 
             var result = await _service.SaveAsync(_settings);
-            _message.Text = result.Ok ? "Settings saved locally and queued for sync." : result.Error ?? "Settings could not be saved.";
-            _message.TextColor = result.Ok ? Color.FromArgb("#059669") : Color.FromArgb("#DC2626");
-            _message.IsVisible = true;
-
-            if (result.Ok && Microsoft.Maui.Controls.Application.Current is not null)
+            if (!result.Ok)
             {
-                Microsoft.Maui.Controls.Application.Current.UserAppTheme = _settings.Theme switch
-                {
-                    ThemeMode.Dark => AppTheme.Dark,
-                    ThemeMode.Light => AppTheme.Light,
-                    _ => AppTheme.Unspecified
-                };
+                ShowMessage(result.Error ?? "Settings could not be saved.", success: false);
+                return;
             }
+
+            Microsoft.Maui.Storage.Preferences.Default.Set(
+                RememberLoginPreferenceKey,
+                _settings.RememberLogin);
+
+            ApplyTheme(_settings.Theme);
+            BuildContent();
+            ShowMessage(
+                _connectivity.IsOnline
+                    ? "Settings saved successfully."
+                    : "Settings saved locally. They will sync when a connection is available.",
+                success: true);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Settings] Save failed: {ex}");
-            _message.Text = "Settings could not be saved. The app is still running.";
-            _message.TextColor = Color.FromArgb("#DC2626");
-            _message.IsVisible = true;
+            ShowMessage("Settings could not be saved. Please try again.", success: false);
+        }
+        finally
+        {
+            _saving = false;
+            if (_saveButton is not null)
+            {
+                _saveButton.IsEnabled = true;
+                _saveButton.Text = "Save Settings";
+            }
+        }
+    }
+
+    private static void ApplyTheme(ThemeMode theme)
+    {
+        if (Microsoft.Maui.Controls.Application.Current is null)
+            return;
+
+        Microsoft.Maui.Controls.Application.Current.UserAppTheme = theme switch
+        {
+            ThemeMode.Dark => AppTheme.Dark,
+            ThemeMode.Light => AppTheme.Light,
+            _ => AppTheme.Unspecified
+        };
+    }
+
+    private bool IsDark(ThemeMode theme)
+    {
+        if (theme == ThemeMode.Dark)
+            return true;
+        if (theme == ThemeMode.Light)
+            return false;
+        return Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark;
+    }
+
+    private void HideMessage()
+    {
+        if (_message is not null)
+            _message.IsVisible = false;
+    }
+
+    private void ShowMessage(string text, bool success)
+    {
+        if (_message is null)
+            return;
+        _message.Text = text;
+        _message.TextColor = success ? Color.FromArgb("#059669") : Color.FromArgb("#DC2626");
+        _message.IsVisible = true;
+    }
+
+    private static string NormalizeAccent(string? value)
+    {
+        var text = value?.Trim() ?? string.Empty;
+        if (text.Length == 6 && !text.StartsWith('#'))
+            text = "#" + text;
+        return string.IsNullOrWhiteSpace(text) ? "#2563EB" : text;
+    }
+
+    private static Color SafeAccentColor(string? value)
+    {
+        try
+        {
+            return Color.FromArgb(NormalizeAccent(value));
+        }
+        catch
+        {
+            return Color.FromArgb("#2563EB");
         }
     }
 
@@ -211,15 +328,16 @@ public partial class SettingsPage : ContentPage, IHostedPage
     private static int ClampIndex(int index, int length) =>
         index < 0 || index >= length ? 0 : index;
 
-    private static Picker MakePicker(IEnumerable<string> values, int index) => new()
+    private static Picker MakePicker(IEnumerable<string> values, int index, Color textColor) => new()
     {
         ItemsSource = values.ToList(),
         SelectedIndex = index,
         HorizontalTextAlignment = TextAlignment.Center,
-        WidthRequest = 210
+        WidthRequest = 210,
+        TextColor = textColor
     };
 
-    private static Grid Row(string label, View control)
+    private static Grid Row(string label, View control, Color textColor)
     {
         var g = new Grid
         {
@@ -228,24 +346,37 @@ public partial class SettingsPage : ContentPage, IHostedPage
                 new ColumnDefinition(GridLength.Auto)),
             ColumnSpacing = 12
         };
-        g.Add(new Label { Text = label, VerticalOptions = LayoutOptions.Center, TextColor = Color.FromArgb("#334155") }, 0, 0);
+        g.Add(new Label { Text = label, VerticalOptions = LayoutOptions.Center, TextColor = textColor }, 0, 0);
         g.Add(control, 1, 0);
         return g;
     }
 
-    private static Border Card(string title, params View[] rows)
+    private static Border Card(
+        string title,
+        Color background,
+        Color border,
+        Color titleColor,
+        Color dividerColor,
+        params View[] rows)
     {
         var stack = new VerticalStackLayout { Spacing = 12 };
-        stack.Children.Add(new Label { Text = title, FontSize = 14, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#0F172A") });
-        stack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#E2E8F0") });
-        foreach (var row in rows) stack.Children.Add(row);
+        stack.Children.Add(new Label
+        {
+            Text = title,
+            FontSize = 14,
+            FontAttributes = FontAttributes.Bold,
+            TextColor = titleColor
+        });
+        stack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = dividerColor });
+        foreach (var row in rows)
+            stack.Children.Add(row);
 
         return new Border
         {
-            Stroke = Color.FromArgb("#E2E8F0"),
+            Stroke = border,
             StrokeThickness = 1,
             StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(14) },
-            BackgroundColor = Colors.White,
+            BackgroundColor = background,
             Padding = new Thickness(16),
             MaximumWidthRequest = 760,
             Content = stack
