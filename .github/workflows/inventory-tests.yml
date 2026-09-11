@@ -64,6 +64,34 @@ jobs:
           path: AveroNova.App.UI/bin/Debug/net10.0-android/**/*.apk
           if-no-files-found: error
 
+  ios-simulator-build:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Install iOS MAUI workload
+        run: dotnet workload install maui-ios
+      - name: Build iOS Simulator UI
+        run: >-
+          dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj
+          --framework net10.0-ios
+          --configuration Debug
+          -p:AveroNovaCiTargetFramework=net10.0-ios
+          -p:RuntimeIdentifier=iossimulator-x64
+          -p:CodesignKey=""
+          -p:CodesignProvision=""
+      - name: Upload iOS Simulator manual-test app
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: averonova-ios-simulator-manual-test
+          path: AveroNova.App.UI/bin/Debug/net10.0-ios/iossimulator-x64/**/*.app/**
+          if-no-files-found: error
+
   windows-build:
     runs-on: windows-latest
     timeout-minutes: 30
