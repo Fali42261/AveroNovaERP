@@ -403,6 +403,10 @@ public class LocalSyncQueueEntity
     public Guid? CompanyId { get; set; }
     /// <summary>Non-secret registration metadata JSON (never password).</summary>
     public string? PayloadJson { get; set; }
+    public long ExpectedServerVersion { get; set; }
+    public long ServerVersion { get; set; }
+    /// <summary>Server copy retained when optimistic concurrency detects a conflict.</summary>
+    public string? ConflictPayloadJson { get; set; }
 }
 
 public class LocalSchemaInfoEntity

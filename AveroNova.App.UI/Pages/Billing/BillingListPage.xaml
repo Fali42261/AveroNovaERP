@@ -10,7 +10,7 @@
     OFFLINE: Invoice creation is possible without internet.
              Invoices stored locally and marked PendingSync.
     ONLINE:  Invoices synchronized with server API.
-    TODO: Implement during backend phase.
+    The local-first billing service queues authenticated server synchronization.
     -->
 
     <Grid RowDefinitions="Auto,Auto,*">

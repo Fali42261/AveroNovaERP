@@ -98,6 +98,8 @@ public sealed class AuthenticationService : IAuthenticationService
             return (false, result.Error ?? "Registration failed. Please try again.");
 
         await _installation.MarkRegisteredAsync(result.Data.UserId, result.Data.CompanyId);
+        if (!string.IsNullOrWhiteSpace(result.Data.RecoveryKey))
+            await _tokens.SetPasswordRecoveryKeyAsync(result.Data.RecoveryKey);
         _context.Clear();
         return (true, null);
     }
@@ -134,15 +136,49 @@ public sealed class AuthenticationService : IAuthenticationService
     public Task<(bool Success, string? Error)> RegisterAsync(string name, string email, string password)
         => Task.FromResult<(bool, string?)>((false, "Please complete the full Create Account form."));
 
-    public Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
-        => Task.FromResult<(bool, string?)>((false, "Password reset will be available in a later update."));
+    public async Task<(bool Success, string? Error)> ResetPasswordAsync(
+        string userEmail,
+        string companyEmail,
+        string newPassword,
+        string confirmPassword)
+    {
+        if (!_connectivity.IsOnline)
+            return (false, "Connect to the internet to reset the password securely on this trusted device.");
+        if (!PasswordPolicy.IsStrong(newPassword))
+            return (false, PasswordPolicy.RequirementMessage);
+        if (!string.Equals(newPassword, confirmPassword, StringComparison.Ordinal))
+            return (false, "Passwords do not match.");
 
-    public Task<(bool Success, string? Error)> ResetPasswordAsync(string email, string newPassword)
-        => Task.FromResult<(bool, string?)>((false,
-            "Password reset requires secure online verification and is not available yet."));
+        await _installation.EnsureInitializedAsync();
+        var recoveryKey = await _tokens.GetPasswordRecoveryKeyAsync();
+        if (string.IsNullOrWhiteSpace(recoveryKey))
+            return (false, "This device is not currently trusted for direct password reset. Sign in online or contact your administrator.");
 
-    public Task<(bool Success, string? Error)> VerifyOtpAsync(string otp)
-        => Task.FromResult<(bool, string?)>((false, "Verification codes are not used."));
+        var request = new PasswordResetRequest
+        {
+            UserEmail = userEmail.Trim(),
+            CompanyEmail = companyEmail.Trim(),
+            NewPassword = newPassword,
+            ConfirmPassword = confirmPassword,
+            InstallationId = _installation.InstallationId,
+            DeviceId = _installation.DeviceId,
+            RecoveryKey = recoveryKey
+        };
+        var result = await _authApi.ResetPasswordAsync(request);
+        if (!result.Success || result.Data is null)
+            return (false, result.Error ?? "Unable to reset password.");
+
+        await _tokens.SetPasswordRecoveryKeyAsync(result.Data.RecoveryKey);
+
+        var user = await _sessions.FindUserByEmailAsync(userEmail);
+        if (user is not null)
+            await StoreLocalCredentialAsync(user.Id, userEmail, newPassword);
+
+        await _tokens.ClearAsync();
+        await _sessions.ClearAuthSessionAsync();
+        _context.Clear();
+        return (true, null);
+    }
 
     public async Task LogoutAsync()
     {
@@ -175,11 +211,17 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         await _installation.EnsureInitializedAsync();
         if (!_installation.IsRegistered)
+        {
+            _context.Clear();
             return false;
+        }
 
         var snapshot = await _sessions.LoadValidSessionAsync(_installation.InstallationId);
         if (snapshot is null)
+        {
+            _context.Clear();
             return false;
+        }
 
         _context.SetFromLocal(
             snapshot.User,
@@ -189,7 +231,16 @@ public sealed class AuthenticationService : IAuthenticationService
             snapshot.Session.ServerSessionId);
 
         if (_connectivity.IsOnline)
-            await TryRefreshAccessTokenAsync();
+        {
+            var refresh = await TryRefreshAccessTokenAsync();
+            if (refresh == RefreshOutcome.Rejected)
+            {
+                await _tokens.ClearAsync();
+                await _sessions.ClearAuthSessionAsync();
+                _context.Clear();
+                return false;
+            }
+        }
 
         return true;
     }
@@ -199,8 +250,8 @@ public sealed class AuthenticationService : IAuthenticationService
         if (!_connectivity.IsOnline)
             return (false, "Internet connection is required to refresh your session.");
 
-        var ok = await TryRefreshAccessTokenAsync();
-        return ok
+        var outcome = await TryRefreshAccessTokenAsync();
+        return outcome == RefreshOutcome.Valid
             ? (true, null)
             : (false, "Your session could not be refreshed. Please sign in again.");
     }
@@ -213,7 +264,8 @@ public sealed class AuthenticationService : IAuthenticationService
             Password = password,
             DeviceId = _installation.DeviceId,
             DeviceName = _device.Name,
-            Platform = _device.Platform
+            Platform = _device.Platform,
+            InstallationId = _installation.InstallationId
         };
 
         var result = await _authApi.LoginAsync(request);
@@ -277,6 +329,8 @@ public sealed class AuthenticationService : IAuthenticationService
         await _tokens.SetAccessTokenAsync(login.AccessToken, login.AccessTokenExpiresAtUtc);
         await _tokens.SetRefreshTokenAsync(login.RefreshToken);
         await _tokens.SetSessionIdAsync(login.Session.SessionId);
+        if (!string.IsNullOrWhiteSpace(login.RecoveryKey))
+            await _tokens.SetPasswordRecoveryKeyAsync(login.RecoveryKey);
         await _sessions.SaveFromLoginAsync(login, _installation.InstallationId);
         _context.SetFromLogin(login);
 
@@ -284,17 +338,17 @@ public sealed class AuthenticationService : IAuthenticationService
             await _installation.MarkRegisteredAsync(login.User.Id, login.CurrentCompany.Id);
     }
 
-    private async Task<bool> TryRefreshAccessTokenAsync()
+    private async Task<RefreshOutcome> TryRefreshAccessTokenAsync()
     {
         try
         {
             var refresh = await _tokens.GetRefreshTokenAsync();
             if (string.IsNullOrWhiteSpace(refresh))
-                return false;
+                return RefreshOutcome.Rejected;
 
             var expiry = await _tokens.GetAccessTokenExpiryAsync();
             if (expiry is DateTime exp && exp > DateTime.UtcNow.AddMinutes(2))
-                return true; // still fresh
+                return RefreshOutcome.Valid; // still fresh
 
             var sessionId = await _tokens.GetSessionIdAsync();
             var result = await _authApi.RefreshAsync(new RefreshRequest
@@ -305,15 +359,22 @@ public sealed class AuthenticationService : IAuthenticationService
             });
 
             if (!result.Success || result.Data is null)
-                return false;
+                return result.IsNetworkError ? RefreshOutcome.NetworkUnavailable : RefreshOutcome.Rejected;
 
             await PersistAuthenticatedSessionAsync(result.Data);
-            return true;
+            return RefreshOutcome.Valid;
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Token refresh failed.");
-            return false;
+            return RefreshOutcome.NetworkUnavailable;
         }
+    }
+
+    private enum RefreshOutcome
+    {
+        Valid,
+        NetworkUnavailable,
+        Rejected
     }
 }

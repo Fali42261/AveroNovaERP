@@ -12,9 +12,9 @@
     <!-- <key>LSApplicationCategoryType</key> -->
     <!-- <string>public.app-category.YOUR-CATEGORY-HERE</string> -->
 	<key>CFBundleDisplayName</key>
-	<string>AveroNova</string>
+	<string>SwipeDigit</string>
 	<key>CFBundleName</key>
-	<string>AveroNova</string>
+	<string>SwipeDigit</string>
 	<key>UIDeviceFamily</key>
 	<array>
 		<integer>2</integer>

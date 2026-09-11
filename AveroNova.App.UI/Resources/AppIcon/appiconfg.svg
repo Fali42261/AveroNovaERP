@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="456" height="456" viewBox="0 0 456 456" version="1.1" xmlns="http://www.w3.org/2000/svg">
-    <!-- AveroNova AN mark. Geometric, high-contrast, readable at launcher sizes. -->
-    <path fill="#FFFFFF" fill-rule="evenodd" d="M140 118 L50 338 L230 338 Z M140 214 L110 286 L170 286 Z"/>
-    <path fill="#FFFFFF" d="M258 118 H294 V250 L362 118 H406 V338 H370 V206 L302 338 H258 Z"/>
+    <!-- SwipeDigit SW mark. Bold strokes remain legible at launcher sizes. -->
+    <path d="M205 150 C184 126 130 124 106 153 C82 183 102 211 145 220 L174 226 C215 235 222 279 190 307 C160 333 105 329 82 299"
+          fill="none" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M232 136 L263 320 L307 218 L351 320 L382 136"
+          fill="none" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

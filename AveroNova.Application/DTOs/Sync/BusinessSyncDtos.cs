@@ -16,6 +16,7 @@ public sealed class BusinessSyncItemRequest
     public SyncOperation Operation { get; set; }
     public string? PayloadJson { get; set; }
     public DateTime ClientUpdatedAtUtc { get; set; }
+    public long ExpectedServerVersion { get; set; }
 }
 
 public sealed class BusinessSyncBatchResponse
@@ -30,6 +31,9 @@ public sealed class BusinessSyncItemResult
     public Guid EntityId { get; set; }
     public string EntityType { get; set; } = string.Empty;
     public bool Success { get; set; }
+    public bool Conflict { get; set; }
     public string? Error { get; set; }
     public DateTime ServerUpdatedAtUtc { get; set; }
+    public long ServerVersion { get; set; }
+    public string? ServerPayloadJson { get; set; }
 }

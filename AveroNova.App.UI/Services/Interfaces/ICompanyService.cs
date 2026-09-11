@@ -8,7 +8,7 @@ namespace AveroNova.App.UI.Services.Interfaces;
 //  ONLINE FLOW:  ViewModel → ICompanyService → API → Server Database
 //  OFFLINE FLOW: ViewModel → ICompanyService → Local DB → Sync Queue
 //
-//  TODO: Connect to AveroNova API during backend phase.
+//  The local-first implementation queues changes for authenticated API synchronization.
 // ═══════════════════════════════════════════════════════════════
 
 public interface ICompanyService

@@ -401,6 +401,8 @@ public sealed class AuthFinalOfflineSyncGateTests : IAsyncLifetime
 
         public Task<ApiCallResult<LoginResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
             => inner.RefreshAsync(request, cancellationToken);
+        public Task<ApiCallResult<PasswordResetResponse>> ResetPasswordAsync(PasswordResetRequest request, CancellationToken cancellationToken = default)
+            => inner.ResetPasswordAsync(request, cancellationToken);
 
         public Task<ApiCallResult> LogoutAsync(LogoutRequest request, string accessToken, CancellationToken cancellationToken = default)
             => inner.LogoutAsync(request, accessToken, cancellationToken);

@@ -36,16 +36,17 @@
 		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
 		<!-- Display name shown on all platforms (launcher, taskbar, window title). -->
-		<ApplicationTitle>AveroNova</ApplicationTitle>
-		<Product>AveroNova</Product>
-		<AssemblyTitle>AveroNova</AssemblyTitle>
+		<ApplicationTitle>SwipeDigit</ApplicationTitle>
+		<Product>SwipeDigit</Product>
+		<AssemblyTitle>SwipeDigit</AssemblyTitle>
+		<AssemblyName>SwipeDigit</AssemblyName>
 
 		<!-- App Identifier (internal; not the user-facing name) -->
-		<ApplicationId>com.companyname.averonova.app.ui</ApplicationId>
+		<ApplicationId>com.swipedigit.erp</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.1</ApplicationDisplayVersion>
+		<ApplicationVersion>2</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -186,9 +187,6 @@
 		<MauiXaml Update="Layouts\MainLayout.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
-		<MauiXaml Update="Pages\Authentication\ForgotPasswordPage.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</MauiXaml>
 		<MauiXaml Update="Pages\Authentication\LoginPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
@@ -254,12 +252,6 @@
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 		<MauiXaml Update="Views\Company\TeamSetupView.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</MauiXaml>
-		<MauiXaml Update="Views\Auth\LoginFormView.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</MauiXaml>
-		<MauiXaml Update="Views\Dashboard\DashboardView.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 		<MauiXaml Update="Views\Layout\MainLayoutView.xaml">

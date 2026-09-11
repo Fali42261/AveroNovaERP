@@ -313,8 +313,10 @@ public sealed class OfflineLicenseAndBusinessTests : IAsyncLifetime
         public Task SetAccessTokenAsync(string token, DateTime expiresUtc) => Task.CompletedTask;
         public Task SetRefreshTokenAsync(string token) => Task.CompletedTask;
         public Task SetSessionIdAsync(Guid sessionId) => Task.CompletedTask;
+        public Task SetPasswordRecoveryKeyAsync(string recoveryKey) => Task.CompletedTask;
         public Task<string?> GetAccessTokenAsync() => Task.FromResult<string?>(null);
         public Task<string?> GetRefreshTokenAsync() => Task.FromResult<string?>(null);
+        public Task<string?> GetPasswordRecoveryKeyAsync() => Task.FromResult<string?>(null);
         public Task<DateTime?> GetAccessTokenExpiryAsync() => Task.FromResult<DateTime?>(null);
         public Task<Guid?> GetSessionIdAsync() => Task.FromResult<Guid?>(null);
         public Task ClearAsync() => Task.CompletedTask;

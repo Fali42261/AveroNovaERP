@@ -6,6 +6,7 @@ public interface IAuthApiClient
 {
     Task<ApiCallResult<LoginResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
     Task<ApiCallResult<LoginResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default);
+    Task<ApiCallResult<PasswordResetResponse>> ResetPasswordAsync(PasswordResetRequest request, CancellationToken cancellationToken = default);
     Task<ApiCallResult> LogoutAsync(LogoutRequest request, string accessToken, CancellationToken cancellationToken = default);
     Task<ApiCallResult<RegisterResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default);
     Task<ApiCallResult<MeResponse>> MeAsync(string accessToken, CancellationToken cancellationToken = default);
@@ -22,6 +23,9 @@ public sealed class AuthApiClient : IAuthApiClient
 
     public Task<ApiCallResult<LoginResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
         => _api.PostAsync<LoginResponse>("api/auth/refresh", request, cancellationToken: cancellationToken);
+
+    public Task<ApiCallResult<PasswordResetResponse>> ResetPasswordAsync(PasswordResetRequest request, CancellationToken cancellationToken = default)
+        => _api.PostAsync<PasswordResetResponse>("api/auth/reset-password", request, cancellationToken: cancellationToken);
 
     public Task<ApiCallResult> LogoutAsync(LogoutRequest request, string accessToken, CancellationToken cancellationToken = default)
         => _api.PostAsync("api/auth/logout", request, accessToken, cancellationToken);

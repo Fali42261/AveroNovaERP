@@ -13,6 +13,7 @@ public sealed class LoginResponse
     public IReadOnlyList<string> Roles { get; set; } = [];
     public IReadOnlyList<string> Permissions { get; set; } = [];
     public AuthSessionDto Session { get; set; } = new();
+    public string RecoveryKey { get; set; } = string.Empty;
 }
 
 public sealed class RegisterResponse
@@ -24,6 +25,12 @@ public sealed class RegisterResponse
     public string Plan { get; set; } = string.Empty;
     public DateTime TrialStartDate { get; set; }
     public DateTime TrialEndDate { get; set; }
+    public string RecoveryKey { get; set; } = string.Empty;
+}
+
+public sealed class PasswordResetResponse
+{
+    public string RecoveryKey { get; set; } = string.Empty;
 }
 
 public sealed class AuthUserDto

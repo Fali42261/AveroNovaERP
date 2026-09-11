@@ -13,8 +13,7 @@ namespace AveroNova.App.UI.Services.Interfaces;
 //  The SyncService runs in the background and processes the
 //  pending queue when internet connectivity is restored.
 //
-//  TODO: Implement full SyncService during backend phase.
-//        Required: conflict resolution, retry logic, error recovery.
+//  Implementations must preserve per-record conflicts and support retry/error recovery.
 // ═══════════════════════════════════════════════════════════════
 
 public interface ISyncService
@@ -29,5 +28,7 @@ public interface ISyncService
     Task<bool> SyncNowAsync();
     Task<bool> RetryFailedAsync();
     Task<List<SyncHistoryModel>> GetHistoryAsync();
+    Task<List<SyncConflictModel>> GetConflictsAsync();
+    Task<bool> RetryConflictUsingLocalAsync(Guid queueId);
 
 }

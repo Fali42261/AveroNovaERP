@@ -385,6 +385,60 @@ public sealed class AuthPhase3Tests : IClassFixture<AuthWebApplicationFactory>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ResetPassword_TrustedInstallation_RotatesRecoveryKeyAndRevokesSessions()
+    {
+        var client = _factory.CreateClient();
+        var userEmail = UniqueEmail("reset-user");
+        var companyEmail = UniqueEmail("reset-company");
+        var installationId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid().ToString("N");
+        var registration = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest
+        {
+            FullName = "Reset User", Email = userEmail, MobileNumber = UniqueMobile(),
+            Password = "Password1!", ConfirmPassword = "Password1!",
+            CompanyName = "Reset Company", CompanyEmail = companyEmail, CompanyMobile = UniqueMobile(),
+            Plan = "Starter", InstallationId = installationId, DeviceId = deviceId
+        });
+        var registered = (await registration.Content.ReadFromJsonAsync<ApiEnvelope<RegisterResponse>>(_json))!.Data!;
+        Assert.False(string.IsNullOrWhiteSpace(registered.RecoveryKey));
+
+        var login = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        {
+            Email = userEmail, Password = "Password1!", DeviceId = deviceId,
+            InstallationId = installationId, DeviceName = "Tests", Platform = "Tests"
+        });
+        var session = (await login.Content.ReadFromJsonAsync<ApiEnvelope<LoginResponse>>(_json))!.Data!;
+        Assert.False(string.IsNullOrWhiteSpace(session.RecoveryKey));
+
+        var reset = await client.PostAsJsonAsync("/api/auth/reset-password", new PasswordResetRequest
+        {
+            UserEmail = userEmail,
+            CompanyEmail = companyEmail,
+            NewPassword = "NewPassword2!",
+            ConfirmPassword = "NewPassword2!",
+            InstallationId = installationId,
+            DeviceId = deviceId,
+            RecoveryKey = session.RecoveryKey
+        });
+        Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
+        var resetBody = await reset.Content.ReadFromJsonAsync<ApiEnvelope<PasswordResetResponse>>(_json);
+        Assert.NotNull(resetBody?.Data);
+        Assert.NotEqual(session.RecoveryKey, resetBody!.Data!.RecoveryKey);
+
+        var oldLogin = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        {
+            Email = userEmail, Password = "Password1!", DeviceId = deviceId, InstallationId = installationId
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldLogin.StatusCode);
+
+        var newLogin = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        {
+            Email = userEmail, Password = "NewPassword2!", DeviceId = deviceId, InstallationId = installationId
+        });
+        Assert.Equal(HttpStatusCode.OK, newLogin.StatusCode);
+    }
+
     private async Task<RegisterResponse> RegisterAsync(HttpClient client, string email)
     {
         var response = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest

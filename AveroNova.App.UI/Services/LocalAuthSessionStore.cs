@@ -128,6 +128,7 @@ public interface ILocalAuthSessionStore
     Task<LocalAuthSnapshot?> EstablishOfflineSessionAsync(Guid installationId, string deviceId, Guid userId, Guid? preferredCompanyId = null, CancellationToken cancellationToken = default);
     Task<LocalAuthSnapshot?> SwitchCompanyAsync(Guid installationId, Guid userId, Guid companyId, CancellationToken cancellationToken = default);
     Task<bool> HasExpiredSessionAsync(Guid installationId, CancellationToken cancellationToken = default);
+    Task TouchSessionAsync(Guid installationId, CancellationToken cancellationToken = default);
     Task ClearAuthSessionAsync(CancellationToken cancellationToken = default);
     Task<List<LocalCompanyEntity>> GetCompaniesForUserAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<LocalUserEntity?> FindUserByEmailAsync(string email, CancellationToken cancellationToken = default);
@@ -247,12 +248,15 @@ public sealed class LocalAuthSessionStore : ILocalAuthSessionStore
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         var now = DateTime.UtcNow;
 
-        var session = await db.Sessions.AsNoTracking()
+        var candidates = await db.Sessions.AsNoTracking()
             .Where(s => s.IsActive
                         && s.InstallationId == installationId
                         && s.OfflineExpiresAtUtc > now)
             .OrderByDescending(s => s.LastAuthenticatedAtUtc)
-            .FirstOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+        var session = candidates.FirstOrDefault(s =>
+            (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
+            > now - OfflineSessionDefaults.InactivityTimeout);
 
         if (session is null)
             return null;
@@ -451,9 +455,26 @@ public sealed class LocalAuthSessionStore : ILocalAuthSessionStore
     {
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         var now = DateTime.UtcNow;
-        return await db.Sessions.AsNoTracking().AnyAsync(
-            s => s.InstallationId == installationId && s.OfflineExpiresAtUtc <= now,
-            cancellationToken);
+        var sessions = await db.Sessions.AsNoTracking()
+            .Where(s => s.InstallationId == installationId)
+            .ToListAsync(cancellationToken);
+        return sessions.Any(s => s.OfflineExpiresAtUtc <= now
+                                 || (s.LastValidatedAtUtc ?? s.LastAuthenticatedAtUtc)
+                                 <= now - OfflineSessionDefaults.InactivityTimeout);
+    }
+
+    public async Task TouchSessionAsync(Guid installationId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var session = await db.Sessions
+            .Where(s => s.InstallationId == installationId && s.IsActive)
+            .OrderByDescending(s => s.LastAuthenticatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (session is null)
+            return;
+
+        session.LastValidatedAtUtc = DateTime.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task ClearAuthSessionAsync(CancellationToken cancellationToken = default)

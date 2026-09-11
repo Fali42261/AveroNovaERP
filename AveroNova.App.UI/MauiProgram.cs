@@ -3,8 +3,6 @@ using AveroNova.App.UI.Pages.Company;
 using AveroNova.App.UI.Pages.Dashboard;
 using AveroNova.App.UI.Pages.Splash;
 using AveroNova.App.UI.ViewModels;
-using AveroNova.App.UI.Views.Auth;
-using AveroNova.App.UI.Views.Dashboard;
 using AveroNova.App.UI.Views.Layout;
 using AveroNova.App.UI.Views.Profile;
 using AveroNova.App.UI.Pages.Customers;
@@ -12,7 +10,6 @@ using AveroNova.App.UI.Services;
 using AveroNova.App.UI.Services.Api;
 using AveroNova.App.UI.Services.Interfaces;
 using AveroNova.App.UI.Services.License;
-using AveroNova.App.UI.Services.Mock;
 using AveroNova.App.UI.Services.Security;
 using AveroNova.App.UI.Data;
 using Microsoft.EntityFrameworkCore;
@@ -71,17 +68,11 @@ public static class MauiProgram
         builder.Services.AddTransient<WelcomePage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
-        builder.Services.AddTransient<ForgotPasswordPage>();
         builder.Services.AddTransient<ResetPasswordPage>();
 
         // ── Auth view models ──────────────────────────────────────────────────
-        builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<RegisterViewModel>();
 
-        // ── Auth views ────────────────────────────────────────────────────────
-        builder.Services.AddTransient<LoginFormView>();
-
-        // ── Company setup ─────────────────────────────────────────────────────
         // ── Company setup ─────────────────────────────────────────────────────
         builder.Services.AddTransient<CompanySetupPage>();
         builder.Services.AddTransient<CompanySetupViewModel>();
@@ -90,11 +81,6 @@ public static class MauiProgram
         // ── Main ERP shell ────────────────────────────────────────────────────
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<MainLayoutView>();       // single registration
-
-        // ── Dashboard ─────────────────────────────────────────────────────────
-        // builder.Services.AddTransient<DashboardPage>();
-        builder.Services.AddTransient<DashboardViewModel>();
-        builder.Services.AddTransient<DashboardView>();
 
         // ── Profile ───────────────────────────────────────────────────────────
         builder.Services.AddTransient<ProfileViewModel>();
@@ -239,10 +225,11 @@ public static class MauiProgram
         builder.Services.AddSingleton<ILocalCredentialStore, MauiLocalCredentialStore>();
         builder.Services.AddSingleton<ILicenseService, LicenseService>();
 
-        // ── Auth + Mock business services ─────────────────────────────────────
+        // ── Authentication and local-first business services ──────────────────
 
         builder.Services.AddSingleton<IClientDeviceInfo, MauiClientDeviceInfo>();
         builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        builder.Services.AddSingleton<ISessionInactivityService, SessionInactivityService>();
         builder.Services.AddTransient<IBillingService, LocalBillingService>();
         builder.Services.AddTransient<AveroNova.App.UI.Services.Interfaces.ICompanyService, LocalCompanyService>();
         builder.Services.AddSingleton<IConnectivityService, MauiConnectivityService>();

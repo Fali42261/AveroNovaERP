@@ -56,6 +56,43 @@ jobs:
         run: dotnet workload install maui-android
       - name: Build Android UI
         run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-android --configuration Debug -p:AveroNovaCiTargetFramework=net10.0-android
+      - name: Upload Android manual-test APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swipedigit-android-manual-test
+          path: AveroNova.App.UI/bin/Debug/net10.0-android/**/*.apk
+          if-no-files-found: error
+
+  ios-simulator-build:
+    # .NET 10 iOS workload currently requires Xcode 26.6, which is the default
+    # toolchain on the macOS 26 Arm64 hosted runner.
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Install iOS MAUI workload
+        run: dotnet workload install maui-ios
+      - name: Build iOS Simulator UI
+        run: >-
+          dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj
+          --framework net10.0-ios
+          --configuration Debug
+          -p:AveroNovaCiTargetFramework=net10.0-ios
+          -p:RuntimeIdentifier=iossimulator-arm64
+          -p:CodesignKey=""
+          -p:CodesignProvision=""
+      - name: Upload iOS Simulator manual-test app
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swipedigit-ios-simulator-manual-test
+          path: AveroNova.App.UI/bin/Debug/net10.0-ios/iossimulator-arm64/**/*.app/**
+          if-no-files-found: error
 
   windows-build:
     runs-on: windows-latest
@@ -70,3 +107,10 @@ jobs:
         run: dotnet workload install maui-windows
       - name: Build Windows UI
         run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj --framework net10.0-windows10.0.19041.0 --configuration Debug -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0
+      - name: Upload Windows manual-test build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swipedigit-windows-manual-test
+          path: AveroNova.App.UI/bin/Debug/net10.0-windows10.0.19041.0/win-x64/**
+          if-no-files-found: error

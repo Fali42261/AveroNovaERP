@@ -46,6 +46,11 @@ namespace AveroNova.Infrastructure.Migrations
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("RecoveryKeyHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SyncStatus")
                         .HasColumnType("INTEGER");
 

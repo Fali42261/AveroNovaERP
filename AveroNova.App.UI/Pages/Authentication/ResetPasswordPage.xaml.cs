@@ -87,7 +87,9 @@ public partial class ResetPasswordPage : ContentPage
         }
     }
 
-    private void OnEmailCompleted(object? sender, EventArgs e) => EntryPassword.Focus();
+    private void OnEmailCompleted(object? sender, EventArgs e) => EntryCompanyEmail.Focus();
+
+    private void OnCompanyEmailCompleted(object? sender, EventArgs e) => EntryPassword.Focus();
 
     private void OnPasswordCompleted(object? sender, EventArgs e) => EntryConfirm.Focus();
 
@@ -98,13 +100,16 @@ public partial class ResetPasswordPage : ContentPage
         HideFieldErrors();
 
         var emailMissing = string.IsNullOrWhiteSpace(EntryEmail.Text);
+        var companyEmailMissing = string.IsNullOrWhiteSpace(EntryCompanyEmail.Text);
         var passwordMissing = string.IsNullOrWhiteSpace(EntryPassword.Text);
         var confirmMissing = string.IsNullOrWhiteSpace(EntryConfirm.Text);
         var mismatch = !passwordMissing && !confirmMissing
                        && !string.Equals(EntryPassword.Text, EntryConfirm.Text, StringComparison.Ordinal);
 
         if (emailMissing)
-            ShowFieldError(LblEmailError, "Email address is required");
+            ShowFieldError(LblEmailError, "User email is required");
+        if (companyEmailMissing)
+            ShowFieldError(LblCompanyEmailError, "Company email is required");
         if (passwordMissing)
             ShowFieldError(LblPasswordError, "New password is required");
         else if (!PasswordPolicy.IsStrong(EntryPassword.Text))
@@ -114,7 +119,7 @@ public partial class ResetPasswordPage : ContentPage
         else if (mismatch)
             ShowFieldError(LblConfirmError, "Passwords do not match");
 
-        if (emailMissing || passwordMissing || confirmMissing || mismatch || !PasswordPolicy.IsStrong(EntryPassword.Text))
+        if (emailMissing || companyEmailMissing || passwordMissing || confirmMissing || mismatch || !PasswordPolicy.IsStrong(EntryPassword.Text))
             return;
 
         SetLoading(true);
@@ -123,7 +128,9 @@ public partial class ResetPasswordPage : ContentPage
         {
             var (success, error) = await _auth.ResetPasswordAsync(
                 EntryEmail.Text.Trim(),
-                EntryPassword.Text);
+                EntryCompanyEmail.Text.Trim(),
+                EntryPassword.Text,
+                EntryConfirm.Text);
 
             if (success)
             {
@@ -164,6 +171,7 @@ public partial class ResetPasswordPage : ContentPage
     private void HideFieldErrors()
     {
         LblEmailError.IsVisible = false;
+        LblCompanyEmailError.IsVisible = false;
         LblPasswordError.IsVisible = false;
         LblConfirmError.IsVisible = false;
         ErrorBanner.IsVisible = false;

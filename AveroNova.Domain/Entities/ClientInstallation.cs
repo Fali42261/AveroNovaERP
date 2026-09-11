@@ -12,6 +12,7 @@ public class ClientInstallation : BaseEntity
     public string DeviceId { get; set; } = string.Empty;
     public Guid UserId { get; set; }
     public Guid CompanyId { get; set; }
+    public string RecoveryKeyHash { get; set; } = string.Empty;
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
