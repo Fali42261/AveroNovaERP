@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SwapDigit.App.UI.ViewModels
+namespace AveroNova.App.UI.ViewModels
 {
     public class ProfileViewModel
     {
