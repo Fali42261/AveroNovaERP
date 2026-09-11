@@ -34,15 +34,15 @@
                             StrokeShape="RoundRectangle 16"
                             Padding="18,10"
                             HorizontalOptions="Center">
-                        <Label Text="A"
-                               FontSize="32"
+                        <Label Text="SW"
+                               FontSize="28"
                                FontAttributes="Bold"
                                TextColor="{StaticResource Primary400}"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
                                LineBreakMode="NoWrap"/>
                     </Border>
-                    <Label Text="AveroNova ERP"
+                    <Label Text="SwipeDigit ERP"
                            FontSize="28"
                            FontAttributes="Bold"
                            TextColor="{StaticResource White}"
@@ -87,7 +87,7 @@
                                      Spacing="0"
                                      MaximumWidthRequest="440">
 
-                    <Label Text="Welcome to AveroNova"
+                    <Label Text="Welcome to SwipeDigit"
                            FontSize="26"
                            FontAttributes="Bold"
                            TextColor="{StaticResource TextPrimary}"
@@ -124,7 +124,7 @@
                             helpers:CursorBehavior.Cursor="Hand"
                             Clicked="OnRegisterClicked"/>
 
-                    <Label Text="AveroNova ERP v1.0"
+                    <Label Text="SwipeDigit ERP v1.0"
                            FontSize="11"
                            TextColor="{StaticResource TextTertiary}"
                            HorizontalOptions="Center"
