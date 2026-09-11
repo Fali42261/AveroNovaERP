@@ -15,11 +15,11 @@
 
             <Border Style="{StaticResource AppCard}">
                 <VerticalStackLayout Spacing="12">
-                    <Label Text="SwipeDigit"
+                    <Label Text="SwapDigit"
                            FontSize="22"
                            FontAttributes="Bold"
                            TextColor="{StaticResource PrimaryColor}" />
-                    <Label Text="SwipeDigit ERP"
+                    <Label Text="SwapDigit ERP"
                            FontSize="16"
                            FontAttributes="Bold" />
                     <Label Text="Version 1.0"
@@ -37,7 +37,7 @@
                     <Label Text="Help &amp; Support"
                            FontSize="17"
                            FontAttributes="Bold" />
-                    <Label Text="For application support, contact your SwipeDigit administrator or support team."
+                    <Label Text="For application support, contact your SwapDigit administrator or support team."
                            FontSize="14"
                            LineBreakMode="WordWrap"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
