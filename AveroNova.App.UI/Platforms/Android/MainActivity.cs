@@ -6,7 +6,7 @@ using Android.Views;
 namespace AveroNova.App.UI
 {
     [Activity(
-        Label = "SwipeDigit",
+        Label = "SwapDigit",
         Theme = "@style/Maui.SplashTheme",
         MainLauncher = true,
         LaunchMode = LaunchMode.SingleTop,
