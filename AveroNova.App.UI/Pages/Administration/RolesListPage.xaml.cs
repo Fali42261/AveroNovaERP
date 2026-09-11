@@ -12,6 +12,7 @@ public partial class RolesListPage : ContentPage, IHostedPage
     private readonly IMainContentNavigator _navigator;
     private readonly Func<RoleFormPage> _formFactory;
     private List<RoleModel> _all = [];
+    private List<UserModel> _users = [];
     private bool _loading;
 
     public RolesListPage(
@@ -40,13 +41,23 @@ public partial class RolesListPage : ContentPage, IHostedPage
         try
         {
             var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
-            _all = companyId == Guid.Empty ? [] : await _svc.GetRolesAsync(companyId);
+            if (companyId == Guid.Empty)
+            {
+                _all = [];
+                _users = [];
+            }
+            else
+            {
+                _all = await _svc.GetRolesAsync(companyId);
+                _users = await _svc.GetAllAsync(companyId);
+            }
             RenderList(_all);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Roles] Load failed: {ex}");
             _all = [];
+            _users = [];
             RoleList.Children.Clear();
             RoleList.Children.Add(new Label
             {
@@ -82,7 +93,8 @@ public partial class RolesListPage : ContentPage, IHostedPage
 
         var shown = _all.Where(r =>
                 r.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                (r.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                (r.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                AssignedUsers(r).Any(u => u.Name.Contains(q, StringComparison.OrdinalIgnoreCase)))
             .ToList();
         RenderList(shown);
     }
@@ -109,8 +121,18 @@ public partial class RolesListPage : ContentPage, IHostedPage
             RoleList.Children.Add(BuildRow(role));
     }
 
+    private List<UserModel> AssignedUsers(RoleModel role) =>
+        _users.Where(u => u.RoleId == role.LocalId)
+            .OrderBy(u => u.Name)
+            .ToList();
+
     private View BuildRow(RoleModel role)
     {
+        var assignedUsers = AssignedUsers(role);
+        var assignedText = assignedUsers.Count == 0
+            ? "Assigned to: No users"
+            : $"Assigned to: {string.Join(", ", assignedUsers.Select(u => u.Name))}";
+
         var border = new Border
         {
             BackgroundColor = Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark
@@ -147,7 +169,7 @@ public partial class RolesListPage : ContentPage, IHostedPage
             }
         };
 
-        var info = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center };
+        var info = new VerticalStackLayout { Spacing = 3, VerticalOptions = LayoutOptions.Center };
         info.Children.Add(new Label { Text = role.Name, FontSize = 14, FontAttributes = FontAttributes.Bold });
         info.Children.Add(new Label
         {
@@ -157,7 +179,15 @@ public partial class RolesListPage : ContentPage, IHostedPage
         });
         info.Children.Add(new Label
         {
-            Text = $"{role.UserCount} user{(role.UserCount == 1 ? string.Empty : "s")}",
+            Text = assignedText,
+            FontSize = 12,
+            FontAttributes = FontAttributes.Bold,
+            TextColor = assignedUsers.Count == 0 ? Color.FromArgb("#94A3B8") : Color.FromArgb("#2563EB"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+        info.Children.Add(new Label
+        {
+            Text = $"{assignedUsers.Count} user{(assignedUsers.Count == 1 ? string.Empty : "s")}",
             FontSize = 11,
             TextColor = Color.FromArgb("#94A3B8")
         });
