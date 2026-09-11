@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 
 namespace AveroNova.App.UI.Views.Layout;
 
@@ -109,7 +110,7 @@ public partial class MainLayoutView
             }
 
             var choice = await GetHostPage().DisplayActionSheet(
-                "AveroNova Menu",
+                "SwipeDigit Menu",
                 "Cancel",
                 null,
                 entries.Select(x => x.Label).ToArray());
