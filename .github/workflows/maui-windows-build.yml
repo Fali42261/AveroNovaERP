@@ -1,0 +1,52 @@
+name: MAUI Windows Build
+
+on:
+  pull_request:
+    branches:
+      - AveroNovaERP
+  push:
+    branches:
+      - AveroNovaERP
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workload
+        shell: pwsh
+        run: dotnet workload install maui
+
+      - name: Restore Windows target and win-x64 runtime
+        shell: pwsh
+        run: dotnet restore AveroNova.App.UI/AveroNova.App.UI.csproj -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -r win-x64
+
+      - name: Publish Windows x64 unpackaged app
+        shell: pwsh
+        run: dotnet publish AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -p:WindowsPackageType=None -p:SelfContained=true --no-restore
+
+      - name: Collect Windows package
+        shell: pwsh
+        run: |
+          $publish = Get-ChildItem -Path 'AveroNova.App.UI/bin/Release/net10.0-windows10.0.19041.0/win-x64' -Directory -Recurse | Where-Object { $_.Name -eq 'publish' } | Select-Object -First 1
+          if (-not $publish) { throw 'Windows publish directory not found.' }
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path "$($publish.FullName)/*" -DestinationPath 'artifacts/AveroNova-Windows-win-x64.zip' -Force
+          Get-Item 'artifacts/AveroNova-Windows-win-x64.zip'
+
+      - name: Upload Windows test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AveroNova-Windows-win-x64
+          path: artifacts/AveroNova-Windows-win-x64.zip
+          if-no-files-found: error
+          retention-days: 14
