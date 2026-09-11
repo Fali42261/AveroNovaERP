@@ -12,6 +12,7 @@ public partial class RegisterPage : ContentPage
     private readonly IInstallationService _installation;
     private readonly RegisterViewModel _vm;
     private bool _layoutBusy;
+    private bool _inputUxConfigured;
     private ScreenSize? _appliedSize;
     private int _appliedColumns = -1;
     private int _lastStep = -1;
@@ -23,6 +24,7 @@ public partial class RegisterPage : ContentPage
         _installation = installation;
         _vm = vm;
         BindingContext = _vm;
+        ConfigureCreateAccountInputUx();
         SizeChanged += (_, _) => ApplyLayout();
         _vm.PropertyChanged += (_, e) =>
         {
@@ -41,6 +43,7 @@ public partial class RegisterPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        ConfigureCreateAccountInputUx();
         await _installation.EnsureInitializedAsync();
         UpdateStepUi();
         ApplyLayout();
@@ -139,6 +142,112 @@ public partial class RegisterPage : ContentPage
             [FieldAddress]
         ];
         ApplyFieldGrid(PersonalGrid, rows, columns);
+    }
+
+    private void ConfigureCreateAccountInputUx()
+    {
+        if (_inputUxConfigured)
+            return;
+
+        SetPlaceholder(FieldFullName, "Enter full name");
+        SetPlaceholder(FieldEmail, "Enter email address");
+        SetPlaceholder(FieldMobile, "Enter mobile number");
+        SetPlaceholder(FieldCity, "Enter city");
+        SetPlaceholder(FieldState, "Enter state");
+        SetPlaceholder(FieldCountry, "Enter country");
+        SetPlaceholder(FieldPin, "Enter PIN / ZIP code");
+        SetPlaceholder(FieldPassword, "Min 6 chars: upper, lower, number & symbol");
+        SetPlaceholder(FieldConfirmPassword, "Re-enter password");
+        SetPlaceholder(FieldAddress, "Enter street address");
+
+        SetPlaceholder(FieldCompanyName, "Enter company name");
+        SetPlaceholder(FieldOwnerName, "Enter owner name");
+        SetPlaceholder(FieldGst, "Enter GST number");
+        SetPlaceholder(FieldPan, "Enter PAN number");
+        SetPlaceholder(FieldCompanyEmail, "Enter company email");
+        SetPlaceholder(FieldCompanyMobile, "Enter company mobile number");
+        SetPlaceholder(FieldCompanyCountry, "Enter country");
+        SetPlaceholder(FieldCompanyState, "Enter state");
+        SetPlaceholder(FieldCompanyCity, "Enter city");
+        SetPlaceholder(FieldCompanyPin, "Enter PIN / ZIP code");
+        SetPlaceholder(FieldCompanyAddress, "Enter company address");
+
+        foreach (var input in EnumerateFocusableInputs(ContentHost))
+        {
+            input.Focused -= OnFormInputFocused;
+            input.Focused += OnFormInputFocused;
+        }
+
+        _inputUxConfigured = true;
+    }
+
+    private static void SetPlaceholder(View host, string placeholder)
+    {
+        var input = FindFocusableInput(host);
+        switch (input)
+        {
+            case Entry entry:
+                entry.Placeholder = placeholder;
+                break;
+            case Editor editor:
+                editor.Placeholder = placeholder;
+                break;
+        }
+    }
+
+    private async void OnFormInputFocused(object? sender, FocusEventArgs e)
+    {
+        if (sender is not View input)
+            return;
+
+        try
+        {
+            await Task.Delay(180);
+            await PageScroll.ScrollToAsync(input, ScrollToPosition.Center, true);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Register] Input scroll failed: {ex}");
+        }
+    }
+
+    private static IEnumerable<View> EnumerateFocusableInputs(View root)
+    {
+        if (root is Entry or Editor)
+        {
+            yield return root;
+            yield break;
+        }
+
+        if (root is Border border && border.Content is View borderContent)
+        {
+            foreach (var item in EnumerateFocusableInputs(borderContent))
+                yield return item;
+            yield break;
+        }
+
+        if (root is ContentView contentView && contentView.Content is View content)
+        {
+            foreach (var item in EnumerateFocusableInputs(content))
+                yield return item;
+            yield break;
+        }
+
+        if (root is ScrollView scrollView && scrollView.Content is View scrollContent)
+        {
+            foreach (var item in EnumerateFocusableInputs(scrollContent))
+                yield return item;
+            yield break;
+        }
+
+        if (root is Microsoft.Maui.Controls.Layout layout)
+        {
+            foreach (var child in layout.Children.OfType<View>())
+            {
+                foreach (var item in EnumerateFocusableInputs(child))
+                    yield return item;
+            }
+        }
     }
 
     private void LayoutCompany(int columns)
@@ -460,7 +569,7 @@ public partial class RegisterPage : ContentPage
 
         var input = FindFocusableInput(host);
         input?.Focus();
-        await PageScroll.ScrollToAsync(host, ScrollToPosition.MakeVisible, true);
+        await PageScroll.ScrollToAsync(host, ScrollToPosition.Center, true);
     }
 
     private static View? FindFocusableInput(View root)
@@ -470,6 +579,12 @@ public partial class RegisterPage : ContentPage
 
         if (root is Border border && border.Content is View borderContent)
             return FindFocusableInput(borderContent);
+
+        if (root is ContentView contentView && contentView.Content is View content)
+            return FindFocusableInput(content);
+
+        if (root is ScrollView scrollView && scrollView.Content is View scrollContent)
+            return FindFocusableInput(scrollContent);
 
         if (root is Microsoft.Maui.Controls.Layout layout)
         {
