@@ -1,0 +1,86 @@
+name: Rebrand SwapDigit
+
+on:
+  push:
+    branches:
+      - swapDigit
+
+permissions:
+  contents: write
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout swapDigit
+        uses: actions/checkout@v4
+        with:
+          ref: swapDigit
+          fetch-depth: 0
+
+      - name: Apply SwapDigit visible branding
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+
+          # Replace only visible XAML Text/Title attribute values, never namespaces/classes.
+          for path in (root / 'AveroNova.App.UI').rglob('*.xaml'):
+              text = path.read_text(encoding='utf-8-sig')
+              def repl(m):
+                  value = m.group(2)
+                  value = value.replace('AveroNova ERP', 'SwapDigit')
+                  value = value.replace('AveroNova', 'SwapDigit')
+                  return m.group(1) + value + m.group(3)
+              updated = re.sub(r'(\b(?:Text|Title)\s*=\s*")([^"]*)(")', repl, text)
+              updated = updated.replace('Text="AN"', 'Text="SW"')
+              if path.as_posix().endswith('Pages/Authentication/WelcomePage.xaml'):
+                  updated = updated.replace('Text="A"', 'Text="SW"', 1)
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+
+          # Application display metadata only; preserve RootNamespace and project names.
+          csproj = root / 'AveroNova.App.UI/AveroNova.App.UI.csproj'
+          text = csproj.read_text(encoding='utf-8-sig')
+          text = re.sub(r'<ApplicationTitle>.*?</ApplicationTitle>', '<ApplicationTitle>SwapDigit</ApplicationTitle>', text)
+          text = re.sub(r'<Product>.*?</Product>', '<Product>SwapDigit</Product>', text)
+          text = re.sub(r'<AssemblyTitle>.*?</AssemblyTitle>', '<AssemblyTitle>SwapDigit</AssemblyTitle>', text)
+          csproj.write_text(text, encoding='utf-8')
+
+          # Shared user-visible app name.
+          constants = root / 'AveroNova.Shared/Helpers/AppConstants.cs'
+          if constants.exists():
+              text = constants.read_text(encoding='utf-8-sig')
+              text = text.replace('AppName = "AveroNova ERP"', 'AppName = "SwapDigit"')
+              constants.write_text(text, encoding='utf-8')
+
+          profile = root / 'AveroNova.App.UI/ViewModels/ProfileViewModel.cs'
+          if profile.exists():
+              text = profile.read_text(encoding='utf-8-sig')
+              text = text.replace('AveroNova ERP', 'SwapDigit').replace('AveroNova', 'SwapDigit')
+              profile.write_text(text, encoding='utf-8')
+
+          # Replace AN launcher mark with a clean SW vector mark.
+          icon = root / 'AveroNova.App.UI/Resources/AppIcon/appiconfg.svg'
+          icon.write_text('''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          <svg width="456" height="456" viewBox="0 0 456 456" version="1.1" xmlns="http://www.w3.org/2000/svg">
+            <!-- SwapDigit SW mark -->
+            <path fill="#FFFFFF" d="M206 128 H116 C82 128 62 148 62 180 C62 213 83 230 116 230 H168 C181 230 187 236 187 246 C187 256 180 263 168 263 H64 V307 H174 C211 307 232 286 232 250 C232 216 211 197 176 197 H124 C112 197 106 191 106 181 C106 171 112 165 124 165 H206 Z"/>
+            <path fill="#FFFFFF" d="M244 128 H286 L303 266 L329 180 H361 L387 266 L404 128 H446 L416 328 H377 L345 230 L313 328 H274 Z"/>
+          </svg>
+          ''', encoding='utf-8')
+
+      - name: Commit SwapDigit branding
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "SwapDigit branding already applied."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add AveroNova.App.UI AveroNova.Shared
+          git commit -m "Rebrand visible app UI to SwapDigit"
+          git push origin HEAD:swapDigit
