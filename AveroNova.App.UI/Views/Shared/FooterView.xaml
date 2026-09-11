@@ -12,24 +12,16 @@
         Padding="25,15">
 
         <Grid>
-
             <Grid.ColumnDefinitions>
-
                 <ColumnDefinition Width="*" />
-
                 <ColumnDefinition Width="Auto" />
-
             </Grid.ColumnDefinitions>
-
-            <!-- Left -->
 
             <Label
                 VerticalOptions="Center"
-                Text="© 2026 SwipeDigit ERP"
+                Text="© 2026 SwapDigit ERP"
                 FontSize="14"
                 TextColor="Gray"/>
-
-            <!-- Right -->
 
             <HorizontalStackLayout
                 Grid.Column="1"
@@ -50,9 +42,6 @@
                     TextColor="White"/>
 
             </HorizontalStackLayout>
-
         </Grid>
-
     </Border>
-
 </ContentView>
