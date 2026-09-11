@@ -185,7 +185,7 @@ public sealed class AuthService : IAuthService
             var user = new User
             {
                 Id = userId,
-                UserCode = $"U{now:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}",
+                UserCode = CreateEntityCode('U'),
                 FullName = request.FullName.Trim(),
                 Email = email,
                 MobileNumber = mobile,
@@ -198,7 +198,7 @@ public sealed class AuthService : IAuthService
             var company = new Company
             {
                 Id = companyId,
-                CompanyCode = $"C{now:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}",
+                CompanyCode = CreateEntityCode('C'),
                 CompanyName = request.CompanyName.Trim(),
                 OwnerName = string.IsNullOrWhiteSpace(request.OwnerName) ? user.FullName : request.OwnerName.Trim(),
                 Email = request.CompanyEmail.Trim().ToLowerInvariant(),
@@ -778,6 +778,9 @@ public sealed class AuthService : IAuthService
         => string.IsNullOrWhiteSpace(mobile)
             ? string.Empty
             : new string(mobile.Where(char.IsDigit).ToArray());
+
+    private static string CreateEntityCode(char prefix)
+        => $"{prefix}{Guid.NewGuid():N}"[..20];
 
     private static AuthUserDto MapUser(User user) => new()
     {
