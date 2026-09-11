@@ -107,8 +107,8 @@ public partial class CustomerViewPage : ContentPage, IHostedPage
                 new ColumnDefinition(GridLength.Star)),
             ColumnSpacing = 16
         };
-        sGrid.Add(BuildStat("Total Purchases", $"${c.TotalPurchases:N0}", "#2563EB"), 0, 0);
-        sGrid.Add(BuildStat("Outstanding", $"${c.OutstandingBalance:N0}", c.OutstandingBalance > 0 ? "#DC2626" : "#059669"), 1, 0);
+        sGrid.Add(BuildStat("Total Purchases", $"₹{c.TotalPurchases:N0}", "#2563EB"), 0, 0);
+        sGrid.Add(BuildStat("Outstanding", $"₹{c.OutstandingBalance:N0}", c.OutstandingBalance > 0 ? "#DC2626" : "#059669"), 1, 0);
         statsCard.Content = sGrid;
 
         var detailCard = MakeCard();
