@@ -24,13 +24,13 @@ public partial class SettingsPage : ContentPage, IHostedPage
     private Entry _accent = null!;
     private Switch _compact = null!;
     private Switch _notifications = null!;
-    private Switch _autoSync = null!;
     private Switch _offline = null!;
     private Switch _remember = null!;
     private Label _message = null!;
     private Button _saveButton = null!;
 
-    private static readonly string[] Themes = ["System", "Light", "Dark"];
+    // Must match ThemeMode enum order: Light=0, Dark=1, System=2.
+    private static readonly string[] Themes = ["Light", "Dark", "System"];
     private static readonly string[] Languages = ["English", "Hindi", "Urdu"];
     private static readonly string[] LanguageCodes = ["en", "hi", "ur"];
     private static readonly string[] Dates = ["dd MMM yyyy", "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd"];
@@ -53,12 +53,6 @@ public partial class SettingsPage : ContentPage, IHostedPage
         await LoadForHostAsync();
     }
 
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        _saving = false;
-    }
-
     public async Task LoadForHostAsync()
     {
         try
@@ -67,6 +61,10 @@ public partial class SettingsPage : ContentPage, IHostedPage
             _settings.RememberLogin = Microsoft.Maui.Storage.Preferences.Default.Get(
                 RememberLoginPreferenceKey,
                 _settings.RememberLogin);
+
+            // Sync is product-managed: online => sync, offline => pending queue.
+            _settings.AutoSync = true;
+
             AppRegionalPreferences.Apply(
                 _settings.Language,
                 _settings.DateFormat,
@@ -74,25 +72,21 @@ public partial class SettingsPage : ContentPage, IHostedPage
                 _settings.CurrencySymbol,
                 _settings.TimeZone,
                 persist: false);
+
+            ApplyTheme(_settings.Theme);
             BuildContent();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Settings] Load failed: {ex}");
-            BuildFallback(ex.Message);
+            BuildFallback();
         }
     }
 
-    private async void OnRefreshing(object s, EventArgs e)
+    private async void OnRefreshing(object? sender, EventArgs e)
     {
-        try
-        {
-            await LoadForHostAsync();
-        }
-        finally
-        {
-            Refresher.IsRefreshing = false;
-        }
+        try { await LoadForHostAsync(); }
+        finally { Refresher.IsRefreshing = false; }
     }
 
     private void OnConnectivityChanged(object? sender, ConnectivityStatus status)
@@ -118,6 +112,7 @@ public partial class SettingsPage : ContentPage, IHostedPage
             var border = dark ? Color.FromArgb("#334155") : Color.FromArgb("#E2E8F0");
 
             _theme = MakePicker(Themes, ClampIndex((int)_settings.Theme, Themes.Length), primaryText);
+            _theme.SelectedIndexChanged += OnThemeChanged;
             _accent = new Entry
             {
                 Text = string.IsNullOrWhiteSpace(_settings.AccentColor) ? "#2563EB" : _settings.AccentColor,
@@ -137,7 +132,6 @@ public partial class SettingsPage : ContentPage, IHostedPage
             _date = MakePicker(Dates, FindIndex(Dates, _settings.DateFormat), primaryText);
             _currency = MakePicker(Currencies, FindIndex(CurrencyCodes, _settings.Currency), primaryText);
             _timeZone = MakePicker(TimeZones, FindIndex(TimeZones, _settings.TimeZone), primaryText);
-
             _language.SelectedIndexChanged += OnRegionalChanged;
             _date.SelectedIndexChanged += OnRegionalChanged;
             _currency.SelectedIndexChanged += OnRegionalChanged;
@@ -151,12 +145,7 @@ public partial class SettingsPage : ContentPage, IHostedPage
                 Row("Time zone", _timeZone, secondaryText)));
 
             _notifications = new Switch { IsToggled = _settings.Notifications };
-            _autoSync = new Switch { IsToggled = _settings.AutoSync };
-            _offline = new Switch
-            {
-                IsToggled = !_connectivity.IsOnline,
-                IsEnabled = false
-            };
+            _offline = new Switch { IsToggled = !_connectivity.IsOnline, IsEnabled = false };
             _remember = new Switch
             {
                 IsToggled = Microsoft.Maui.Storage.Preferences.Default.Get(
@@ -167,9 +156,16 @@ public partial class SettingsPage : ContentPage, IHostedPage
             SettingsContent.Children.Add(Card(
                 "Sync & Preferences", surface, border, primaryText, secondaryText,
                 Row("Notifications", _notifications, secondaryText),
-                Row("Auto-sync", _autoSync, secondaryText),
                 Row("Offline mode (current status)", _offline, secondaryText),
                 Row("Remember login", _remember, secondaryText)));
+
+            SettingsContent.Children.Add(new Label
+            {
+                Text = "Synchronization runs automatically when internet is available. Offline changes remain queued until connection returns.",
+                FontSize = 11,
+                TextColor = secondaryText,
+                HorizontalTextAlignment = TextAlignment.Center
+            });
 
             _message = new Label
             {
@@ -199,55 +195,31 @@ public partial class SettingsPage : ContentPage, IHostedPage
         }
     }
 
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        if (_building) return;
+        var mode = (ThemeMode)ClampIndex(_theme.SelectedIndex, Themes.Length);
+        ApplyTheme(mode);
+        ShowMessage("Theme selected. Tap Save Settings to keep it.", true);
+    }
+
     private void OnRegionalChanged(object? sender, EventArgs e)
     {
-        if (_building)
-            return;
-
-        var language = LanguageCodes[ClampIndex(_language.SelectedIndex, LanguageCodes.Length)];
-        var dateFormat = Dates[ClampIndex(_date.SelectedIndex, Dates.Length)];
-        var currencyIndex = ClampIndex(_currency.SelectedIndex, CurrencyCodes.Length);
-        var timeZone = TimeZones[ClampIndex(_timeZone.SelectedIndex, TimeZones.Length)];
-
+        if (_building) return;
+        var ci = ClampIndex(_currency.SelectedIndex, CurrencyCodes.Length);
         AppRegionalPreferences.Apply(
-            language,
-            dateFormat,
-            CurrencyCodes[currencyIndex],
-            CurrencySymbols[currencyIndex],
-            timeZone,
+            LanguageCodes[ClampIndex(_language.SelectedIndex, LanguageCodes.Length)],
+            Dates[ClampIndex(_date.SelectedIndex, Dates.Length)],
+            CurrencyCodes[ci],
+            CurrencySymbols[ci],
+            TimeZones[ClampIndex(_timeZone.SelectedIndex, TimeZones.Length)],
             persist: false);
-
-        ShowMessage("Regional preference selected. Tap Save Settings to keep it.", success: true);
+        ShowMessage("Regional preference selected. Tap Save Settings to keep it.", true);
     }
 
-    private void BuildFallback(string detail)
+    private async void OnSaveClicked(object? sender, EventArgs e)
     {
-        SettingsContent.Children.Clear();
-        SettingsContent.Children.Add(new Border
-        {
-            Stroke = Color.FromArgb("#FECACA"),
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) },
-            BackgroundColor = Color.FromArgb("#FEF2F2"),
-            Padding = new Thickness(16),
-            Content = new VerticalStackLayout
-            {
-                Spacing = 6,
-                Children =
-                {
-                    new Label { Text = "Settings could not be loaded", FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#991B1B") },
-                    new Label { Text = "The app is still running. Pull down to retry.", FontSize = 12, TextColor = Color.FromArgb("#7F1D1D") }
-                }
-            }
-        });
-        System.Diagnostics.Debug.WriteLine($"[Settings] Fallback detail: {detail}");
-    }
-
-    private async void OnSaveClicked(object? s, EventArgs e)
-    {
-        if (_saving)
-            return;
-
+        if (_saving) return;
         _saving = true;
         _saveButton.IsEnabled = false;
         _saveButton.Text = "Saving...";
@@ -260,27 +232,23 @@ public partial class SettingsPage : ContentPage, IHostedPage
             _settings.CompactMode = _compact.IsToggled;
             _settings.Language = LanguageCodes[ClampIndex(_language.SelectedIndex, LanguageCodes.Length)];
             _settings.DateFormat = Dates[ClampIndex(_date.SelectedIndex, Dates.Length)];
-
             var ci = ClampIndex(_currency.SelectedIndex, CurrencyCodes.Length);
             _settings.Currency = CurrencyCodes[ci];
             _settings.CurrencySymbol = CurrencySymbols[ci];
             _settings.TimeZone = TimeZones[ClampIndex(_timeZone.SelectedIndex, TimeZones.Length)];
             _settings.Notifications = _notifications.IsToggled;
-            _settings.AutoSync = _autoSync.IsToggled;
+            _settings.AutoSync = true;
             _settings.OfflineMode = !_connectivity.IsOnline;
             _settings.RememberLogin = _remember.IsToggled;
 
             var result = await _service.SaveAsync(_settings);
             if (!result.Ok)
             {
-                ShowMessage(result.Error ?? "Settings could not be saved.", success: false);
+                ShowMessage(result.Error ?? "Settings could not be saved.", false);
                 return;
             }
 
-            Microsoft.Maui.Storage.Preferences.Default.Set(
-                RememberLoginPreferenceKey,
-                _settings.RememberLogin);
-
+            Microsoft.Maui.Storage.Preferences.Default.Set(RememberLoginPreferenceKey, _settings.RememberLogin);
             AppRegionalPreferences.Apply(
                 _settings.Language,
                 _settings.DateFormat,
@@ -288,19 +256,15 @@ public partial class SettingsPage : ContentPage, IHostedPage
                 _settings.CurrencySymbol,
                 _settings.TimeZone,
                 persist: true);
-
             ApplyTheme(_settings.Theme);
+
             BuildContent();
-            ShowMessage(
-                _connectivity.IsOnline
-                    ? "Settings saved and applied successfully."
-                    : "Settings saved locally and applied. They will sync when a connection is available.",
-                success: true);
+            ShowMessage("Settings saved successfully.", true);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Settings] Save failed: {ex}");
-            ShowMessage("Settings could not be saved. Please try again.", success: false);
+            ShowMessage("Settings could not be saved. Please try again.", false);
         }
         finally
         {
@@ -315,36 +279,42 @@ public partial class SettingsPage : ContentPage, IHostedPage
 
     private static void ApplyTheme(ThemeMode theme)
     {
-        if (Microsoft.Maui.Controls.Application.Current is null)
-            return;
-
+        if (Microsoft.Maui.Controls.Application.Current is null) return;
         Microsoft.Maui.Controls.Application.Current.UserAppTheme = theme switch
         {
-            ThemeMode.Dark => AppTheme.Dark,
             ThemeMode.Light => AppTheme.Light,
+            ThemeMode.Dark => AppTheme.Dark,
             _ => AppTheme.Unspecified
         };
     }
 
-    private bool IsDark(ThemeMode theme)
+    private static bool IsDark(ThemeMode theme)
     {
-        if (theme == ThemeMode.Dark)
-            return true;
-        if (theme == ThemeMode.Light)
-            return false;
+        if (theme == ThemeMode.Dark) return true;
+        if (theme == ThemeMode.Light) return false;
         return Microsoft.Maui.Controls.Application.Current?.RequestedTheme == AppTheme.Dark;
+    }
+
+    private void BuildFallback()
+    {
+        SettingsContent.Children.Clear();
+        SettingsContent.Children.Add(new Label
+        {
+            Text = "Settings could not be loaded. Pull down to retry.",
+            TextColor = Color.FromArgb("#DC2626"),
+            HorizontalOptions = LayoutOptions.Center,
+            Margin = new Thickness(0, 30)
+        });
     }
 
     private void HideMessage()
     {
-        if (_message is not null)
-            _message.IsVisible = false;
+        if (_message is not null) _message.IsVisible = false;
     }
 
     private void ShowMessage(string text, bool success)
     {
-        if (_message is null)
-            return;
+        if (_message is null) return;
         _message.Text = text;
         _message.TextColor = success ? Color.FromArgb("#059669") : Color.FromArgb("#DC2626");
         _message.IsVisible = true;
@@ -353,21 +323,14 @@ public partial class SettingsPage : ContentPage, IHostedPage
     private static string NormalizeAccent(string? value)
     {
         var text = value?.Trim() ?? string.Empty;
-        if (text.Length == 6 && !text.StartsWith('#'))
-            text = "#" + text;
+        if (text.Length == 6 && !text.StartsWith('#')) text = "#" + text;
         return string.IsNullOrWhiteSpace(text) ? "#2563EB" : text;
     }
 
     private static Color SafeAccentColor(string? value)
     {
-        try
-        {
-            return Color.FromArgb(NormalizeAccent(value));
-        }
-        catch
-        {
-            return Color.FromArgb("#2563EB");
-        }
+        try { return Color.FromArgb(NormalizeAccent(value)); }
+        catch { return Color.FromArgb("#2563EB"); }
     }
 
     private static int FindIndex(string[] values, string? value)
@@ -376,8 +339,7 @@ public partial class SettingsPage : ContentPage, IHostedPage
         return i < 0 ? 0 : i;
     }
 
-    private static int ClampIndex(int index, int length) =>
-        index < 0 || index >= length ? 0 : index;
+    private static int ClampIndex(int index, int length) => index < 0 || index >= length ? 0 : index;
 
     private static Picker MakePicker(IEnumerable<string> values, int index, Color textColor) => new()
     {
@@ -390,38 +352,24 @@ public partial class SettingsPage : ContentPage, IHostedPage
 
     private static Grid Row(string label, View control, Color textColor)
     {
-        var g = new Grid
+        var grid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitionCollection(
                 new ColumnDefinition(GridLength.Star),
                 new ColumnDefinition(GridLength.Auto)),
             ColumnSpacing = 12
         };
-        g.Add(new Label { Text = label, VerticalOptions = LayoutOptions.Center, TextColor = textColor }, 0, 0);
-        g.Add(control, 1, 0);
-        return g;
+        grid.Add(new Label { Text = label, VerticalOptions = LayoutOptions.Center, TextColor = textColor }, 0, 0);
+        grid.Add(control, 1, 0);
+        return grid;
     }
 
-    private static Border Card(
-        string title,
-        Color background,
-        Color border,
-        Color titleColor,
-        Color dividerColor,
-        params View[] rows)
+    private static Border Card(string title, Color background, Color border, Color titleColor, Color dividerColor, params View[] rows)
     {
         var stack = new VerticalStackLayout { Spacing = 12 };
-        stack.Children.Add(new Label
-        {
-            Text = title,
-            FontSize = 14,
-            FontAttributes = FontAttributes.Bold,
-            TextColor = titleColor
-        });
+        stack.Children.Add(new Label { Text = title, FontSize = 14, FontAttributes = FontAttributes.Bold, TextColor = titleColor });
         stack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = dividerColor });
-        foreach (var row in rows)
-            stack.Children.Add(row);
-
+        foreach (var row in rows) stack.Children.Add(row);
         return new Border
         {
             Stroke = border,
