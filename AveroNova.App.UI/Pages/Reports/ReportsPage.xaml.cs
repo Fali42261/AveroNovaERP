@@ -49,14 +49,13 @@ public partial class ReportsPage : ContentPage, IHostedPage
             LblExpenses.Text = Money(summary.OperatingExpenses);
             LblProfit.Text = Money(summary.NetProfit);
             LblOutstanding.Text = Money(summary.OutstandingReceivables);
-            AddRow("Sales", $"{summary.InvoiceCount} invoices", summary.GrossSales);
-            AddRow("Sales returns", "Completed refunds", -summary.SalesReturns);
-            AddRow("Purchases", $"{summary.PurchaseCount} orders", summary.GrossPurchases);
-            AddRow("Purchase returns", "Completed refunds", -summary.PurchaseReturns);
-            AddRow("Operating expenses", "Approved / paid", summary.OperatingExpenses);
-            AddRow("Payments received", "Completed", summary.PaymentsReceived);
-            AddRow("Payments paid", "Completed supplier payments", summary.PaymentsPaid);
-            AddRow("Outstanding payables", "Pending supplier payment", summary.OutstandingPayables);
+
+            AddRow("Sales", $"{summary.InvoiceCount} invoices", summary.NetRevenue);
+            AddRow("Purchases", $"{summary.PurchaseCount} orders", summary.NetPurchases);
+            AddRow("Expenses", "Business expenses", summary.OperatingExpenses);
+            AddRow("Payments received", "Customer payments", summary.PaymentsReceived);
+            AddRow("Pending collection", "Customer outstanding", summary.OutstandingReceivables);
+            AddRow("Pending supplier payment", "Supplier outstanding", summary.OutstandingPayables);
         }
         catch (Exception ex)
         {
