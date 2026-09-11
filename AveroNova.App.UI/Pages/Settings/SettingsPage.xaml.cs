@@ -1,3 +1,4 @@
+using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
@@ -13,6 +14,7 @@ public partial class SettingsPage : ContentPage, IHostedPage
     private readonly IConnectivityService _connectivity;
     private AppSettings _settings = new();
     private bool _saving;
+    private bool _building;
 
     private Picker _theme = null!;
     private Picker _language = null!;
@@ -65,6 +67,13 @@ public partial class SettingsPage : ContentPage, IHostedPage
             _settings.RememberLogin = Microsoft.Maui.Storage.Preferences.Default.Get(
                 RememberLoginPreferenceKey,
                 _settings.RememberLogin);
+            AppRegionalPreferences.Apply(
+                _settings.Language,
+                _settings.DateFormat,
+                _settings.Currency,
+                _settings.CurrencySymbol,
+                _settings.TimeZone,
+                persist: false);
             BuildContent();
         }
         catch (Exception ex)
@@ -97,84 +106,118 @@ public partial class SettingsPage : ContentPage, IHostedPage
 
     private void BuildContent()
     {
-        SettingsContent.Children.Clear();
-
-        var dark = IsDark(_settings.Theme);
-        var primaryText = dark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#0F172A");
-        var secondaryText = dark ? Color.FromArgb("#CBD5E1") : Color.FromArgb("#334155");
-        var surface = dark ? Color.FromArgb("#111827") : Colors.White;
-        var border = dark ? Color.FromArgb("#334155") : Color.FromArgb("#E2E8F0");
-
-        _theme = MakePicker(Themes, ClampIndex((int)_settings.Theme, Themes.Length), primaryText);
-        _accent = new Entry
+        _building = true;
+        try
         {
-            Text = string.IsNullOrWhiteSpace(_settings.AccentColor) ? "#2563EB" : _settings.AccentColor,
-            HorizontalTextAlignment = TextAlignment.Center,
-            WidthRequest = 210,
-            TextColor = primaryText
-        };
-        _compact = new Switch { IsToggled = _settings.CompactMode };
+            SettingsContent.Children.Clear();
 
-        SettingsContent.Children.Add(Card(
-            "Appearance", surface, border, primaryText, secondaryText,
-            Row("Theme", _theme, secondaryText),
-            Row("Accent color", _accent, secondaryText),
-            Row("Compact mode", _compact, secondaryText)));
+            var dark = IsDark(_settings.Theme);
+            var primaryText = dark ? Color.FromArgb("#F8FAFC") : Color.FromArgb("#0F172A");
+            var secondaryText = dark ? Color.FromArgb("#CBD5E1") : Color.FromArgb("#334155");
+            var surface = dark ? Color.FromArgb("#111827") : Colors.White;
+            var border = dark ? Color.FromArgb("#334155") : Color.FromArgb("#E2E8F0");
 
-        _language = MakePicker(Languages, FindIndex(LanguageCodes, _settings.Language), primaryText);
-        _date = MakePicker(Dates, FindIndex(Dates, _settings.DateFormat), primaryText);
-        _currency = MakePicker(Currencies, FindIndex(CurrencyCodes, _settings.Currency), primaryText);
-        _timeZone = MakePicker(TimeZones, FindIndex(TimeZones, _settings.TimeZone), primaryText);
+            _theme = MakePicker(Themes, ClampIndex((int)_settings.Theme, Themes.Length), primaryText);
+            _accent = new Entry
+            {
+                Text = string.IsNullOrWhiteSpace(_settings.AccentColor) ? "#2563EB" : _settings.AccentColor,
+                HorizontalTextAlignment = TextAlignment.Center,
+                WidthRequest = 210,
+                TextColor = primaryText
+            };
+            _compact = new Switch { IsToggled = _settings.CompactMode };
 
-        SettingsContent.Children.Add(Card(
-            "Regional", surface, border, primaryText, secondaryText,
-            Row("Language", _language, secondaryText),
-            Row("Date format", _date, secondaryText),
-            Row("Currency", _currency, secondaryText),
-            Row("Time zone", _timeZone, secondaryText)));
+            SettingsContent.Children.Add(Card(
+                "Appearance", surface, border, primaryText, secondaryText,
+                Row("Theme", _theme, secondaryText),
+                Row("Accent color", _accent, secondaryText),
+                Row("Compact mode", _compact, secondaryText)));
 
-        _notifications = new Switch { IsToggled = _settings.Notifications };
-        _autoSync = new Switch { IsToggled = _settings.AutoSync };
-        _offline = new Switch
+            _language = MakePicker(Languages, FindIndex(LanguageCodes, _settings.Language), primaryText);
+            _date = MakePicker(Dates, FindIndex(Dates, _settings.DateFormat), primaryText);
+            _currency = MakePicker(Currencies, FindIndex(CurrencyCodes, _settings.Currency), primaryText);
+            _timeZone = MakePicker(TimeZones, FindIndex(TimeZones, _settings.TimeZone), primaryText);
+
+            _language.SelectedIndexChanged += OnRegionalChanged;
+            _date.SelectedIndexChanged += OnRegionalChanged;
+            _currency.SelectedIndexChanged += OnRegionalChanged;
+            _timeZone.SelectedIndexChanged += OnRegionalChanged;
+
+            SettingsContent.Children.Add(Card(
+                "Regional", surface, border, primaryText, secondaryText,
+                Row("Language", _language, secondaryText),
+                Row("Date format", _date, secondaryText),
+                Row("Currency", _currency, secondaryText),
+                Row("Time zone", _timeZone, secondaryText)));
+
+            _notifications = new Switch { IsToggled = _settings.Notifications };
+            _autoSync = new Switch { IsToggled = _settings.AutoSync };
+            _offline = new Switch
+            {
+                IsToggled = !_connectivity.IsOnline,
+                IsEnabled = false
+            };
+            _remember = new Switch
+            {
+                IsToggled = Microsoft.Maui.Storage.Preferences.Default.Get(
+                    RememberLoginPreferenceKey,
+                    _settings.RememberLogin)
+            };
+
+            SettingsContent.Children.Add(Card(
+                "Sync & Preferences", surface, border, primaryText, secondaryText,
+                Row("Notifications", _notifications, secondaryText),
+                Row("Auto-sync", _autoSync, secondaryText),
+                Row("Offline mode (current status)", _offline, secondaryText),
+                Row("Remember login", _remember, secondaryText)));
+
+            _message = new Label
+            {
+                IsVisible = false,
+                HorizontalTextAlignment = TextAlignment.Center,
+                FontSize = 12
+            };
+            SettingsContent.Children.Add(_message);
+
+            _saveButton = new Button
+            {
+                Text = "Save Settings",
+                HeightRequest = 46,
+                CornerRadius = 10,
+                BackgroundColor = SafeAccentColor(_settings.AccentColor),
+                TextColor = Colors.White,
+                FontAttributes = FontAttributes.Bold,
+                HorizontalOptions = LayoutOptions.Fill,
+                MaximumWidthRequest = 500
+            };
+            _saveButton.Clicked += OnSaveClicked;
+            SettingsContent.Children.Add(_saveButton);
+        }
+        finally
         {
-            IsToggled = !_connectivity.IsOnline,
-            IsEnabled = false
-        };
-        _remember = new Switch
-        {
-            IsToggled = Microsoft.Maui.Storage.Preferences.Default.Get(
-                RememberLoginPreferenceKey,
-                _settings.RememberLogin)
-        };
+            _building = false;
+        }
+    }
 
-        SettingsContent.Children.Add(Card(
-            "Sync & Preferences", surface, border, primaryText, secondaryText,
-            Row("Notifications", _notifications, secondaryText),
-            Row("Auto-sync", _autoSync, secondaryText),
-            Row("Offline mode (current status)", _offline, secondaryText),
-            Row("Remember login", _remember, secondaryText)));
+    private void OnRegionalChanged(object? sender, EventArgs e)
+    {
+        if (_building)
+            return;
 
-        _message = new Label
-        {
-            IsVisible = false,
-            HorizontalTextAlignment = TextAlignment.Center,
-            FontSize = 12
-        };
-        SettingsContent.Children.Add(_message);
+        var language = LanguageCodes[ClampIndex(_language.SelectedIndex, LanguageCodes.Length)];
+        var dateFormat = Dates[ClampIndex(_date.SelectedIndex, Dates.Length)];
+        var currencyIndex = ClampIndex(_currency.SelectedIndex, CurrencyCodes.Length);
+        var timeZone = TimeZones[ClampIndex(_timeZone.SelectedIndex, TimeZones.Length)];
 
-        _saveButton = new Button
-        {
-            Text = "Save Settings",
-            HeightRequest = 46,
-            CornerRadius = 10,
-            BackgroundColor = SafeAccentColor(_settings.AccentColor),
-            TextColor = Colors.White,
-            FontAttributes = FontAttributes.Bold,
-            HorizontalOptions = LayoutOptions.Fill,
-            MaximumWidthRequest = 500
-        };
-        _saveButton.Clicked += OnSaveClicked;
-        SettingsContent.Children.Add(_saveButton);
+        AppRegionalPreferences.Apply(
+            language,
+            dateFormat,
+            CurrencyCodes[currencyIndex],
+            CurrencySymbols[currencyIndex],
+            timeZone,
+            persist: false);
+
+        ShowMessage("Regional preference selected. Tap Save Settings to keep it.", success: true);
     }
 
     private void BuildFallback(string detail)
@@ -238,12 +281,20 @@ public partial class SettingsPage : ContentPage, IHostedPage
                 RememberLoginPreferenceKey,
                 _settings.RememberLogin);
 
+            AppRegionalPreferences.Apply(
+                _settings.Language,
+                _settings.DateFormat,
+                _settings.Currency,
+                _settings.CurrencySymbol,
+                _settings.TimeZone,
+                persist: true);
+
             ApplyTheme(_settings.Theme);
             BuildContent();
             ShowMessage(
                 _connectivity.IsOnline
-                    ? "Settings saved successfully."
-                    : "Settings saved locally. They will sync when a connection is available.",
+                    ? "Settings saved and applied successfully."
+                    : "Settings saved locally and applied. They will sync when a connection is available.",
                 success: true);
         }
         catch (Exception ex)
