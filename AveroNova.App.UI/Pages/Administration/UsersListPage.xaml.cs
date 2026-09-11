@@ -9,15 +9,18 @@ public partial class UsersListPage : ContentPage, IHostedPage
 {
     private readonly IUserService _svc;
     private readonly ICompanyService _company;
+    private readonly ISubscriptionService _subscriptions;
     private readonly IMainContentNavigator _navigator;
     private readonly Func<UserFormPage> _formFactory;
     private readonly Func<UserViewPage> _viewFactory;
     private List<UserModel> _all = [];
     private bool _loading;
+    private int _maxUsers = 2;
 
     public UsersListPage(
         IUserService svc,
         ICompanyService company,
+        ISubscriptionService subscriptions,
         IMainContentNavigator navigator,
         Func<UserFormPage> formFactory,
         Func<UserViewPage> viewFactory)
@@ -25,6 +28,7 @@ public partial class UsersListPage : ContentPage, IHostedPage
         InitializeComponent();
         _svc = svc;
         _company = company;
+        _subscriptions = subscriptions;
         _navigator = navigator;
         _formFactory = formFactory;
         _viewFactory = viewFactory;
@@ -44,12 +48,17 @@ public partial class UsersListPage : ContentPage, IHostedPage
         {
             var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
             _all = companyId == Guid.Empty ? [] : await _svc.GetAllAsync(companyId);
+
+            var subscription = companyId == Guid.Empty ? null : await _subscriptions.GetCurrentAsync(companyId);
+            _maxUsers = subscription?.MaxUsers ?? 2;
+            ApplyPlanLimit();
             RenderList(_all);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Users] Load failed: {ex}");
             _all = [];
+            BtnAdd.IsEnabled = false;
             UserList.Children.Clear();
             UserList.Children.Add(new Label
             {
@@ -64,6 +73,25 @@ public partial class UsersListPage : ContentPage, IHostedPage
         {
             _loading = false;
         }
+    }
+
+    private void ApplyPlanLimit()
+    {
+        var unlimited = _maxUsers < 0;
+        var reached = !unlimited && _all.Count >= _maxUsers;
+        BtnAdd.IsEnabled = !reached;
+        BtnAdd.Opacity = reached ? 0.5 : 1;
+        PlanLimitBanner.IsVisible = reached;
+
+        if (unlimited)
+        {
+            LblPlanLimit.Text = string.Empty;
+            return;
+        }
+
+        LblPlanLimit.Text = reached
+            ? $"Free plan limit reached: {_maxUsers} users total (owner/admin included). Upgrade to add more users."
+            : $"Free plan: {_all.Count} of {_maxUsers} users used.";
     }
 
     private async void OnRefreshing(object? sender, EventArgs e)
@@ -233,6 +261,12 @@ public partial class UsersListPage : ContentPage, IHostedPage
 
     private async void OnAddClicked(object? sender, EventArgs e)
     {
+        if (_maxUsers >= 0 && _all.Count >= _maxUsers)
+        {
+            await DisplayAlert("Free plan limit", $"You can have up to {_maxUsers} users total on the Free plan, including the owner/admin.", "OK");
+            return;
+        }
+
         try { await _navigator.NavigateAsync(_formFactory(), "Add User", "Home / Users / Add"); }
         catch (Exception ex)
         {
