@@ -8,7 +8,7 @@ namespace AveroNova.Shared.Helpers
     {
         public const string Welcome = "Welcome";
 
-        public const string AppName = "AveroNova ERP";
+        public const string AppName = "SwipeDigit ERP";
 
         public const string TagLine = "Modern Business Management System";
 
