@@ -7,6 +7,8 @@ public partial class MainLayoutView
 {
     private bool _productUxConnectivityHooked;
     private bool _productUxNavigationHooked;
+    private bool _productUxLoadedHooked;
+    private bool _initialDashboardLoaded;
 
     protected override void OnParentSet()
     {
@@ -28,6 +30,12 @@ public partial class MainLayoutView
                 _contentNavigator.PageChanged += OnProductUxPageChanged;
                 _productUxNavigationHooked = true;
             }
+
+            if (!_productUxLoadedHooked)
+            {
+                Loaded += OnProductUxLoaded;
+                _productUxLoadedHooked = true;
+            }
         }
         else
         {
@@ -43,7 +51,34 @@ public partial class MainLayoutView
                 _productUxNavigationHooked = false;
             }
 
+            if (_productUxLoadedHooked)
+            {
+                Loaded -= OnProductUxLoaded;
+                _productUxLoadedHooked = false;
+            }
+
             MBtnSettings.Clicked -= OnMoreClicked;
+        }
+    }
+
+    private async void OnProductUxLoaded(object? sender, EventArgs e)
+    {
+        if (_initialDashboardLoaded) return;
+        _initialDashboardLoaded = true;
+
+        try
+        {
+            var page = _dashboardFactory();
+            ShowMobilePage(page, "Dashboard", "Home / Dashboard");
+            _contentNavigator.SetRoot(page, "Dashboard", "Home / Dashboard");
+            UpdateMobileNavSelection("Dashboard");
+
+            if (page is IHostedPage hosted)
+                await hosted.LoadForHostAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Dashboard] Initial load failed: {ex}");
         }
     }
 
@@ -114,18 +149,19 @@ public partial class MainLayoutView
                 "Cancel",
                 null,
                 entries.Select(x => x.Label).ToArray());
+
             if (string.IsNullOrWhiteSpace(choice) || choice == "Cancel") return;
 
             var selected = entries.FirstOrDefault(x => x.Label == choice);
             if (selected is null) return;
 
-            var exemptFromLicense = selected.PermissionKey is "License" or "Settings" or "Help" or "SyncCenter";
+            var exemptFromLicense = selected.PermissionKey is "License" or "Settings" or "Help";
             if (!exemptFromLicense)
             {
                 var access = await _licenses.GetAccessStateAsync();
                 if (!access.AllowsAccess)
                 {
-                    await NavigateMobileAsync(() => _licenseFactory(), "License", "Home / License");
+                    await NavigateMobileAsync(() => _licenseFactory(), "Plan", "Home / Plan");
                     return;
                 }
             }
@@ -141,6 +177,7 @@ public partial class MainLayoutView
 
     private List<MobileMenuEntry> BuildMobileMoreEntries() =>
     [
+        // Dashboard, Billing, Customers and Reports already exist in bottom navigation.
         new("Company", "Company", "Company", "Home / Company", () => _companyFactory()),
         new("Products", "Products", "Products", "Home / Products", () => _productsFactory()),
         new("Inventory", "Inventory", "Inventory", "Home / Inventory", () => _inventoryFactory()),
@@ -153,26 +190,50 @@ public partial class MainLayoutView
         new("Roles", "Roles", "Roles", "Home / Administration / Roles", () => _rolesFactory()),
         new("Permissions", "Permissions", "Permissions", "Home / Administration / Permissions", () => _permissionsFactory()),
         new("Notifications", "Notifications", "Notifications", "Home / Notifications", () => _notificationsFactory()),
-        new("SyncCenter", "Sync Center", "Sync Center", "Home / Sync Center", () => _syncCenterFactory()),
         new("Settings", "Settings", "Settings", "Home / Settings", () => _settingsFactory()),
-        new("License", "License", "License", "Home / License", () => _licenseFactory()),
+        new("License", "Plan", "Plan", "Home / Plan", () => _licenseFactory()),
         new("Help", "Help & Support", "Help & Support", "Home / Help", () => _helpFactory())
     ];
 
     private async Task NavigateMobileAsync(Func<ContentPage> factory, string title, string breadcrumb)
     {
-        var page = factory();
-        if (page is IHostedPage hosted)
-            await hosted.LoadForHostAsync();
+        ContentPage page;
+        try
+        {
+            page = factory();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[MainMenu] Factory failed for {title}: {ex}");
+            await ShowMessageAsync(title, $"{title} could not be opened.");
+            return;
+        }
 
+        // Show the selected page first so a data-loading problem never closes the menu/app shell.
         ShowMobilePage(page, title, breadcrumb);
         _contentNavigator.SetRoot(page, title, breadcrumb);
         UpdateMobileNavSelection(title);
+
+        if (page is IHostedPage hosted)
+        {
+            try
+            {
+                await hosted.LoadForHostAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainMenu] Hosted load failed for {title}: {ex}");
+                await ShowMessageAsync(title, $"{title} opened, but its data could not be loaded. Pull down to retry.");
+            }
+        }
     }
 
     private Page GetHostPage()
     {
-        if (Window?.Page is Page page) return page;
+        var page = Microsoft.Maui.Controls.Application.Current?.Windows
+            .FirstOrDefault(w => w.Page is not null)?.Page;
+        if (page is not null) return page;
+        if (Window?.Page is Page windowPage) return windowPage;
         return Shell.Current ?? throw new InvalidOperationException("No active page is available.");
     }
 
