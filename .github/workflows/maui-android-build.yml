@@ -30,3 +30,20 @@ jobs:
 
       - name: Build Android target
         run: dotnet build AveroNova.App.UI/AveroNova.App.UI.csproj -c Debug -f net10.0-android -p:AveroNovaCiTargetFramework=net10.0-android --no-restore
+
+      - name: Collect installable APK
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          find AveroNova.App.UI/bin/Debug/net10.0-android -type f -name '*.apk' -exec cp {} artifacts/ \;
+          echo 'APK files:'
+          find artifacts -maxdepth 1 -type f -name '*.apk' -print
+          test -n "$(find artifacts -maxdepth 1 -type f -name '*.apk' -print -quit)"
+
+      - name: Upload Android test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AveroNova-Android-Test-APK
+          path: artifacts/*.apk
+          if-no-files-found: error
+          retention-days: 14
