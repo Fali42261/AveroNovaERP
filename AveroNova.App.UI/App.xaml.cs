@@ -19,7 +19,7 @@ namespace AveroNova.App.UI
         {
             var window = new Window(_appShell)
             {
-                Title = "AveroNova"
+                Title = "SwipeDigit"
             };
 
             // Desktop window sizing is Windows-only. Setting Width/Height on Android
