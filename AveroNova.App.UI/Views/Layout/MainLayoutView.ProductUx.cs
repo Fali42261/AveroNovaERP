@@ -18,6 +18,7 @@ public partial class MainLayoutView
         {
             HideOfflineBanners();
             ConfigureMobileNavigation();
+            ApplySwipeDigitBranding(this);
 
             if (!_productUxConnectivityHooked)
             {
@@ -63,6 +64,9 @@ public partial class MainLayoutView
 
     private async void OnProductUxLoaded(object? sender, EventArgs e)
     {
+        ApplySwipeDigitBranding(this);
+        BtnSyncCenter.IsVisible = false;
+
         if (_initialDashboardLoaded) return;
         _initialDashboardLoaded = true;
 
@@ -88,6 +92,7 @@ public partial class MainLayoutView
         MBtnSettings.Clicked -= OnNavClicked;
         MBtnSettings.Clicked -= OnMoreClicked;
         MBtnSettings.Clicked += OnMoreClicked;
+        BtnSyncCenter.IsVisible = false;
         UpdateMobileNavSelection("Dashboard");
     }
 
@@ -95,7 +100,12 @@ public partial class MainLayoutView
         => MainThread.BeginInvokeOnMainThread(HideOfflineBanners);
 
     private void OnProductUxPageChanged(object? sender, HostedPage entry)
-        => MainThread.BeginInvokeOnMainThread(() => UpdateMobileNavSelection(entry.Title));
+        => MainThread.BeginInvokeOnMainThread(() =>
+        {
+            UpdateMobileNavSelection(entry.Title);
+            ApplySwipeDigitBranding(this);
+            BtnSyncCenter.IsVisible = false;
+        });
 
     private void HideOfflineBanners()
     {
@@ -177,7 +187,6 @@ public partial class MainLayoutView
 
     private List<MobileMenuEntry> BuildMobileMoreEntries() =>
     [
-        // Dashboard, Billing, Customers and Reports already exist in bottom navigation.
         new("Company", "Company", "Company", "Home / Company", () => _companyFactory()),
         new("Products", "Products", "Products", "Home / Products", () => _productsFactory()),
         new("Inventory", "Inventory", "Inventory", "Home / Inventory", () => _inventoryFactory()),
@@ -209,7 +218,6 @@ public partial class MainLayoutView
             return;
         }
 
-        // Show the selected page first so a data-loading problem never closes the menu/app shell.
         ShowMobilePage(page, title, breadcrumb);
         _contentNavigator.SetRoot(page, title, breadcrumb);
         UpdateMobileNavSelection(title);
@@ -246,6 +254,36 @@ public partial class MainLayoutView
             && value is Color color)
             return color;
         return Color.FromArgb(fallback);
+    }
+
+    private static void ApplySwipeDigitBranding(View view)
+    {
+        if (view is Label label && !string.IsNullOrEmpty(label.Text))
+        {
+            if (label.Text == "A") label.Text = "SW";
+            else if (label.Text == "AN") label.Text = "SW";
+            else if (label.Text.Contains("AveroNova", StringComparison.Ordinal))
+                label.Text = label.Text.Replace("AveroNova", "SwipeDigit", StringComparison.Ordinal);
+        }
+
+        switch (view)
+        {
+            case Layout layout:
+                foreach (var child in layout.Children.OfType<View>()) ApplySwipeDigitBranding(child);
+                break;
+            case Border border when border.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+            case ContentView contentView when contentView.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+            case ScrollView scrollView when scrollView.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+            case RefreshView refreshView when refreshView.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+        }
     }
 
     private sealed record MobileMenuEntry(
