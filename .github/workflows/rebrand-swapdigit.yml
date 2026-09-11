@@ -26,7 +26,7 @@ jobs:
 
           root = Path('.')
 
-          # Replace only visible XAML Text/Title attribute values, never namespaces/classes.
+          # Replace only visible XAML Text/Title attribute values; preserve namespaces/classes.
           for path in (root / 'AveroNova.App.UI').rglob('*.xaml'):
               text = path.read_text(encoding='utf-8-sig')
               def repl(m):
@@ -49,17 +49,20 @@ jobs:
           text = re.sub(r'<AssemblyTitle>.*?</AssemblyTitle>', '<AssemblyTitle>SwapDigit</AssemblyTitle>', text)
           csproj.write_text(text, encoding='utf-8')
 
-          # Shared user-visible app name.
+          # Shared user-visible app name only.
           constants = root / 'AveroNova.Shared/Helpers/AppConstants.cs'
           if constants.exists():
               text = constants.read_text(encoding='utf-8-sig')
               text = text.replace('AppName = "AveroNova ERP"', 'AppName = "SwapDigit"')
               constants.write_text(text, encoding='utf-8')
 
+          # Profile strings only; never alter its namespace.
           profile = root / 'AveroNova.App.UI/ViewModels/ProfileViewModel.cs'
           if profile.exists():
               text = profile.read_text(encoding='utf-8-sig')
-              text = text.replace('AveroNova ERP', 'SwapDigit').replace('AveroNova', 'SwapDigit')
+              text = re.sub(r'"([^"\n]*(?:AveroNova ERP|AveroNova)[^"\n]*)"',
+                            lambda m: '"' + m.group(1).replace('AveroNova ERP', 'SwapDigit').replace('AveroNova', 'SwapDigit') + '"',
+                            text)
               profile.write_text(text, encoding='utf-8')
 
           # Replace AN launcher mark with a clean SW vector mark.
