@@ -83,7 +83,7 @@
                             VerticalOptions="Center">
 
                             <Label
-                                Text="AveroNova"
+                                Text="SwapDigit"
                                 FontSize="18"
                                 FontAttributes="Bold"
                                 TextColor="{StaticResource White}" />
@@ -371,7 +371,7 @@
 
                         <Label
                             x:Name="LblCompanyName"
-                            Text="AveroNova Global"
+                            Text="SwapDigit Global"
                             FontSize="12"
                             FontAttributes="Bold"
                             TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />

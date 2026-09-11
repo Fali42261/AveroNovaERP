@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>
@@ -36,9 +36,9 @@
 		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
 		<!-- Display name shown on all platforms (launcher, taskbar, window title). -->
-		<ApplicationTitle>AveroNova</ApplicationTitle>
-		<Product>AveroNova</Product>
-		<AssemblyTitle>AveroNova</AssemblyTitle>
+		<ApplicationTitle>SwapDigit</ApplicationTitle>
+		<Product>SwapDigit</Product>
+		<AssemblyTitle>SwapDigit</AssemblyTitle>
 
 		<!-- App Identifier (internal; not the user-facing name) -->
 		<ApplicationId>com.companyname.averonova.app.ui</ApplicationId>

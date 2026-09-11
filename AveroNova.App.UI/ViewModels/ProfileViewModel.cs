@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace AveroNova.App.UI.ViewModels
+namespace SwapDigit.App.UI.ViewModels
 {
     public class ProfileViewModel
     {
@@ -11,12 +11,12 @@ namespace AveroNova.App.UI.ViewModels
             "Profile completed successfully!";
 
         public string SuccessMessage { get; set; } =
-            "Your account is now active. You can start using AveroNova ERP.";
+            "Your account is now active. You can start using SwapDigit.";
 
 
         // Company Information
         public string CompanyName { get; set; } =
-            "AveroNova ERP";
+            "SwapDigit";
 
         public string OwnerName { get; set; } =
             "Faizan Ali";

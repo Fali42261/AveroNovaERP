@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,7 +8,7 @@ namespace AveroNova.Shared.Helpers
     {
         public const string Welcome = "Welcome";
 
-        public const string AppName = "AveroNova ERP";
+        public const string AppName = "SwapDigit";
 
         public const string TagLine = "Modern Business Management System";
 

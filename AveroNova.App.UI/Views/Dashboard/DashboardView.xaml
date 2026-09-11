@@ -76,7 +76,7 @@
                         <VerticalStackLayout Spacing="3">
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                                 <Label Text="&#x1F3DB;" FontSize="14" VerticalOptions="Center" />
-                                <Label Text="AveroNova Global"
+                                <Label Text="SwapDigit Global"
                                        FontSize="13" FontAttributes="Bold"
                                        TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
                             </HorizontalStackLayout>

@@ -11,7 +11,7 @@
 
         <Border WidthRequest="72" HeightRequest="72" BackgroundColor="#1557B0" StrokeThickness="0"
                 StrokeShape="RoundRectangle 18" HorizontalOptions="Center">
-            <Label Text="AN" FontSize="22" FontAttributes="Bold"
+            <Label Text="SW" FontSize="22" FontAttributes="Bold"
                    TextColor="{StaticResource Primary400}"
                    HorizontalOptions="Center" VerticalOptions="Center"/>
         </Border>

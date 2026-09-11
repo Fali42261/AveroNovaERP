@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="456" height="456" viewBox="0 0 456 456" version="1.1" xmlns="http://www.w3.org/2000/svg">
-    <!-- AveroNova AN mark. Geometric, high-contrast, readable at launcher sizes. -->
-    <path fill="#FFFFFF" fill-rule="evenodd" d="M140 118 L50 338 L230 338 Z M140 214 L110 286 L170 286 Z"/>
-    <path fill="#FFFFFF" d="M258 118 H294 V250 L362 118 H406 V338 H370 V206 L302 338 H258 Z"/>
+  <!-- SwapDigit SW mark -->
+  <path fill="#FFFFFF" d="M206 128 H116 C82 128 62 148 62 180 C62 213 83 230 116 230 H168 C181 230 187 236 187 246 C187 256 180 263 168 263 H64 V307 H174 C211 307 232 286 232 250 C232 216 211 197 176 197 H124 C112 197 106 191 106 181 C106 171 112 165 124 165 H206 Z"/>
+  <path fill="#FFFFFF" d="M244 128 H286 L303 266 L329 180 H361 L387 266 L404 128 H446 L416 328 H377 L345 230 L313 328 H274 Z"/>
 </svg>

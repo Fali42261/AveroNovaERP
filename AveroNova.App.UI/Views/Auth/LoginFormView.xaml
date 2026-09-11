@@ -22,7 +22,7 @@
                 FontAttributes="Bold"
                 TextColor="{StaticResource TextPrimary}" />
             <Label
-                Text="Sign in to your AveroNova ERP account"
+                Text="Sign in to your SwapDigit account"
                 FontSize="{StaticResource FontSizeBody}"
                 TextColor="{StaticResource TextSecondary}" />
         </VerticalStackLayout>
