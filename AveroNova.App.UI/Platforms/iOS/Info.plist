@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>AveroNova</string>
+	<string>SwipeDigit</string>
 	<key>CFBundleName</key>
-	<string>AveroNova</string>
+	<string>SwipeDigit</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIDeviceFamily</key>

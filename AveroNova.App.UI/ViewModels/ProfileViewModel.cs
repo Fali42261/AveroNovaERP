@@ -16,7 +16,7 @@ namespace AveroNova.App.UI.ViewModels
 
         // Company Information
         public string CompanyName { get; set; } =
-            "AveroNova ERP";
+            "SwipeDigit ERP";
 
         public string OwnerName { get; set; } =
             "Faizan Ali";

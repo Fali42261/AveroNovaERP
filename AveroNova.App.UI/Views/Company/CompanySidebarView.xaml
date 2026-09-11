@@ -49,7 +49,7 @@
                     VerticalOptions="Center">
 
                     <Label
-                        Text="AveroNova"
+                        Text="SwipeDigit"
                         FontSize="20"
                         FontAttributes="Bold"
                         TextColor="White"/>

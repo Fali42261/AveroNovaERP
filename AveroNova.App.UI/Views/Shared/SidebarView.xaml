@@ -41,7 +41,7 @@
                     Spacing="0">
 
                     <Label
-                        Text="AveroNova"
+                        Text="SwipeDigit"
                         FontSize="20"
                         FontAttributes="Bold"
                         TextColor="White" />

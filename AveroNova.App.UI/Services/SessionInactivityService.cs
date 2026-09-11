@@ -73,17 +73,20 @@ public sealed class SessionInactivityService : ISessionInactivityService, IDispo
             return;
         _tracked.Add(root, new object());
 
+        // Do not attach gesture recognizers to the visual tree. On Android a
+        // recognizer attached to a parent or Button can consume the native tap
+        // before Clicked/Command executes. Track meaningful control events
+        // instead so inactivity monitoring never changes input behaviour.
         root.Focused += (_, _) => RecordActivity();
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += (_, _) => RecordActivity();
-        root.GestureRecognizers.Add(tap);
-        var pointer = new PointerGestureRecognizer();
-        pointer.PointerPressed += (_, _) => RecordActivity();
-        pointer.PointerMoved += (_, _) => RecordActivity();
-        root.GestureRecognizers.Add(pointer);
 
         switch (root)
         {
+            case Button button:
+                button.Clicked += (_, _) => RecordActivity();
+                break;
+            case ImageButton imageButton:
+                imageButton.Clicked += (_, _) => RecordActivity();
+                break;
             case Entry entry:
                 entry.TextChanged += (_, _) => RecordActivity();
                 break;
@@ -98,6 +101,33 @@ public sealed class SessionInactivityService : ISessionInactivityService, IDispo
                 break;
             case CheckBox checkBox:
                 checkBox.CheckedChanged += (_, _) => RecordActivity();
+                break;
+            case RadioButton radioButton:
+                radioButton.CheckedChanged += (_, _) => RecordActivity();
+                break;
+            case SearchBar searchBar:
+                searchBar.TextChanged += (_, _) => RecordActivity();
+                break;
+            case DatePicker datePicker:
+                datePicker.DateSelected += (_, _) => RecordActivity();
+                break;
+            case TimePicker timePicker:
+                timePicker.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(TimePicker.Time)) RecordActivity();
+                };
+                break;
+            case Slider slider:
+                slider.ValueChanged += (_, _) => RecordActivity();
+                break;
+            case Stepper stepper:
+                stepper.ValueChanged += (_, _) => RecordActivity();
+                break;
+            case ScrollView scrollView:
+                scrollView.Scrolled += (_, _) => RecordActivity();
+                break;
+            case CollectionView collectionView:
+                collectionView.SelectionChanged += (_, _) => RecordActivity();
                 break;
         }
 

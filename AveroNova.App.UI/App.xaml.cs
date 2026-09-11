@@ -27,7 +27,7 @@ namespace AveroNova.App.UI
         {
             var window = new Window(_appShell)
             {
-                Title = "AveroNova"
+                Title = "SwipeDigit"
             };
             window.Activated += async (_, _) =>
             {

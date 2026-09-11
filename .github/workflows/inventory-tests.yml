@@ -60,7 +60,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: averonova-android-manual-test
+          name: swipedigit-android-manual-test
           path: AveroNova.App.UI/bin/Debug/net10.0-android/**/*.apk
           if-no-files-found: error
 
@@ -90,7 +90,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: averonova-ios-simulator-manual-test
+          name: swipedigit-ios-simulator-manual-test
           path: AveroNova.App.UI/bin/Debug/net10.0-ios/iossimulator-arm64/**/*.app/**
           if-no-files-found: error
 
@@ -111,6 +111,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: averonova-windows-manual-test
+          name: swipedigit-windows-manual-test
           path: AveroNova.App.UI/bin/Debug/net10.0-windows10.0.19041.0/win-x64/**
           if-no-files-found: error
