@@ -19,15 +19,15 @@ public sealed class LocalSubscriptionService : ISubscriptionService
         {
             Id = "starter",
             Name = "Free",
-            Description = "Free plan for early customers while AveroNova is being tested.",
+            Description = "Free plan for early customers while SwapDigit is being tested.",
             MonthlyPrice = 0,
             YearlyPrice = 0,
             MaxUsers = 2,
-            MaxCompanies = 1,
+            MaxCompanies = 2,
             TrialDays = 0,
             CurrencyCode = "INR",
             IsAvailable = true,
-            Features = ["1 Company", "2 Users", "Basic Invoicing", "Customer Management", "Offline-first access"]
+            Features = ["Registration company + 1 extra company", "2 Users", "Basic Invoicing", "Customer Management", "Offline-first access"]
         },
         new()
         {
@@ -142,9 +142,6 @@ public sealed class LocalSubscriptionService : ISubscriptionService
         if (plan is null)
             return (false, "This plan is preview-only right now. Please continue with the Free plan.");
 
-        // Safety rule: until business subscriptions are launched, only the Free
-        // plan can ever be activated locally even if a future plan is accidentally
-        // marked available in UI data.
         if (!plan.Id.Equals("starter", StringComparison.OrdinalIgnoreCase))
             return (false, "Paid plans are not enabled yet. Please use the Free plan.");
 
