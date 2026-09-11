@@ -43,7 +43,7 @@ jobs:
       - name: Upload Android test APK
         uses: actions/upload-artifact@v4
         with:
-          name: AveroNova-Android-Test-APK
+          name: SwipeDigit-Android-Test-APK
           path: artifacts/*.apk
           if-no-files-found: error
           retention-days: 14
