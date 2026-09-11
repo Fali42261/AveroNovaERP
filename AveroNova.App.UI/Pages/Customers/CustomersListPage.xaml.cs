@@ -178,7 +178,7 @@ public partial class CustomersListPage : ContentPage, IHostedPage
         {
             right.Children.Add(new Label
             {
-                Text = $"${c.OutstandingBalance:N0} due",
+                Text = $"₹{c.OutstandingBalance:N0} due",
                 FontSize = 11,
                 TextColor = Color.FromArgb("#D97706"),
                 HorizontalOptions = LayoutOptions.End
