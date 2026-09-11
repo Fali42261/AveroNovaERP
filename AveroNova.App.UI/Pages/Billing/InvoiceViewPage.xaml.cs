@@ -2,28 +2,49 @@ using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Layouts;
 
 namespace AveroNova.App.UI.Pages.Billing;
 
 [QueryProperty(nameof(InvoiceId), "id")]
-public partial class InvoiceViewPage : ContentPage
+public partial class InvoiceViewPage : ContentPage, IHostedPage
 {
     private readonly IBillingService _svc;
+    private readonly IMainContentNavigator _navigator;
+    private readonly IServiceProvider _services;
+    private readonly ISettingsService _settings;
     private InvoiceModel? _invoice;
+    private string _currencySymbol = "₹";
+    private string _dateFormat = "dd MMM yyyy";
     public string? InvoiceId { get; set; }
 
-    public InvoiceViewPage(IBillingService svc) { InitializeComponent(); _svc = svc; }
-
-    protected override async void OnAppearing()
+    public InvoiceViewPage(IBillingService svc, IMainContentNavigator navigator, IServiceProvider services, ISettingsService settings)
     {
-        base.OnAppearing();
-        if (!string.IsNullOrEmpty(InvoiceId) && Guid.TryParse(InvoiceId, out var id))
+        InitializeComponent();
+        _svc = svc; _navigator = navigator; _services = services; _settings = settings;
+    }
+
+    protected override async void OnAppearing() { base.OnAppearing(); await LoadForHostAsync(); }
+
+    public async Task LoadForHostAsync()
+    {
+        try
         {
-            _invoice = await _svc.GetByIdAsync(id);
-            if (_invoice != null) BuildContent(_invoice);
+            var s = await _settings.GetAsync();
+            _currencySymbol = string.IsNullOrWhiteSpace(s.CurrencySymbol) ? (s.Currency == "INR" ? "₹" : "$") : s.CurrencySymbol;
+            _dateFormat = string.IsNullOrWhiteSpace(s.DateFormat) ? "dd MMM yyyy" : s.DateFormat;
+            if (!string.IsNullOrWhiteSpace(InvoiceId) && Guid.TryParse(InvoiceId, out var id))
+            {
+                _invoice = await _svc.GetByIdAsync(id);
+                if (_invoice is not null) BuildContent(_invoice);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[InvoiceView] Load failed: {ex}");
+            Content.Children.Clear();
+            Content.Children.Add(new Label { Text = "Invoice could not be loaded.", TextColor = Color.FromArgb("#DC2626"), HorizontalOptions = LayoutOptions.Center, Margin = new Thickness(0,32) });
         }
     }
 
@@ -31,104 +52,95 @@ public partial class InvoiceViewPage : ContentPage
     {
         Content.Children.Clear();
 
-        // Action buttons
-        var actions = new FlexLayout { Wrap = FlexWrap.Wrap, Direction = FlexDirection.Row, JustifyContent = FlexJustify.Start };
-        void AddAction(string label, Action onClick, string style = "SmallSecondaryButton")
+        var actions = new HorizontalStackLayout { Spacing = 8 };
+        if (inv.Status == InvoiceStatus.Draft)
         {
-            var b = new Button { Text = label, Style = (Style)Resources[style], Margin = new Thickness(0, 0, 8, 8) };
-            b.Clicked += (_, _) => onClick();
-            actions.Children.Add(b);
+            var paid = MakeButton("Mark Paid", true);
+            paid.Clicked += async (_,_) => await MarkPaidAsync();
+            var cancel = MakeButton("Cancel", false);
+            cancel.Clicked += async (_,_) => await CancelAsync();
+            actions.Children.Add(paid);
+            actions.Children.Add(cancel);
         }
-        AddAction("Edit",           async () => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceEdit}?id={inv.LocalId}"));
-        AddAction("Print",          async () => await DisplayAlert("Print", "Print functionality coming soon.", "OK"));
-        AddAction("Share",          async () => await DisplayAlert("Share", "Share functionality coming soon.", "OK"));
-        if (inv.Status is not InvoiceStatus.Draft and not InvoiceStatus.Cancelled and not InvoiceStatus.Paid
-            && inv.DueAmount > 0)
-            AddAction("Record Payment", async () => await Shell.Current.GoToAsync(
-                $"{AppRoutes.PaymentAdd}?invoiceId={inv.LocalId}"), "SmallButton");
-        if (inv.Status != InvoiceStatus.Cancelled)
-            AddAction("Cancel Invoice", async () => await CancelInvoice(), "DangerButton");
+        if (inv.Status == InvoiceStatus.Draft)
+        {
+            var edit = MakeButton("Edit", false);
+            edit.Clicked += async (_,_) =>
+            {
+                try
+                {
+                    var page = ActivatorUtilities.CreateInstance<InvoiceFormPage>(_services);
+                    page.EditId = inv.LocalId.ToString("D");
+                    await _navigator.NavigateAsync(page, "Edit Invoice", "Home / Billing / Edit Invoice");
+                }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[InvoiceView] Edit failed: {ex}"); }
+            };
+            actions.Children.Add(edit);
+        }
         Content.Children.Add(actions);
 
-        // Status card
-        var (statusBg, statusColor) = inv.Status switch
-        {
-            InvoiceStatus.Paid    => ("#ECFDF5", "#059669"),
-            InvoiceStatus.Overdue => ("#FEF2F2", "#DC2626"),
-            InvoiceStatus.Sent    => ("#EFF6FF", "#2563EB"),
-            _                     => ("#F9FAFB", "#6B7280")
-        };
+        var header = new Border { Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(16) };
+        var hv = new VerticalStackLayout { Spacing = 6 };
+        hv.Children.Add(new Label { Text = inv.InvoiceNumber, FontSize = 20, FontAttributes = FontAttributes.Bold });
+        hv.Children.Add(new Label { Text = inv.CustomerName, FontSize = 14, TextColor = Color.FromArgb("#64748B") });
+        hv.Children.Add(new Label { Text = inv.StatusLabel, FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = inv.Status == InvoiceStatus.Paid ? Color.FromArgb("#059669") : inv.Status == InvoiceStatus.Cancelled ? Color.FromArgb("#6B7280") : Color.FromArgb("#D97706") });
+        header.Content = hv;
+        Content.Children.Add(header);
 
-        var headerCard = new Border { Style = (Style)Resources["AppCard"] };
-        var hGrid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), RowDefinitions = new RowDefinitionCollection(new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)) };
-        hGrid.Add(new Label { Text = inv.InvoiceNumber, FontSize = 20, FontAttributes = FontAttributes.Bold }, 0, 0);
-        var badge = new Border { BackgroundColor = Color.FromArgb(statusBg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(10, 4) };
-        badge.Content = new Label { Text = inv.StatusLabel, FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) };
-        hGrid.Add(badge, 1, 0);
-        hGrid.Add(new Label { Text = inv.CustomerName, FontSize = 15, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0, 6, 0, 0) }, 0, 1);
-        Grid.SetColumnSpan(hGrid.Children[2] as View ?? new Label(), 2);
-        headerCard.Content = hGrid;
+        var amount = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star),new ColumnDefinition(GridLength.Star),new ColumnDefinition(GridLength.Star)), ColumnSpacing = 8 };
+        amount.Add(Stat("Total", Money(inv.GrandTotal)),0,0);
+        amount.Add(Stat("Paid", Money(inv.PaidAmount)),1,0);
+        amount.Add(Stat("Due", Money(Math.Max(0,inv.DueAmount))),2,0);
+        Content.Children.Add(new Border { Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(16), Content = amount });
 
-        // Amounts
-        var amtCard = new Border { Style = (Style)Resources["AppCard"] };
-        var amtGrid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)), ColumnSpacing = 12 };
-        void AmtBox(int col, string label, string value, string color)
-        {
-            var v = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.Center };
-            v.Children.Add(new Label { Text = value, FontSize = 18, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(color), HorizontalOptions = LayoutOptions.Center });
-            v.Children.Add(new Label { Text = label, FontSize = 11, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center });
-            amtGrid.Add(v, col, 0);
-        }
-        AmtBox(0, "Grand Total", $"${inv.GrandTotal:N2}", "#0F172A");
-        AmtBox(1, "Paid",        $"${inv.PaidAmount:N2}", "#059669");
-        AmtBox(2, "Due",         $"${inv.DueAmount:N2}",  inv.DueAmount > 0 ? "#DC2626" : "#059669");
-        amtCard.Content = amtGrid;
+        var details = new VerticalStackLayout { Spacing = 10 };
+        details.Children.Add(Detail("Invoice Date", inv.InvoiceDate.ToString(_dateFormat)));
+        details.Children.Add(Detail("Due Date", inv.DueDate.ToString(_dateFormat)));
+        details.Children.Add(Detail("Payment Method", inv.PaymentMethod.ToString()));
+        if (!string.IsNullOrWhiteSpace(inv.Notes)) details.Children.Add(Detail("Notes", inv.Notes));
+        Content.Children.Add(new Border { Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(16), Content = details });
 
-        // Details
-        var detailCard = new Border { Style = (Style)Resources["AppCard"] };
-        var dv = new VerticalStackLayout { Spacing = 12 };
-        dv.Children.Add(new Label { Text = "Invoice Details", FontSize = 14, FontAttributes = FontAttributes.Bold });
-        dv.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
-        void DRow(string l, string v) { var g = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(new GridLength(130)), new ColumnDefinition(GridLength.Star)) }; g.Add(new Label { Text = l, FontSize = 13, TextColor = Color.FromArgb("#64748B") }, 0, 0); g.Add(new Label { Text = v, FontSize = 13, FontAttributes = FontAttributes.Bold }, 1, 0); dv.Children.Add(g); }
-        DRow("Invoice Date",  inv.InvoiceDate.ToString("dd MMM yyyy"));
-        DRow("Due Date",      inv.DueDate.ToString("dd MMM yyyy"));
-        DRow("Payment",       inv.PaymentMethod.ToString());
-        if (!string.IsNullOrEmpty(inv.Notes)) DRow("Notes", inv.Notes);
-        detailCard.Content = dv;
-
-        // Line items
         if (inv.Items.Count > 0)
         {
-            var lineCard = new Border { Style = (Style)Resources["AppCard"] };
-            var lv = new VerticalStackLayout { Spacing = 10 };
-            lv.Children.Add(new Label { Text = "Line Items", FontSize = 14, FontAttributes = FontAttributes.Bold });
-            lv.Children.Add(new BoxView { Style = (Style)Resources["Divider"] });
+            var lines = new VerticalStackLayout { Spacing = 10 };
+            lines.Children.Add(new Label { Text = "Line Items", FontAttributes = FontAttributes.Bold, FontSize = 14 });
             foreach (var item in inv.Items)
             {
-                var ig = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)) };
-                var il = new VerticalStackLayout { Spacing = 2 };
-                il.Children.Add(new Label { Text = item.ProductName, FontSize = 13, FontAttributes = FontAttributes.Bold });
-                il.Children.Add(new Label { Text = $"{item.Quantity} × ${item.UnitPrice:N2}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
-                ig.Add(il, 0, 0);
-                ig.Add(new Label { Text = $"${item.GrandTotal:N2}", FontSize = 14, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center }, 1, 0);
-                lv.Children.Add(ig);
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star),new ColumnDefinition(GridLength.Auto)) };
+                row.Add(new Label { Text = $"{item.ProductName}  × {item.Quantity}", FontSize = 13 },0,0);
+                row.Add(new Label { Text = Money(item.GrandTotal), FontSize = 13, FontAttributes = FontAttributes.Bold },1,0);
+                lines.Children.Add(row);
             }
-            lineCard.Content = lv;
-            Content.Children.Add(lineCard);
+            Content.Children.Add(new Border { Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(16), Content = lines });
         }
-
-        Content.Children.Add(headerCard);
-        Content.Children.Add(amtCard);
-        Content.Children.Add(detailCard);
     }
 
-    private async Task CancelInvoice()
+    private async Task MarkPaidAsync()
     {
-        if (_invoice == null) return;
-        if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Are you sure you want to cancel this invoice?", "Cancel Invoice", "Keep")) return;
-        await _svc.CancelAsync(_invoice.LocalId);
-        await Shell.Current.GoToAsync("..");
+        if (_invoice is null) return;
+        if (!await DialogHelper.ConfirmAsync("Mark Paid", "Mark this invoice as fully paid?", "Mark Paid", "Back")) return;
+        var result = await _svc.MarkPaidAsync(_invoice.LocalId);
+        if (!result.Ok) { await DisplayAlert("Billing", result.Error ?? "Invoice could not be marked paid.", "OK"); return; }
+        await LoadForHostAsync();
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async Task CancelAsync()
+    {
+        if (_invoice is null) return;
+        if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Cancel this invoice?", "Cancel Invoice", "Back")) return;
+        var result = await _svc.CancelAsync(_invoice.LocalId);
+        if (!result.Ok) { await DisplayAlert("Billing", result.Error ?? "Invoice could not be cancelled.", "OK"); return; }
+        await LoadForHostAsync();
+    }
+
+    private static Button MakeButton(string text, bool primary) => new() { Text = text, HeightRequest = 40, CornerRadius = 8, Padding = new Thickness(14,0), BackgroundColor = primary ? Color.FromArgb("#2563EB") : Colors.Transparent, TextColor = primary ? Colors.White : Color.FromArgb("#2563EB"), BorderColor = Color.FromArgb("#2563EB"), BorderWidth = 1 };
+    private string Money(decimal value) => $"{_currencySymbol}{value:N2}";
+    private static View Stat(string label, string value) { var s = new VerticalStackLayout { Spacing = 3, HorizontalOptions = LayoutOptions.Center }; s.Children.Add(new Label { Text = value, FontAttributes = FontAttributes.Bold, FontSize = 16, HorizontalOptions = LayoutOptions.Center }); s.Children.Add(new Label { Text = label, FontSize = 11, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.Center }); return s; }
+    private static View Detail(string label,string value) { var g = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(new GridLength(130)),new ColumnDefinition(GridLength.Star)) }; g.Add(new Label { Text = label, TextColor = Color.FromArgb("#64748B"), FontSize = 13 },0,0); g.Add(new Label { Text = value, FontAttributes = FontAttributes.Bold, FontSize = 13 },1,0); return g; }
+
+    private async void OnBackClicked(object? s, EventArgs e)
+    {
+        try { await _navigator.GoBackAsync(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[InvoiceView] Back failed: {ex}"); }
+    }
 }
