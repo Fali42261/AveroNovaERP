@@ -170,7 +170,7 @@ public sealed class SessionInactivityService : ISessionInactivityService, IDispo
 
     private static IEnumerable<View> Children(View root)
     {
-        if (root is Layout layout)
+        if (root is Microsoft.Maui.Controls.Layout layout)
             foreach (var child in layout.Children.OfType<View>()) yield return child;
         if (root is ContentView contentView && contentView.Content is View content)
             yield return content;
