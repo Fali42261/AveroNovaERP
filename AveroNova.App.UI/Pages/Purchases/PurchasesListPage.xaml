@@ -7,16 +7,18 @@
         <Border Grid.Row="0" Padding="20,14"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                 <VerticalStackLayout Spacing="2">
                     <Label Text="Purchases" FontSize="20" FontAttributes="Bold"
                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                     <Label x:Name="LblCount" Text="0 purchases" FontSize="12"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
                 </VerticalStackLayout>
-                <Button Grid.Column="1" Text="Suppliers" Style="{StaticResource SecondaryButton}" HeightRequest="40" FontSize="13" Clicked="OnSuppliersClicked"/>
-                <Button Grid.Column="2" Text="+ New Purchase" Style="{StaticResource PrimaryButton}"
+                <Button Grid.Column="1" Text="+ New Purchase" Style="{StaticResource PrimaryButton}"
                         HeightRequest="40" FontSize="13" Clicked="OnNewClicked"/>
+                <Button Grid.Row="1" Grid.ColumnSpan="2" Text="Suppliers  •  View / Add Supplier"
+                        Style="{StaticResource SecondaryButton}" HeightRequest="42" FontSize="13"
+                        HorizontalOptions="Fill" Clicked="OnSuppliersClicked"/>
             </Grid>
         </Border>
         <RefreshView Grid.Row="1" x:Name="Refresher" Refreshing="OnRefreshing">

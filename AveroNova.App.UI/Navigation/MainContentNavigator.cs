@@ -35,19 +35,66 @@ public sealed class MainContentNavigator : IMainContentNavigator
 
     public async Task NavigateAsync(ContentPage page, string title, string breadcrumb)
     {
+        TryReleaseInputFocus(Current?.Page);
         var entry = new HostedPage(page, title, breadcrumb);
         _stack.Add(entry);
-        await LoadAsync(entry);
-        PageChanged?.Invoke(this, entry);
+
+        try
+        {
+            await LoadAsync(entry);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HostedNavigation] Initial load failed for {title}: {ex}");
+        }
+
+        SafeRaisePageChanged(entry);
     }
 
     public async Task GoBackAsync()
     {
+        TryReleaseInputFocus(Current?.Page);
         if (_stack.Count <= 1) return;
+
         _stack.RemoveAt(_stack.Count - 1);
         var entry = _stack[^1];
-        await LoadAsync(entry);
-        PageChanged?.Invoke(this, entry);
+
+        // Show the previous page first so a refresh failure can never make a
+        // successful Save look like the app closed or left the hosted layout.
+        SafeRaisePageChanged(entry);
+
+        try
+        {
+            await LoadAsync(entry);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HostedNavigation] Reload failed for {entry.Title}: {ex}");
+        }
+    }
+
+    private void SafeRaisePageChanged(HostedPage entry)
+    {
+        try
+        {
+            PageChanged?.Invoke(this, entry);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HostedNavigation] PageChanged failed for {entry.Title}: {ex}");
+        }
+    }
+
+    private static void TryReleaseInputFocus(Page? page)
+    {
+        try
+        {
+            page?.Unfocus();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HostedNavigation] Unfocus failed: {ex}");
+        }
     }
 
     private static Task LoadAsync(HostedPage entry)
