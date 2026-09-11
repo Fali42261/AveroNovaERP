@@ -32,7 +32,7 @@ jobs:
 
       - name: Publish Windows x64 unpackaged app
         shell: pwsh
-        run: dotnet publish AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -p:WindowsPackageType=None -p:SelfContained=true --no-restore
+        run: dotnet publish AveroNova.App.UI/AveroNova.App.UI.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 -p:AveroNovaCiTargetFramework=net10.0-windows10.0.19041.0 -p:WindowsPackageType=None -p:SelfContained=true -p:PublishReadyToRun=false --no-restore
 
       - name: Collect Windows package
         shell: pwsh
