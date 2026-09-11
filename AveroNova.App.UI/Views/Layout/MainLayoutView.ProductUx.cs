@@ -97,7 +97,6 @@ public partial class MainLayoutView
                 {
                     Text = entry.Label,
                     HorizontalOptions = LayoutOptions.Fill,
-                    HorizontalTextAlignment = TextAlignment.Start,
                     HeightRequest = 48,
                     CornerRadius = 10,
                     BackgroundColor = Colors.Transparent,
@@ -195,11 +194,21 @@ public partial class MainLayoutView
         }
         switch (view)
         {
-            case Layout layout: foreach (var child in layout.Children.OfType<View>()) ApplySwipeDigitBranding(child); break;
-            case Border border when border.Content is View content: ApplySwipeDigitBranding(content); break;
-            case ContentView contentView when contentView.Content is View content: ApplySwipeDigitBranding(content); break;
-            case ScrollView scrollView when scrollView.Content is View content: ApplySwipeDigitBranding(content); break;
-            case RefreshView refreshView when refreshView.Content is View content: ApplySwipeDigitBranding(content); break;
+            case Microsoft.Maui.Controls.Layout layout:
+                foreach (var child in layout.Children.OfType<View>()) ApplySwipeDigitBranding(child);
+                break;
+            case Border border when border.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+            case ContentView contentView when contentView.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+            case ScrollView scrollView when scrollView.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
+            case RefreshView refreshView when refreshView.Content is View content:
+                ApplySwipeDigitBranding(content);
+                break;
         }
     }
 
