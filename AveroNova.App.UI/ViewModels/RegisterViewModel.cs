@@ -60,10 +60,7 @@ namespace AveroNova.App.UI.ViewModels
 
         public string TrialDisplay => HasTrial ? $"{Plan.TrialDays} Days" : string.Empty;
 
-        public string TrialHeadline =>
-            string.Equals(Plan.Id, "starter", StringComparison.OrdinalIgnoreCase)
-                ? "15 Days Free Trial"
-                : TrialDisplay;
+        public string TrialHeadline => TrialDisplay;
 
         public string Details => Plan.Description;
 
@@ -86,7 +83,7 @@ namespace AveroNova.App.UI.ViewModels
                 if (IsSelected)
                     return "Selected";
                 if (string.Equals(Plan.Id, "starter", StringComparison.OrdinalIgnoreCase))
-                    return "Start 15-Day Free Trial";
+                    return "Select Free Plan";
                 return "Select";
             }
         }
