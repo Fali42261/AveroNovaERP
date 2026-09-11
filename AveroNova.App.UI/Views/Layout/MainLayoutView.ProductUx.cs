@@ -18,7 +18,7 @@ public partial class MainLayoutView
         {
             HideOfflineBanners();
             ConfigureMobileNavigation();
-            ApplySwipeDigitBranding(this);
+            ApplySwapDigitBranding(this);
             if (!_productUxConnectivityHooked) { _connectivity.StatusChanged += OnProductUxConnectivityChanged; _productUxConnectivityHooked = true; }
             if (!_productUxNavigationHooked) { _contentNavigator.PageChanged += OnProductUxPageChanged; _productUxNavigationHooked = true; }
             if (!_productUxLoadedHooked) { Loaded += OnProductUxLoaded; _productUxLoadedHooked = true; }
@@ -34,7 +34,7 @@ public partial class MainLayoutView
 
     private async void OnProductUxLoaded(object? sender, EventArgs e)
     {
-        ApplySwipeDigitBranding(this);
+        ApplySwapDigitBranding(this);
         BtnSyncCenter.IsVisible = false;
         if (_initialDashboardLoaded) return;
         _initialDashboardLoaded = true;
@@ -60,7 +60,7 @@ public partial class MainLayoutView
     }
 
     private void OnProductUxConnectivityChanged(object? sender, ConnectivityStatus status) => MainThread.BeginInvokeOnMainThread(HideOfflineBanners);
-    private void OnProductUxPageChanged(object? sender, HostedPage entry) => MainThread.BeginInvokeOnMainThread(() => { UpdateMobileNavSelection(entry.Title); ApplySwipeDigitBranding(this); BtnSyncCenter.IsVisible = false; });
+    private void OnProductUxPageChanged(object? sender, HostedPage entry) => MainThread.BeginInvokeOnMainThread(() => { UpdateMobileNavSelection(entry.Title); ApplySwapDigitBranding(this); BtnSyncCenter.IsVisible = false; });
     private void HideOfflineBanners() { OfflineBanner.IsVisible = false; MOfflineBanner.IsVisible = false; }
 
     private void UpdateMobileNavSelection(string? title)
@@ -89,7 +89,7 @@ public partial class MainLayoutView
             var entries = BuildMobileMoreEntries().Where(x => MenuCatalog.IsAllowed(x.PermissionKey, permissions)).ToList();
             var stack = new VerticalStackLayout { Padding = new Thickness(16, 14), Spacing = 10 };
             stack.Children.Add(new Label { Text = "More", FontSize = 24, FontAttributes = FontAttributes.Bold });
-            stack.Children.Add(new Label { Text = "SwipeDigit modules", FontSize = 12, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0,0,0,8) });
+            stack.Children.Add(new Label { Text = "SwapDigit modules", FontSize = 12, TextColor = Color.FromArgb("#64748B"), Margin = new Thickness(0,0,0,8) });
 
             foreach (var entry in entries)
             {
@@ -185,29 +185,30 @@ public partial class MainLayoutView
     private async Task ShowMessageAsync(string title,string message) => await GetHostPage().DisplayAlert(title,message,"OK");
     private static Color ResolveColor(string resourceKey,string fallback) => Microsoft.Maui.Controls.Application.Current?.Resources.TryGetValue(resourceKey,out var value) == true && value is Color color ? color : Color.FromArgb(fallback);
 
-    private static void ApplySwipeDigitBranding(View view)
+    private static void ApplySwapDigitBranding(View view)
     {
         if (view is Label label && !string.IsNullOrEmpty(label.Text))
         {
             if (label.Text is "A" or "AN" or "SW") label.Text = "SD";
-            else if (label.Text.Contains("AveroNova", StringComparison.Ordinal)) label.Text = label.Text.Replace("AveroNova","SwipeDigit",StringComparison.Ordinal);
+            else if (label.Text.Contains("AveroNova", StringComparison.Ordinal)) label.Text = label.Text.Replace("AveroNova","SwapDigit",StringComparison.Ordinal);
+            else if (label.Text.Contains("SwipeDigit", StringComparison.Ordinal)) label.Text = label.Text.Replace("SwipeDigit","SwapDigit",StringComparison.Ordinal);
         }
         switch (view)
         {
             case Microsoft.Maui.Controls.Layout layout:
-                foreach (var child in layout.Children.OfType<View>()) ApplySwipeDigitBranding(child);
+                foreach (var child in layout.Children.OfType<View>()) ApplySwapDigitBranding(child);
                 break;
             case Border border when border.Content is View content:
-                ApplySwipeDigitBranding(content);
+                ApplySwapDigitBranding(content);
                 break;
             case ContentView contentView when contentView.Content is View content:
-                ApplySwipeDigitBranding(content);
+                ApplySwapDigitBranding(content);
                 break;
             case ScrollView scrollView when scrollView.Content is View content:
-                ApplySwipeDigitBranding(content);
+                ApplySwapDigitBranding(content);
                 break;
             case RefreshView refreshView when refreshView.Content is View content:
-                ApplySwipeDigitBranding(content);
+                ApplySwapDigitBranding(content);
                 break;
         }
     }
