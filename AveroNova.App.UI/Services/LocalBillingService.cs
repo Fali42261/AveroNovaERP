@@ -41,12 +41,14 @@ public sealed class LocalBillingService : IBillingService
         invoice.LocalId = invoice.LocalId == Guid.Empty ? Guid.NewGuid() : invoice.LocalId;
         invoice.PaidAmount = 0;
 
-        // Preserve the caller's valid initial status. The single Save action in the
-        // invoice form stores a posted (Sent) invoice locally; no external send occurs.
-        // This keeps the invoice eligible for offline payment entry while Draft remains
-        // available for legacy/imported records and explicit future draft workflows.
-        if (!Enum.IsDefined(invoice.Status) || invoice.Status is InvoiceStatus.Paid or InvoiceStatus.PartialPaid or InvoiceStatus.Overdue or InvoiceStatus.Cancelled)
-            invoice.Status = InvoiceStatus.Draft;
+        // Product flow has one Save action and no external "send" action. A newly
+        // saved invoice is posted locally so employees/managers in the same company
+        // can see it and record payments. "Sent" here means posted/available inside
+        // the ERP; it does not transmit an invoice to a customer.
+        if (invoice.Status == InvoiceStatus.Draft)
+            invoice.Status = InvoiceStatus.Sent;
+        else if (!Enum.IsDefined(invoice.Status) || invoice.Status is InvoiceStatus.Paid or InvoiceStatus.PartialPaid or InvoiceStatus.Overdue or InvoiceStatus.Cancelled)
+            invoice.Status = InvoiceStatus.Sent;
 
         if (string.IsNullOrWhiteSpace(invoice.InvoiceNumber)) invoice.InvoiceNumber = await NextNumberAsync(db, invoice.CompanyId);
         var row = ToEntity(invoice, now);
