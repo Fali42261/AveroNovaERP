@@ -8,6 +8,7 @@ namespace AveroNova.App.UI.Services;
 
 public sealed class LocalCompanyService : ICompanyService
 {
+    private const int FreePlanTotalCompanyLimit = 2; // registration company + 1 extra company
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAppSessionContext _session;
     private readonly ILocalAuthSessionStore _sessions;
@@ -34,7 +35,11 @@ public sealed class LocalCompanyService : ICompanyService
             return [];
 
         var companies = await _sessions.GetCompaniesForUserAsync(userId);
-        return companies.Select(c => Map(c.Id, c.CompanyName, c.Email, c.MobileNumber, c.Id == _session.CurrentCompanyId)).ToList();
+        return companies
+            .Select(c => Map(c.Id, c.CompanyName, c.Email, c.MobileNumber, c.Id == _session.CurrentCompanyId))
+            .OrderByDescending(c => c.IsCurrentCompany)
+            .ThenBy(c => c.Name)
+            .ToList();
     }
 
     public async Task<CompanyModel?> GetByIdAsync(Guid id)
@@ -49,6 +54,11 @@ public sealed class LocalCompanyService : ICompanyService
             return (false, "Sign in to create a company.");
 
         await using var db = await _dbFactory.CreateDbContextAsync();
+        var activeCompanyCount = await db.UserCompanies.AsNoTracking()
+            .CountAsync(x => x.UserId == userId && x.IsActive);
+        if (activeCompanyCount >= FreePlanTotalCompanyLimit)
+            return (false, "Free plan allows the company created during registration plus 1 additional company. Upgrade is required to add more companies.");
+
         var now = DateTime.UtcNow;
         company.LocalId = company.LocalId == Guid.Empty ? Guid.NewGuid() : company.LocalId;
         db.Companies.Add(new LocalCompanyEntity
@@ -68,6 +78,28 @@ public sealed class LocalCompanyService : ICompanyService
             IsOwner = true,
             IsActive = true
         });
+
+        // Give the owner the same role/permissions on the newly created company so
+        // switching to it works immediately offline.
+        if (_session.CurrentCompanyId is Guid sourceCompanyId)
+        {
+            var roles = await db.Roles.AsNoTracking()
+                .Where(r => r.UserId == userId && r.CompanyId == sourceCompanyId)
+                .Select(r => r.RoleName)
+                .Distinct()
+                .ToListAsync();
+            foreach (var role in roles)
+                db.Roles.Add(new LocalRoleEntity { Id = Guid.NewGuid(), UserId = userId, CompanyId = company.LocalId, RoleName = role });
+
+            var permissions = await db.Permissions.AsNoTracking()
+                .Where(p => p.UserId == userId && p.CompanyId == sourceCompanyId)
+                .Select(p => p.PermissionName)
+                .Distinct()
+                .ToListAsync();
+            foreach (var permission in permissions)
+                db.Permissions.Add(new LocalPermissionEntity { Id = Guid.NewGuid(), UserId = userId, CompanyId = company.LocalId, PermissionName = permission });
+        }
+
         LocalSyncQueueWriter.Enqueue(db, "Company", company.LocalId, company.LocalId, SyncOperation.Create, new { company.Name, company.Email }, now);
         await db.SaveChangesAsync();
         return (true, null);
@@ -75,10 +107,15 @@ public sealed class LocalCompanyService : ICompanyService
 
     public async Task<(bool Ok, string? Error)> UpdateAsync(CompanyModel company)
     {
-        if (!Owns(company.LocalId))
-            return (false, "You do not have access to this company.");
+        if (_session.CurrentUserId is not Guid userId)
+            return (false, "Sign in to edit a company.");
 
         await using var db = await _dbFactory.CreateDbContextAsync();
+        var owns = await db.UserCompanies.AsNoTracking()
+            .AnyAsync(x => x.UserId == userId && x.CompanyId == company.LocalId && x.IsActive);
+        if (!owns)
+            return (false, "You do not have access to this company.");
+
         var row = await db.Companies.FirstOrDefaultAsync(c => c.Id == company.LocalId);
         if (row is null)
             return (false, "Company not found.");
@@ -111,9 +148,6 @@ public sealed class LocalCompanyService : ICompanyService
             snapshot.Permissions,
             snapshot.Session.ServerSessionId);
     }
-
-    private bool Owns(Guid companyId)
-        => _session.CurrentUserId is Guid && _session.CurrentCompanyId == companyId;
 
     private static CompanyModel Map(Guid id, string name, string email, string phone, bool isCurrent)
         => new()
