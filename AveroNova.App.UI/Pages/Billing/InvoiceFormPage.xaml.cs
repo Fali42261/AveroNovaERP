@@ -180,6 +180,7 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
         {
             _lineItems.Add(new InvoiceLineItem { Quantity = 1, UnitPrice = 0m });
             RebuildLineItems();
+            UpdateTotals();
         }
         catch (Exception ex)
         {
@@ -231,6 +232,7 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
                 item.UnitPrice = product.SellingPrice;
                 item.TaxPct = product.TaxPercent;
                 RebuildLineItems();
+                UpdateTotals();
             };
 
             stack.Children.Add(FieldBorder(productPicker));
@@ -289,6 +291,7 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
                 {
                     _lineItems.RemoveAt(index);
                     RebuildLineItems();
+                    UpdateTotals();
                 }
             };
 
@@ -334,7 +337,9 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
         LblSubtotal.Text = Money(sub);
         LblDiscount.Text = $"-{Money(disc)}";
         LblTax.Text = $"+{Money(tax)}";
-        LblGrandTotal.Text = Money(total);
+        var formattedTotal = Money(total);
+        LblGrandTotal.Text = formattedTotal;
+        LblFooterGrandTotal.Text = formattedTotal;
     }
 
     private string Money(decimal amount) => $"{_currencySymbol}{amount:N2}";
