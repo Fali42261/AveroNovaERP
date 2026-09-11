@@ -59,9 +59,9 @@ public partial class BillingListPage : ContentPage, IHostedPage
     {
         FilterTabs.Children.Clear();
         _filterButtons.Clear();
-        foreach (var status in new[] { "All", "Draft", "Paid", "Cancelled" })
+        foreach (var status in new[] { "All", "Pending", "Completed", "Cancelled" })
         {
-            var button = new Button { Text = status, FontSize = 12, HeightRequest = 36, MinimumWidthRequest = 72, Padding = new Thickness(14,0), CornerRadius = 18, BorderWidth = 1 };
+            var button = new Button { Text = status, FontSize = 12, HeightRequest = 36, MinimumWidthRequest = 78, Padding = new Thickness(14,0), CornerRadius = 18, BorderWidth = 1 };
             var captured = status;
             button.Clicked += (_,_) => { _filter = captured; UpdateFilterVisuals(); RenderCurrentFilter(); };
             _filterButtons[status] = button;
@@ -86,8 +86,8 @@ public partial class BillingListPage : ContentPage, IHostedPage
     {
         var shown = _filter switch
         {
-            "Draft" => _all.Where(i => i.Status == InvoiceStatus.Draft).ToList(),
-            "Paid" => _all.Where(i => i.Status == InvoiceStatus.Paid).ToList(),
+            "Pending" => _all.Where(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled).ToList(),
+            "Completed" => _all.Where(i => i.Status == InvoiceStatus.Paid).ToList(),
             "Cancelled" => _all.Where(i => i.Status == InvoiceStatus.Cancelled).ToList(),
             _ => _all.ToList()
         };
@@ -103,6 +103,7 @@ public partial class BillingListPage : ContentPage, IHostedPage
 
     private View BuildRow(InvoiceModel inv)
     {
+        var statusText = inv.Status switch { InvoiceStatus.Paid => "Completed", InvoiceStatus.Cancelled => "Cancelled", _ => "Pending" };
         var (statusBg,statusColor) = inv.Status switch
         {
             InvoiceStatus.Paid => ("#ECFDF5","#059669"),
@@ -117,7 +118,7 @@ public partial class BillingListPage : ContentPage, IHostedPage
         left.Children.Add(new Label { Text = $"{inv.InvoiceDate.ToString(_dateFormat)}  •  Due: {inv.DueDate.ToString(_dateFormat)}", FontSize = 11, TextColor = Color.FromArgb("#94A3B8") });
         var right = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = Money(inv.GrandTotal), FontSize = 15, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.End });
-        right.Children.Add(new Border { BackgroundColor = Color.FromArgb(statusBg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(8,3), Content = new Label { Text = inv.StatusLabel, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) } });
+        right.Children.Add(new Border { BackgroundColor = Color.FromArgb(statusBg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(8,3), Content = new Label { Text = statusText, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) } });
         var view = new Button { Text = "View", FontSize = 12, HeightRequest = 36, Padding = new Thickness(12,0), CornerRadius = 8, BackgroundColor = Colors.Transparent, TextColor = Color.FromArgb("#2563EB"), BorderColor = Color.FromArgb("#2563EB"), BorderWidth = 1 };
         view.Clicked += async (_,_) => await OpenInvoiceAsync(inv);
         right.Children.Add(view);
