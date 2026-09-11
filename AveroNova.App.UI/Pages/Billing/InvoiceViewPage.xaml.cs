@@ -4,6 +4,8 @@ using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.Shapes;
+using System.Net;
+using System.Text;
 
 namespace AveroNova.App.UI.Pages.Billing;
 
@@ -53,7 +55,11 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
         Content.Children.Clear();
 
         var actions = new HorizontalStackLayout { Spacing = 8 };
-        if (inv.Status == InvoiceStatus.Draft)
+        var print = MakeButton("Print", false);
+        print.Clicked += async (_,_) => await PrintInvoiceAsync(inv);
+        actions.Children.Add(print);
+
+        if (inv.Status != InvoiceStatus.Paid && inv.Status != InvoiceStatus.Cancelled)
         {
             var paid = MakeButton("Mark Paid", true);
             paid.Clicked += async (_,_) => await MarkPaidAsync();
@@ -61,29 +67,32 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
             cancel.Clicked += async (_,_) => await CancelAsync();
             actions.Children.Add(paid);
             actions.Children.Add(cancel);
-        }
-        if (inv.Status == InvoiceStatus.Draft)
-        {
-            var edit = MakeButton("Edit", false);
-            edit.Clicked += async (_,_) =>
-            {
-                try
-                {
-                    var page = ActivatorUtilities.CreateInstance<InvoiceFormPage>(_services);
-                    page.EditId = inv.LocalId.ToString("D");
-                    await _navigator.NavigateAsync(page, "Edit Invoice", "Home / Billing / Edit Invoice");
-                }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[InvoiceView] Edit failed: {ex}"); }
-            };
-            actions.Children.Add(edit);
-        }
-        Content.Children.Add(actions);
 
+            if (inv.Status == InvoiceStatus.Draft)
+            {
+                var edit = MakeButton("Edit", false);
+                edit.Clicked += async (_,_) =>
+                {
+                    try
+                    {
+                        var page = ActivatorUtilities.CreateInstance<InvoiceFormPage>(_services);
+                        page.EditId = inv.LocalId.ToString("D");
+                        await _navigator.NavigateAsync(page, "Edit Invoice", "Home / Billing / Edit Invoice");
+                    }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[InvoiceView] Edit failed: {ex}"); }
+                };
+                actions.Children.Add(edit);
+            }
+        }
+        Content.Children.Add(new ScrollView { Orientation = ScrollOrientation.Horizontal, HorizontalScrollBarVisibility = ScrollBarVisibility.Never, Content = actions });
+
+        var statusText = inv.Status switch { InvoiceStatus.Paid => "Completed", InvoiceStatus.Cancelled => "Cancelled", _ => "Pending" };
+        var statusColor = inv.Status switch { InvoiceStatus.Paid => "#059669", InvoiceStatus.Cancelled => "#6B7280", _ => "#D97706" };
         var header = new Border { Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 1, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(12) }, Padding = new Thickness(16) };
         var hv = new VerticalStackLayout { Spacing = 6 };
         hv.Children.Add(new Label { Text = inv.InvoiceNumber, FontSize = 20, FontAttributes = FontAttributes.Bold });
         hv.Children.Add(new Label { Text = inv.CustomerName, FontSize = 14, TextColor = Color.FromArgb("#64748B") });
-        hv.Children.Add(new Label { Text = inv.StatusLabel, FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = inv.Status == InvoiceStatus.Paid ? Color.FromArgb("#059669") : inv.Status == InvoiceStatus.Cancelled ? Color.FromArgb("#6B7280") : Color.FromArgb("#D97706") });
+        hv.Children.Add(new Label { Text = statusText, FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) });
         header.Content = hv;
         Content.Children.Add(header);
 
@@ -115,10 +124,68 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
         }
     }
 
+    private async Task PrintInvoiceAsync(InvoiceModel inv)
+    {
+        try
+        {
+            var html = BuildInvoiceHtml(inv);
+#if ANDROID
+            var activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+            if (activity is null) throw new InvalidOperationException("Android activity is unavailable.");
+            var manager = activity.GetSystemService(Android.Content.Context.PrintService) as Android.Print.PrintManager;
+            if (manager is null) throw new InvalidOperationException("Print service is unavailable.");
+            var webView = new Android.Webkit.WebView(activity);
+            webView.SetWebViewClient(new InvoicePrintClient(() =>
+            {
+                var adapter = webView.CreatePrintDocumentAdapter($"Invoice-{inv.InvoiceNumber}");
+                manager.Print($"Invoice {inv.InvoiceNumber}", adapter, new Android.Print.PrintAttributes.Builder().Build());
+            }));
+            webView.LoadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+#else
+            var path = Path.Combine(FileSystem.CacheDirectory, $"Invoice-{inv.InvoiceNumber}.html");
+            await File.WriteAllTextAsync(path, html);
+            await Share.Default.RequestAsync(new ShareFileRequest { Title = $"Invoice {inv.InvoiceNumber}", File = new ShareFile(path) });
+#endif
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[InvoiceView] Print failed: {ex}");
+            await DisplayAlert("Print", "Invoice could not be opened for printing.", "OK");
+        }
+    }
+
+    private string BuildInvoiceHtml(InvoiceModel inv)
+    {
+        var sb = new StringBuilder();
+        sb.Append("<html><head><meta charset='utf-8'><style>body{font-family:sans-serif;padding:24px;color:#0f172a}h1{margin:0}.meta{color:#64748b}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0}.total{font-size:20px;font-weight:700;margin-top:18px}</style></head><body>");
+        sb.Append($"<h1>SwapDigit Invoice</h1><div class='meta'>{WebUtility.HtmlEncode(inv.InvoiceNumber)} · {WebUtility.HtmlEncode(inv.InvoiceDate.ToString(_dateFormat))}</div>");
+        sb.Append($"<h3>Customer: {WebUtility.HtmlEncode(inv.CustomerName)}</h3>");
+        foreach (var item in inv.Items)
+            sb.Append($"<div class='row'><span>{WebUtility.HtmlEncode(item.ProductName)} × {item.Quantity}</span><strong>{WebUtility.HtmlEncode(Money(item.GrandTotal))}</strong></div>");
+        sb.Append($"<div class='total'>Total: {WebUtility.HtmlEncode(Money(inv.GrandTotal))}</div>");
+        sb.Append($"<p>Status: {(inv.Status == InvoiceStatus.Paid ? "Completed" : inv.Status == InvoiceStatus.Cancelled ? "Cancelled" : "Pending")}</p>");
+        sb.Append("</body></html>");
+        return sb.ToString();
+    }
+
+#if ANDROID
+    private sealed class InvoicePrintClient(Action onReady) : Android.Webkit.WebViewClient
+    {
+        private bool _printed;
+        public override void OnPageFinished(Android.Webkit.WebView? view, string? url)
+        {
+            base.OnPageFinished(view, url);
+            if (_printed) return;
+            _printed = true;
+            onReady();
+        }
+    }
+#endif
+
     private async Task MarkPaidAsync()
     {
         if (_invoice is null) return;
-        if (!await DialogHelper.ConfirmAsync("Mark Paid", "Mark this invoice as fully paid?", "Mark Paid", "Back")) return;
+        if (!await DialogHelper.ConfirmAsync("Mark Paid", "Mark this invoice as fully paid and completed?", "Mark Paid", "Back")) return;
         var result = await _svc.MarkPaidAsync(_invoice.LocalId);
         if (!result.Ok) { await DisplayAlert("Billing", result.Error ?? "Invoice could not be marked paid.", "OK"); return; }
         await LoadForHostAsync();
