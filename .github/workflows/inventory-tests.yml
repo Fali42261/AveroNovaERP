@@ -65,7 +65,9 @@ jobs:
           if-no-files-found: error
 
   ios-simulator-build:
-    runs-on: macos-15
+    # .NET 10 iOS workload currently requires Xcode 26.6, which is the default
+    # toolchain on the macOS 26 Arm64 hosted runner.
+    runs-on: macos-26
     timeout-minutes: 45
 
     steps:
@@ -81,7 +83,7 @@ jobs:
           --framework net10.0-ios
           --configuration Debug
           -p:AveroNovaCiTargetFramework=net10.0-ios
-          -p:RuntimeIdentifier=iossimulator-x64
+          -p:RuntimeIdentifier=iossimulator-arm64
           -p:CodesignKey=""
           -p:CodesignProvision=""
       - name: Upload iOS Simulator manual-test app
@@ -89,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: averonova-ios-simulator-manual-test
-          path: AveroNova.App.UI/bin/Debug/net10.0-ios/iossimulator-x64/**/*.app/**
+          path: AveroNova.App.UI/bin/Debug/net10.0-ios/iossimulator-arm64/**/*.app/**
           if-no-files-found: error
 
   windows-build:
