@@ -189,7 +189,7 @@ public partial class MainLayoutView
     {
         if (view is Label label && !string.IsNullOrEmpty(label.Text))
         {
-            if (label.Text is "A" or "AN") label.Text = "SW";
+            if (label.Text is "A" or "AN" or "SW") label.Text = "SD";
             else if (label.Text.Contains("AveroNova", StringComparison.Ordinal)) label.Text = label.Text.Replace("AveroNova","SwipeDigit",StringComparison.Ordinal);
         }
         switch (view)
