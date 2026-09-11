@@ -48,9 +48,6 @@ public partial class MainLayoutView
 
     private void ConfigureMobileNavigation()
     {
-        // Five bottom slots are kept compact on phones. The last slot opens the
-        // complete ERP menu so Company, Products, Inventory, Purchases, etc.
-        // are never hidden from mobile users who have permission to use them.
         MBtnSettings.Text = "More";
         MBtnSettings.Clicked -= OnNavClicked;
         MBtnSettings.Clicked -= OnMoreClicked;
@@ -66,7 +63,6 @@ public partial class MainLayoutView
 
     private void HideOfflineBanners()
     {
-        // Offline capability still works; only the noisy yellow banner is hidden.
         OfflineBanner.IsVisible = false;
         MOfflineBanner.IsVisible = false;
     }
@@ -112,8 +108,11 @@ public partial class MainLayoutView
                 return;
             }
 
-            var labels = entries.Select(x => x.Label).ToArray();
-            var choice = await GetHostPage().DisplayActionSheet("AveroNova Menu", "Cancel", null, labels);
+            var choice = await GetHostPage().DisplayActionSheet(
+                "AveroNova Menu",
+                "Cancel",
+                null,
+                entries.Select(x => x.Label).ToArray());
             if (string.IsNullOrWhiteSpace(choice) || choice == "Cancel") return;
 
             var selected = entries.FirstOrDefault(x => x.Label == choice);
@@ -125,10 +124,7 @@ public partial class MainLayoutView
                 var access = await _licenses.GetAccessStateAsync();
                 if (!access.AllowsAccess)
                 {
-                    await NavigateMobileAsync(
-                        () => _licenseFactory(),
-                        "License",
-                        "Home / License");
+                    await NavigateMobileAsync(() => _licenseFactory(), "License", "Home / License");
                     return;
                 }
             }
@@ -173,17 +169,14 @@ public partial class MainLayoutView
         UpdateMobileNavSelection(title);
     }
 
-    private ContentPage GetHostPage()
+    private Page GetHostPage()
     {
-        if (Window?.Page is ContentPage page) return page;
+        if (Window?.Page is Page page) return page;
         return Shell.Current ?? throw new InvalidOperationException("No active page is available.");
     }
 
     private async Task ShowMessageAsync(string title, string message)
-    {
-        var page = GetHostPage();
-        await page.DisplayAlert(title, message, "OK");
-    }
+        => await GetHostPage().DisplayAlert(title, message, "OK");
 
     private static Color ResolveColor(string resourceKey, string fallback)
     {
