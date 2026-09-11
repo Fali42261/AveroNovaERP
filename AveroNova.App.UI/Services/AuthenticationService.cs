@@ -14,6 +14,8 @@ namespace AveroNova.App.UI.Services;
 /// </summary>
 public sealed class AuthenticationService : IAuthenticationService
 {
+    private const string RememberLoginPreferenceKey = "auth.remember_login";
+
     private readonly IAuthApiClient _authApi;
     private readonly ISecureTokenStore _tokens;
     private readonly ILocalAuthSessionStore _sessions;
@@ -63,10 +65,14 @@ public sealed class AuthenticationService : IAuthenticationService
 
         await _installation.EnsureInitializedAsync();
 
-        if (_connectivity.IsOnline)
-            return await LoginOnlineAsync(email.Trim(), password);
+        var result = _connectivity.IsOnline
+            ? await LoginOnlineAsync(email.Trim(), password)
+            : await LoginOfflineAsync(email.Trim(), password);
 
-        return await LoginOfflineAsync(email.Trim(), password);
+        if (result.Success)
+            Microsoft.Maui.Storage.Preferences.Default.Set(RememberLoginPreferenceKey, rememberMe);
+
+        return result;
     }
 
     public async Task<(bool Success, string? Error)> RegisterAsync(RegisterRequest request)
@@ -113,7 +119,6 @@ public sealed class AuthenticationService : IAuthenticationService
         if (!string.Equals(request.Password, request.ConfirmPassword, StringComparison.Ordinal))
             return (false, "Passwords do not match.");
 
-        // Stable client IDs so Local SQLite and Server SQLite share identity after sync.
         request.ClientUserId ??= Guid.NewGuid();
         request.ClientCompanyId ??= Guid.NewGuid();
         request.ClientUserCompanyId ??= Guid.NewGuid();
@@ -130,7 +135,6 @@ public sealed class AuthenticationService : IAuthenticationService
         return (true, null);
     }
 
-    // Compatibility shim used by older call sites — prefer RegisterAsync(RegisterRequest).
     public Task<(bool Success, string? Error)> RegisterAsync(string name, string email, string password)
         => Task.FromResult<(bool, string?)>((false, "Please complete the full Create Account form."));
 
@@ -166,6 +170,7 @@ public sealed class AuthenticationService : IAuthenticationService
             _logger.LogWarning(ex, "Logout API call failed; clearing local auth state anyway.");
         }
 
+        Microsoft.Maui.Storage.Preferences.Default.Set(RememberLoginPreferenceKey, false);
         await _tokens.ClearAsync();
         await _sessions.ClearAuthSessionAsync();
         _context.Clear();
@@ -173,6 +178,9 @@ public sealed class AuthenticationService : IAuthenticationService
 
     public async Task<bool> TryAutoLoginAsync()
     {
+        if (!Microsoft.Maui.Storage.Preferences.Default.Get(RememberLoginPreferenceKey, false))
+            return false;
+
         await _installation.EnsureInitializedAsync();
         if (!_installation.IsRegistered)
             return false;
@@ -294,7 +302,7 @@ public sealed class AuthenticationService : IAuthenticationService
 
             var expiry = await _tokens.GetAccessTokenExpiryAsync();
             if (expiry is DateTime exp && exp > DateTime.UtcNow.AddMinutes(2))
-                return true; // still fresh
+                return true;
 
             var sessionId = await _tokens.GetSessionIdAsync();
             var result = await _authApi.RefreshAsync(new RefreshRequest
