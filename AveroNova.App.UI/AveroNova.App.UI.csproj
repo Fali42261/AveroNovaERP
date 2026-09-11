@@ -39,6 +39,7 @@
 		<ApplicationTitle>SwipeDigit</ApplicationTitle>
 		<Product>SwipeDigit</Product>
 		<AssemblyTitle>SwipeDigit</AssemblyTitle>
+		<AssemblyName>SwipeDigit</AssemblyName>
 
 		<!-- App Identifier (internal; not the user-facing name) -->
 		<ApplicationId>com.swipedigit.erp</ApplicationId>
