@@ -8,7 +8,6 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- Header -->
         <Border Grid.Row="0" Padding="20,14"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
@@ -19,8 +18,10 @@
                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                     <Label x:Name="LblCount" Text="0 companies" FontSize="12"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
+                    <Label x:Name="LblPlanLimit" Text="Free plan: you can add 1 extra company"
+                           FontSize="11" TextColor="{StaticResource TextSecondary}"/>
                 </VerticalStackLayout>
-                <Button Grid.Column="1" Text="+ Add Company" Style="{StaticResource PrimaryButton}"
+                <Button x:Name="BtnAddCompany" Grid.Column="1" Text="+ Add Company" Style="{StaticResource PrimaryButton}"
                         HeightRequest="40" FontSize="13" Clicked="OnAddClicked"/>
             </Grid>
         </Border>
