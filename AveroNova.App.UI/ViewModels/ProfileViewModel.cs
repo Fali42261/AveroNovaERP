@@ -11,12 +11,12 @@ namespace AveroNova.App.UI.ViewModels
             "Profile completed successfully!";
 
         public string SuccessMessage { get; set; } =
-            "Your account is now active. You can start using AveroNova ERP.";
+            "Your account is now active. You can start using SwipeDigit ERP.";
 
 
         // Company Information
         public string CompanyName { get; set; } =
-            "AveroNova ERP";
+            "SwipeDigit ERP";
 
         public string OwnerName { get; set; } =
             "Faizan Ali";
