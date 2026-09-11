@@ -133,11 +133,19 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <Border Grid.Row="2" Padding="20,12"
+        <Border Grid.Row="2" Padding="16,10"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
                 StrokeThickness="1">
-            <Button x:Name="BtnSave" Text="Save" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                    <Label Text="Grand Total" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
+                    <Label x:Name="LblFooterGrandTotal" Text="₹0.00" FontSize="18" FontAttributes="Bold"
+                           TextColor="{StaticResource PrimaryColor}"/>
+                </VerticalStackLayout>
+                <Button Grid.Column="1" x:Name="BtnSave" Text="Save" Style="{StaticResource PrimaryButton}"
+                        MinimumWidthRequest="120" Clicked="OnSaveClicked"/>
+            </Grid>
         </Border>
     </Grid>
 </ContentPage>
