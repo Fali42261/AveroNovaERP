@@ -19,7 +19,7 @@ namespace AveroNova.App.UI.Services;
 public sealed class RegistrationSyncService : ISyncService
 {
     private static readonly string[] RegistrationEntityTypes = ["User", "Company", "UserCompany", "Subscription"];
-    private static readonly string[] BusinessEntityTypes = ["Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"];
+    private static readonly string[] BusinessEntityTypes = ["Customer", "Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"];
 
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAuthApiClient _authApi;
@@ -317,9 +317,12 @@ public sealed class RegistrationSyncService : ISyncService
         var latest = items
             .GroupBy(i => new { Type = i.EntityType.ToUpperInvariant(), i.EntityId })
             .Select(g => g.OrderByDescending(i => i.CreatedAt).ThenByDescending(i => i.Id).First())
-            .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
-                          || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 0
-                : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 2 : 1)
+            .OrderBy(i => i.EntityType.Equals("Customer", StringComparison.OrdinalIgnoreCase)
+                          || i.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase)
+                          || i.EntityType.Equals("Supplier", StringComparison.OrdinalIgnoreCase) ? 0
+                : i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
+                  || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 1
+                : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 3 : 2)
             .ThenBy(i => i.CreatedAt)
             .ToList();
 
@@ -406,6 +409,17 @@ public sealed class RegistrationSyncService : ISyncService
             });
         }
 
+        if (item.EntityType.Equals("Customer", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new
+            {
+                row.Id, row.CompanyId, row.Name, row.Email, row.Phone, row.Address, row.City,
+                row.Country, row.TaxNumber, row.Notes, row.Status, row.OutstandingBalance,
+                row.TotalPurchases, row.UpdatedAtUtc
+            });
+        }
+
         if (item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
         {
             var row = await db.Payments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
@@ -455,6 +469,17 @@ public sealed class RegistrationSyncService : ISyncService
         if (item.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase))
         {
             var row = await db.Invoices.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null)
+            {
+                row.ServerId = row.Id;
+                row.SyncStatus = (int)RecordSyncStatus.Synced;
+                row.SyncError = null;
+                row.LastSyncedAtUtc = syncedAt;
+            }
+        }
+        else if (item.EntityType.Equals("Customer", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Customers.FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
             if (row is not null)
             {
                 row.ServerId = row.Id;

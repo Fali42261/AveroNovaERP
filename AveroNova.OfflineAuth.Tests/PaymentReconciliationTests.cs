@@ -132,6 +132,21 @@ public sealed class PaymentReconciliationTests : IAsyncLifetime
         await AssertInvoiceAsync(60m, InvoiceStatus.PartialPaid);
     }
 
+    [Fact]
+    public async Task MarkPaid_CreatesCompletedPayment_AndQueuesInvoiceAndPayment()
+    {
+        var result = await _billing.MarkPaidAsync(_invoiceId);
+        Assert.True(result.Ok, result.Error);
+
+        await using var db = await _factory.CreateDbContextAsync();
+        var payment = await db.Payments.SingleAsync(p => p.InvoiceId == _invoiceId);
+        Assert.Equal(100m, payment.Amount);
+        Assert.Equal((int)PaymentStatus.Completed, payment.Status);
+        Assert.Equal(1, await db.SyncQueue.CountAsync(q => q.EntityType == "Payment"));
+        Assert.Equal(1, await db.SyncQueue.CountAsync(q => q.EntityType == "Invoice"));
+        await AssertInvoiceAsync(100m, InvoiceStatus.Paid);
+    }
+
     private PaymentModel Payment(decimal amount, PaymentStatus status = PaymentStatus.Completed)
         => new()
         {

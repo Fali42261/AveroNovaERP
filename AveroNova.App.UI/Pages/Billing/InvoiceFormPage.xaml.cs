@@ -17,6 +17,8 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
     private readonly IProductService _products;
     private readonly ICompanyService _company;
     private readonly ISettingsService _settings;
+    private readonly ISyncService _sync;
+    private readonly IConnectivityService _connectivity;
     private readonly IMainContentNavigator _navigator;
     private readonly IServiceProvider _services;
 
@@ -36,6 +38,8 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
         IProductService products,
         ICompanyService company,
         ISettingsService settings,
+        ISyncService sync,
+        IConnectivityService connectivity,
         IMainContentNavigator navigator,
         IServiceProvider services)
     {
@@ -45,6 +49,8 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
         _products = products;
         _company = company;
         _settings = settings;
+        _sync = sync;
+        _connectivity = connectivity;
         _navigator = navigator;
         _services = services;
         CustomerPicker.SelectedIndexChanged += OnCustomerChanged;
@@ -380,14 +386,31 @@ public partial class InvoiceFormPage : ContentPage, IHostedPage
                 ? (PaymentMethod)PaymentMethodPicker.SelectedIndex
                 : PaymentMethod.Cash;
             inv.Notes = EditorNotes.Text?.Trim() ?? string.Empty;
-            inv.Status = InvoiceStatus.Draft;
+            if (_editing is null)
+                inv.Status = InvoiceStatus.Draft;
 
             var (ok, error) = _editing is null
                 ? await _billing.CreateAsync(inv)
                 : await _billing.UpdateAsync(inv);
 
-            if (ok) await _navigator.GoBackAsync();
-            else ShowError(error ?? "Invoice could not be saved.");
+            if (!ok)
+            {
+                ShowError(error ?? "Invoice could not be saved.");
+                return;
+            }
+
+            if (_connectivity.IsOnline)
+            {
+                var settings = await _settings.GetAsync();
+                if (settings.AutoSync)
+                {
+                    var synced = await _sync.SyncNowAsync();
+                    if (!synced)
+                        await DisplayAlert("Saved locally", "The invoice is safe on this device and will retry syncing automatically.", "OK");
+                }
+            }
+
+            await _navigator.GoBackAsync();
         }
         catch (Exception ex)
         {

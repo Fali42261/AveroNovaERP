@@ -12,6 +12,8 @@ public partial class BillingListPage : ContentPage, IHostedPage
     private readonly IBillingService _svc;
     private readonly ICompanyService _company;
     private readonly ISettingsService _settings;
+    private readonly ISyncService _sync;
+    private readonly IConnectivityService _connectivity;
     private readonly IMainContentNavigator _navigator;
     private readonly IServiceProvider _services;
     private readonly Dictionary<string, Button> _filterButtons = new(StringComparer.OrdinalIgnoreCase);
@@ -21,10 +23,23 @@ public partial class BillingListPage : ContentPage, IHostedPage
     private string _dateFormat = "dd MMM yyyy";
     private bool _loading;
 
-    public BillingListPage(IBillingService svc, ICompanyService company, ISettingsService settings, IMainContentNavigator navigator, IServiceProvider services)
+    public BillingListPage(
+        IBillingService svc,
+        ICompanyService company,
+        ISettingsService settings,
+        ISyncService sync,
+        IConnectivityService connectivity,
+        IMainContentNavigator navigator,
+        IServiceProvider services)
     {
         InitializeComponent();
-        _svc = svc; _company = company; _settings = settings; _navigator = navigator; _services = services;
+        _svc = svc;
+        _company = company;
+        _settings = settings;
+        _sync = sync;
+        _connectivity = connectivity;
+        _navigator = navigator;
+        _services = services;
         BuildFilterTabs();
     }
 
@@ -53,7 +68,19 @@ public partial class BillingListPage : ContentPage, IHostedPage
         finally { _loading = false; }
     }
 
-    private async void OnRefreshing(object? sender, EventArgs e) { try { await LoadForHostAsync(); } finally { Refresher.IsRefreshing = false; } }
+    private async void OnRefreshing(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (_connectivity.IsOnline)
+                await _sync.SyncNowAsync();
+            await LoadForHostAsync();
+        }
+        finally
+        {
+            Refresher.IsRefreshing = false;
+        }
+    }
 
     private void BuildFilterTabs()
     {
@@ -119,6 +146,25 @@ public partial class BillingListPage : ContentPage, IHostedPage
         var right = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = Money(inv.GrandTotal), FontSize = 15, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.End });
         right.Children.Add(new Border { BackgroundColor = Color.FromArgb(statusBg), StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(999) }, Padding = new Thickness(8,3), Content = new Label { Text = statusText, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor) } });
+        var syncText = inv.SyncStatus switch
+        {
+            SyncStatus.Synced => "Synced",
+            SyncStatus.SyncFailed => "Sync failed",
+            _ => "Pending sync"
+        };
+        var syncColor = inv.SyncStatus switch
+        {
+            SyncStatus.Synced => "#059669",
+            SyncStatus.SyncFailed => "#DC2626",
+            _ => "#D97706"
+        };
+        right.Children.Add(new Label
+        {
+            Text = syncText,
+            FontSize = 10,
+            TextColor = Color.FromArgb(syncColor),
+            HorizontalOptions = LayoutOptions.End
+        });
         var view = new Button { Text = "View", FontSize = 12, HeightRequest = 36, Padding = new Thickness(12,0), CornerRadius = 8, BackgroundColor = Colors.Transparent, TextColor = Color.FromArgb("#2563EB"), BorderColor = Color.FromArgb("#2563EB"), BorderWidth = 1 };
         view.Clicked += async (_,_) => await OpenInvoiceAsync(inv);
         right.Children.Add(view);

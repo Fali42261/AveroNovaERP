@@ -19,7 +19,7 @@ namespace AveroNova.API.Controllers;
 public sealed class BusinessSyncController : ControllerBase
 {
     private static readonly HashSet<string> SupportedTypes =
-        new(["Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"], StringComparer.OrdinalIgnoreCase);
+        new(["Customer", "Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"], StringComparer.OrdinalIgnoreCase);
 
     private readonly AppDbContext _db;
 
@@ -53,9 +53,12 @@ public sealed class BusinessSyncController : ControllerBase
             var now = DateTime.UtcNow;
             var results = new List<BusinessSyncItemResult>(request.Items.Count);
             var ordered = request.Items
-                .OrderBy(i => i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
-                              || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 0
-                    : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 2 : 1)
+                .OrderBy(i => i.EntityType.Equals("Customer", StringComparison.OrdinalIgnoreCase)
+                              || i.EntityType.Equals("Product", StringComparison.OrdinalIgnoreCase)
+                              || i.EntityType.Equals("Supplier", StringComparison.OrdinalIgnoreCase) ? 0
+                    : i.EntityType.Equals("Invoice", StringComparison.OrdinalIgnoreCase)
+                      || i.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase) ? 1
+                    : i.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase) ? 3 : 2)
                 .ThenBy(i => i.ClientUpdatedAtUtc)
                 .ToList();
 

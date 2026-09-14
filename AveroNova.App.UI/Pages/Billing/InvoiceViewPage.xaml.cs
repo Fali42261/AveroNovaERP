@@ -16,15 +16,28 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
     private readonly IMainContentNavigator _navigator;
     private readonly IServiceProvider _services;
     private readonly ISettingsService _settings;
+    private readonly ISyncService _sync;
+    private readonly IConnectivityService _connectivity;
     private InvoiceModel? _invoice;
     private string _currencySymbol = "₹";
     private string _dateFormat = "dd MMM yyyy";
     public string? InvoiceId { get; set; }
 
-    public InvoiceViewPage(IBillingService svc, IMainContentNavigator navigator, IServiceProvider services, ISettingsService settings)
+    public InvoiceViewPage(
+        IBillingService svc,
+        IMainContentNavigator navigator,
+        IServiceProvider services,
+        ISettingsService settings,
+        ISyncService sync,
+        IConnectivityService connectivity)
     {
         InitializeComponent();
-        _svc = svc; _navigator = navigator; _services = services; _settings = settings;
+        _svc = svc;
+        _navigator = navigator;
+        _services = services;
+        _settings = settings;
+        _sync = sync;
+        _connectivity = connectivity;
     }
 
     protected override async void OnAppearing() { base.OnAppearing(); await LoadForHostAsync(); }
@@ -68,21 +81,18 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
             actions.Children.Add(paid);
             actions.Children.Add(cancel);
 
-            if (inv.Status == InvoiceStatus.Draft)
+            var edit = MakeButton("Edit", false);
+            edit.Clicked += async (_,_) =>
             {
-                var edit = MakeButton("Edit", false);
-                edit.Clicked += async (_,_) =>
+                try
                 {
-                    try
-                    {
-                        var page = ActivatorUtilities.CreateInstance<InvoiceFormPage>(_services);
-                        page.EditId = inv.LocalId.ToString("D");
-                        await _navigator.NavigateAsync(page, "Edit Invoice", "Home / Billing / Edit Invoice");
-                    }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[InvoiceView] Edit failed: {ex}"); }
-                };
-                actions.Children.Add(edit);
-            }
+                    var page = ActivatorUtilities.CreateInstance<InvoiceFormPage>(_services);
+                    page.EditId = inv.LocalId.ToString("D");
+                    await _navigator.NavigateAsync(page, "Edit Invoice", "Home / Billing / Edit Invoice");
+                }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[InvoiceView] Edit failed: {ex}"); }
+            };
+            actions.Children.Add(edit);
         }
         Content.Children.Add(new ScrollView { Orientation = ScrollOrientation.Horizontal, HorizontalScrollBarVisibility = ScrollBarVisibility.Never, Content = actions });
 
@@ -188,6 +198,7 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
         if (!await DialogHelper.ConfirmAsync("Mark Paid", "Mark this invoice as fully paid and completed?", "Mark Paid", "Back")) return;
         var result = await _svc.MarkPaidAsync(_invoice.LocalId);
         if (!result.Ok) { await DisplayAlert("Billing", result.Error ?? "Invoice could not be marked paid.", "OK"); return; }
+        await SyncIfOnlineAsync();
         await LoadForHostAsync();
     }
 
@@ -197,7 +208,16 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
         if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Cancel this invoice?", "Cancel Invoice", "Back")) return;
         var result = await _svc.CancelAsync(_invoice.LocalId);
         if (!result.Ok) { await DisplayAlert("Billing", result.Error ?? "Invoice could not be cancelled.", "OK"); return; }
+        await SyncIfOnlineAsync();
         await LoadForHostAsync();
+    }
+
+    private async Task SyncIfOnlineAsync()
+    {
+        if (!_connectivity.IsOnline) return;
+        var settings = await _settings.GetAsync();
+        if (settings.AutoSync)
+            await _sync.SyncNowAsync();
     }
 
     private static Button MakeButton(string text, bool primary) => new() { Text = text, HeightRequest = 40, CornerRadius = 8, Padding = new Thickness(14,0), BackgroundColor = primary ? Color.FromArgb("#2563EB") : Colors.Transparent, TextColor = primary ? Colors.White : Color.FromArgb("#2563EB"), BorderColor = Color.FromArgb("#2563EB"), BorderWidth = 1 };

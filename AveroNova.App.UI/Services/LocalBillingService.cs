@@ -35,6 +35,8 @@ public sealed class LocalBillingService : IBillingService
 
     public async Task<(bool Ok, string? Error)> CreateAsync(InvoiceModel invoice)
     {
+        var validationError = Validate(invoice);
+        if (validationError is not null) return (false, validationError);
         if (!Allows(invoice.CompanyId)) return (false, "You do not have access to this company.");
         await using var db = await _dbFactory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
@@ -51,6 +53,8 @@ public sealed class LocalBillingService : IBillingService
             invoice.Status = InvoiceStatus.Sent;
 
         if (string.IsNullOrWhiteSpace(invoice.InvoiceNumber)) invoice.InvoiceNumber = await NextNumberAsync(db, invoice.CompanyId);
+        if (await db.Invoices.AnyAsync(i => i.CompanyId == invoice.CompanyId && i.InvoiceNumber == invoice.InvoiceNumber))
+            return (false, "An invoice with this number already exists.");
         var row = ToEntity(invoice, now);
         row.SyncStatus = (int)RecordSyncStatus.Pending;
         db.Invoices.Add(row);
@@ -61,13 +65,20 @@ public sealed class LocalBillingService : IBillingService
 
     public async Task<(bool Ok, string? Error)> UpdateAsync(InvoiceModel invoice)
     {
+        var validationError = Validate(invoice);
+        if (validationError is not null) return (false, validationError);
         await using var db = await _dbFactory.CreateDbContextAsync();
         var row = await db.Invoices.FirstOrDefaultAsync(i => i.Id == invoice.LocalId);
-        if (row is null || !Allows(row.CompanyId)) return (false, "Invoice not found.");
+        if (row is null || !Allows(row.CompanyId) || row.CompanyId != invoice.CompanyId) return (false, "Invoice not found.");
+        if (await db.Invoices.AnyAsync(i => i.CompanyId == row.CompanyId && i.Id != row.Id && i.InvoiceNumber == invoice.InvoiceNumber))
+            return (false, "An invoice with this number already exists.");
+        var previousStatus = (InvoiceStatus)row.Status;
         var paid = await db.Payments.Where(p => p.CompanyId == row.CompanyId && p.InvoiceId == row.Id && p.Status == (int)PaymentStatus.Completed).SumAsync(p => p.Amount);
         if (paid > invoice.GrandTotal) return (false, "Invoice total cannot be less than payments already applied.");
         var now = DateTime.UtcNow;
         Apply(row, invoice, now);
+        if (invoice.Status == InvoiceStatus.Draft && previousStatus != InvoiceStatus.Draft)
+            row.Status = (int)previousStatus;
         row.PaidAmount = paid;
         ApplyReconciledStatus(row, invoice.GrandTotal);
         row.SyncStatus = (int)RecordSyncStatus.Pending;
@@ -108,13 +119,53 @@ public sealed class LocalBillingService : IBillingService
         var row = await db.Invoices.FirstOrDefaultAsync(i => i.Id == id);
         if (row is null || !Allows(row.CompanyId)) return (false, "Invoice not found.");
         if (row.Status == (int)InvoiceStatus.Cancelled) return (false, "A cancelled invoice cannot be marked paid.");
+
         var total = InvoiceTotal(row);
         if (total <= 0) return (false, "Invoice total must be greater than zero.");
+        var alreadyPaid = await db.Payments
+            .Where(p => p.CompanyId == row.CompanyId && p.InvoiceId == row.Id && p.Status == (int)PaymentStatus.Completed)
+            .SumAsync(p => p.Amount);
+        var remaining = total - alreadyPaid;
+        if (remaining <= 0)
+        {
+            row.PaidAmount = total;
+            row.Status = (int)InvoiceStatus.Paid;
+            await db.SaveChangesAsync();
+            return (true, null);
+        }
+
+        var now = DateTime.UtcNow;
+        var payment = new LocalPaymentEntity
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = row.CompanyId,
+            PaymentNumber = await NextPaymentNumberAsync(db, row.CompanyId),
+            PartyId = row.CustomerId,
+            PartyName = row.CustomerName,
+            IsSupplier = false,
+            InvoiceId = row.Id,
+            InvoiceNumber = row.InvoiceNumber,
+            Amount = remaining,
+            Method = row.PaymentMethod,
+            PaymentDate = DateTime.Today,
+            Status = (int)PaymentStatus.Completed,
+            SyncStatus = (int)RecordSyncStatus.Pending,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+        db.Payments.Add(payment);
+        LocalSyncQueueWriter.Enqueue(db, "Payment", payment.Id, payment.CompanyId, SyncOperation.Create, new
+        {
+            payment.Id, payment.CompanyId, payment.PaymentNumber, payment.PartyId, payment.PartyName,
+            payment.IsSupplier, payment.InvoiceId, payment.InvoiceNumber, payment.Amount, payment.Method,
+            payment.PaymentDate, payment.Reference, payment.Notes, payment.Status, payment.UpdatedAtUtc
+        }, now);
+
         row.PaidAmount = total;
         row.Status = (int)InvoiceStatus.Paid;
-        row.UpdatedAtUtc = DateTime.UtcNow;
+        row.UpdatedAtUtc = now;
         row.SyncStatus = (int)RecordSyncStatus.Pending;
-        LocalSyncQueueWriter.Enqueue(db, "Invoice", row.Id, row.CompanyId, SyncOperation.Update, Payload(row), row.UpdatedAtUtc);
+        LocalSyncQueueWriter.Enqueue(db, "Invoice", row.Id, row.CompanyId, SyncOperation.Update, Payload(row), now);
         await db.SaveChangesAsync();
         return (true, null);
     }
@@ -139,11 +190,39 @@ public sealed class LocalBillingService : IBillingService
 
     private bool Allows(Guid companyId) => _session.CurrentCompanyId is Guid current && current != Guid.Empty && current == companyId;
 
+    private static string? Validate(InvoiceModel invoice)
+    {
+        if (invoice.CompanyId == Guid.Empty) return "Select a company before saving the invoice.";
+        if (invoice.CustomerId == Guid.Empty || string.IsNullOrWhiteSpace(invoice.CustomerName)) return "Select a valid customer.";
+        if (invoice.InvoiceDate == default) return "Invoice date is required.";
+        if (invoice.DueDate.Date < invoice.InvoiceDate.Date) return "Due date cannot be before the invoice date.";
+        if (invoice.Items is null || invoice.Items.Count == 0) return "Add at least one invoice item.";
+        if (invoice.Items.Any(i => i.ProductId == Guid.Empty || i.Quantity <= 0 || i.UnitPrice < 0
+                                   || i.DiscountPct is < 0 or > 100 || i.TaxPct is < 0 or > 100))
+            return "Invoice items contain invalid product, quantity, price, discount, or tax values.";
+        if (invoice.DiscountPct is < 0 or > 100 || invoice.TaxPct is < 0 or > 100)
+            return "Invoice discount and tax must be between 0 and 100.";
+        if (invoice.GrandTotal <= 0) return "Invoice total must be greater than zero.";
+        return null;
+    }
+
     private static async Task<string> NextNumberAsync(LocalAppDbContext db, Guid companyId)
     {
         var prefix = $"INV-{DateTime.UtcNow:yyyy}-";
         var numbers = await db.Invoices.AsNoTracking().Where(i => i.CompanyId == companyId && i.InvoiceNumber.StartsWith(prefix)).Select(i => i.InvoiceNumber).ToListAsync();
         var next = numbers.Select(number => int.TryParse(number[prefix.Length..], out var sequence) ? sequence : 0).DefaultIfEmpty().Max() + 1;
+        return $"{prefix}{next:D4}";
+    }
+
+    private static async Task<string> NextPaymentNumberAsync(LocalAppDbContext db, Guid companyId)
+    {
+        var prefix = $"PAY-{DateTime.UtcNow:yyyy}-";
+        var numbers = await db.Payments.AsNoTracking()
+            .Where(p => p.CompanyId == companyId && p.PaymentNumber.StartsWith(prefix))
+            .Select(p => p.PaymentNumber)
+            .ToListAsync();
+        var next = numbers.Select(number => int.TryParse(number[prefix.Length..], out var sequence) ? sequence : 0)
+            .DefaultIfEmpty().Max() + 1;
         return $"{prefix}{next:D4}";
     }
 
