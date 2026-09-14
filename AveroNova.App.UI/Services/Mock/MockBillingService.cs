@@ -15,7 +15,8 @@ public class MockBillingService : IBillingService
 
     public Task<(bool Ok, string? Error)> CreateAsync(InvoiceModel invoice)
     {
-        invoice.LocalId    = Guid.NewGuid();
+        invoice.LocalId = Guid.NewGuid();
+        invoice.Status = InvoiceStatus.Draft;
         invoice.SyncStatus = SyncStatus.PendingSync;
         MockDataStore.Invoices.Add(invoice);
         return Task.FromResult<(bool, string?)>((true, null));
@@ -42,7 +43,19 @@ public class MockBillingService : IBillingService
     {
         var item = MockDataStore.Invoices.FirstOrDefault(i => i.LocalId == id);
         if (item == null) return Task.FromResult((false, "Invoice not found."));
+        if (item.PaidAmount > 0) return Task.FromResult((false, "A paid invoice cannot be cancelled."));
         item.Status = InvoiceStatus.Cancelled;
+        item.SyncStatus = SyncStatus.PendingSync;
+        return Task.FromResult<(bool, string?)>((true, null));
+    }
+
+    public Task<(bool Ok, string? Error)> MarkPaidAsync(Guid id)
+    {
+        var item = MockDataStore.Invoices.FirstOrDefault(i => i.LocalId == id);
+        if (item == null) return Task.FromResult((false, "Invoice not found."));
+        if (item.Status == InvoiceStatus.Cancelled) return Task.FromResult((false, "A cancelled invoice cannot be marked paid."));
+        item.PaidAmount = item.GrandTotal;
+        item.Status = InvoiceStatus.Paid;
         item.SyncStatus = SyncStatus.PendingSync;
         return Task.FromResult<(bool, string?)>((true, null));
     }
@@ -54,6 +67,5 @@ public class MockBillingService : IBillingService
         => Task.FromResult(MockDataStore.Invoices.Where(i => i.CustomerId == customerId).ToList());
 
     public Task<List<InvoiceModel>> GetOverdueAsync(Guid companyId)
-        => Task.FromResult(MockDataStore.Invoices
-            .Where(i => i.CompanyId == companyId && i.Status == InvoiceStatus.Overdue).ToList());
+        => Task.FromResult(MockDataStore.Invoices.Where(i => i.CompanyId == companyId && i.Status == InvoiceStatus.Overdue).ToList());
 }

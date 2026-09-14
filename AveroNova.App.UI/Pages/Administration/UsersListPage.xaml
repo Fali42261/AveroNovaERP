@@ -6,7 +6,7 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource BackgroundColorDark}}">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
 
         <Border Grid.Row="0" Padding="20,14"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
@@ -19,16 +19,22 @@
                     <Label x:Name="LblCount" Text="0 users" FontSize="12"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"/>
                 </VerticalStackLayout>
-               <Button Grid.Column="1"
-        Text="Add"
-        Style="{StaticResource PrimaryButton}"
-        HeightRequest="40"
-        FontSize="13"
-        Clicked="OnAddClicked"/>
+                <Button x:Name="BtnAdd" Grid.Column="1"
+                        Text="Add"
+                        Style="{StaticResource PrimaryButton}"
+                        HeightRequest="40"
+                        FontSize="13"
+                        Clicked="OnAddClicked"/>
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Padding="16,10"
+        <Border x:Name="PlanLimitBanner" Grid.Row="1" IsVisible="False" Padding="14,10"
+                BackgroundColor="#FFFBEB" Stroke="#FDE68A" StrokeThickness="1">
+            <Label x:Name="LblPlanLimit" Text="Free plan user limit reached."
+                   FontSize="12" TextColor="#92400E" LineBreakMode="WordWrap"/>
+        </Border>
+
+        <Border Grid.Row="2" Padding="16,10"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource SurfaceColorDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}"
                 StrokeThickness="1">
@@ -42,7 +48,7 @@
             </Grid>
         </Border>
 
-        <RefreshView Grid.Row="2" x:Name="Refresher" Refreshing="OnRefreshing">
+        <RefreshView Grid.Row="3" x:Name="Refresher" Refreshing="OnRefreshing">
             <ScrollView>
                 <VerticalStackLayout Padding="16,12" Spacing="10" x:Name="UserList"/>
             </ScrollView>

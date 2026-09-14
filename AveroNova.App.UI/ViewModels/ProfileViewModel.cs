@@ -6,17 +6,14 @@ namespace AveroNova.App.UI.ViewModels
 {
     public class ProfileViewModel
     {
-        // Success
         public string SuccessTitle { get; set; } =
             "Profile completed successfully!";
 
         public string SuccessMessage { get; set; } =
-            "Your account is now active. You can start using AveroNova ERP.";
+            "Your account is now active. You can start using SwapDigit ERP.";
 
-
-        // Company Information
         public string CompanyName { get; set; } =
-            "AveroNova ERP";
+            "SwapDigit ERP";
 
         public string OwnerName { get; set; } =
             "Faizan Ali";
@@ -42,8 +39,6 @@ namespace AveroNova.App.UI.ViewModels
         public string Pincode { get; set; } =
             "400001";
 
-
-        // Admin Account
         public string Username { get; set; } =
             "faizanali";
 

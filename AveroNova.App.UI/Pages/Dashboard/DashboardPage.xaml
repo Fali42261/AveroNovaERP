@@ -9,148 +9,70 @@
     <RefreshView x:Name="Refresher" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="20,18,20,32" Spacing="18">
-
-                <!-- Header -->
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <VerticalStackLayout Spacing="3">
-                        <Label x:Name="LblWelcome"
-                               Text="Dashboard"
-                               FontSize="24"
-                               FontAttributes="Bold"
-                               TextColor="#0F172A" />
-                        <Label x:Name="LblDate"
-                               FontSize="12"
-                               TextColor="#64748B" />
+                        <Label x:Name="LblWelcome" Text="Dashboard" FontSize="24" FontAttributes="Bold" TextColor="#0F172A" />
+                        <Label x:Name="LblDate" FontSize="12" TextColor="#64748B" />
                     </VerticalStackLayout>
-
-                    <Border Grid.Column="1"
-                            BackgroundColor="#FFFFFF"
-                            Stroke="#E2E8F0"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 12"
-                            Padding="12,7"
-                            VerticalOptions="Center">
-                        <Label x:Name="LblFiscalYear"
-                               Text="FY"
-                               FontSize="12"
-                               FontAttributes="Bold"
-                               TextColor="#334155" />
+                    <Border Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="12,7" VerticalOptions="Center">
+                        <Label x:Name="LblFiscalYear" Text="FY" FontSize="12" FontAttributes="Bold" TextColor="#334155" />
                     </Border>
                 </Grid>
 
-                <!-- Free plan / license status -->
-                <Border x:Name="TrialBanner"
-                        IsVisible="False"
-                        BackgroundColor="#EFF6FF"
-                        Stroke="#BFDBFE"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 14"
-                        Padding="14,12">
+                <Border x:Name="TrialBanner" IsVisible="False" BackgroundColor="#EFF6FF" Stroke="#BFDBFE" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="14,12">
                     <VerticalStackLayout Spacing="3">
-                        <Label x:Name="LblTrialTitle"
-                               Text="Free Plan"
-                               FontSize="13"
-                               FontAttributes="Bold"
-                               TextColor="#1D4ED8" />
-                        <Label x:Name="LblTrialDetail"
-                               FontSize="12"
-                               TextColor="#475569" />
+                        <Label x:Name="LblTrialTitle" Text="Free Plan" FontSize="13" FontAttributes="Bold" TextColor="#1D4ED8" />
+                        <Label x:Name="LblTrialDetail" FontSize="12" TextColor="#475569" />
                     </VerticalStackLayout>
                 </Border>
 
                 <VerticalStackLayout Spacing="3">
-                    <Label Text="Business Overview"
-                           FontSize="17"
-                           FontAttributes="Bold"
-                           TextColor="#0F172A" />
-                    <Label Text="Live values from your local business database"
-                           FontSize="12"
-                           TextColor="#64748B" />
+                    <Label Text="Business Overview" FontSize="17" FontAttributes="Bold" TextColor="#0F172A" />
+                    <Label Text="Live values from your local business database" FontSize="12" TextColor="#64748B" />
                 </VerticalStackLayout>
 
-                <!-- KPI cards -->
                 <FlexLayout Wrap="Wrap" Direction="Row" AlignItems="Stretch">
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200"
-                            Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16" Padding="16">
-                        <VerticalStackLayout Spacing="7">
-                            <Label Text="TOTAL SALES" FontSize="10" FontAttributes="Bold" TextColor="#64748B" />
-                            <Label x:Name="LblTotalSales" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" />
-                            <Label x:Name="LblSalesCount" Text="0 invoices" FontSize="11" TextColor="#059669" />
-                        </VerticalStackLayout>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200" Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="7"><Label Text="TOTAL SALES" FontSize="10" FontAttributes="Bold" TextColor="#64748B" /><Label x:Name="LblTotalSales" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" /><Label x:Name="LblSalesCount" Text="0 invoices" FontSize="11" TextColor="#059669" /></VerticalStackLayout>
                     </Border>
-
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200"
-                            Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16" Padding="16">
-                        <VerticalStackLayout Spacing="7">
-                            <Label Text="TOTAL PURCHASES" FontSize="10" FontAttributes="Bold" TextColor="#64748B" />
-                            <Label x:Name="LblTotalPurchases" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" />
-                            <Label x:Name="LblPurchaseCount" Text="0 orders" FontSize="11" TextColor="#7C3AED" />
-                        </VerticalStackLayout>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200" Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="7"><Label Text="TOTAL PURCHASES" FontSize="10" FontAttributes="Bold" TextColor="#64748B" /><Label x:Name="LblTotalPurchases" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" /><Label x:Name="LblPurchaseCount" Text="0 orders" FontSize="11" TextColor="#7C3AED" /></VerticalStackLayout>
                     </Border>
-
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200"
-                            Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16" Padding="16">
-                        <VerticalStackLayout Spacing="7">
-                            <Label Text="OUTSTANDING" FontSize="10" FontAttributes="Bold" TextColor="#64748B" />
-                            <Label x:Name="LblOutstanding" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" />
-                            <Label x:Name="LblOverdueCount" Text="0 invoices" FontSize="11" TextColor="#D97706" />
-                        </VerticalStackLayout>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200" Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="7"><Label Text="OUTSTANDING" FontSize="10" FontAttributes="Bold" TextColor="#64748B" /><Label x:Name="LblOutstanding" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" /><Label x:Name="LblOverdueCount" Text="0 invoices" FontSize="11" TextColor="#D97706" /></VerticalStackLayout>
                     </Border>
-
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200"
-                            Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16" Padding="16">
-                        <VerticalStackLayout Spacing="7">
-                            <Label Text="CUSTOMERS" FontSize="10" FontAttributes="Bold" TextColor="#64748B" />
-                            <Label x:Name="LblCustomers" Text="0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" />
-                            <Label x:Name="LblActiveCustomers" Text="0 active" FontSize="11" TextColor="#059669" />
-                        </VerticalStackLayout>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200" Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="7"><Label Text="CUSTOMERS" FontSize="10" FontAttributes="Bold" TextColor="#64748B" /><Label x:Name="LblCustomers" Text="0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" /><Label x:Name="LblActiveCustomers" Text="0 active" FontSize="11" TextColor="#059669" /></VerticalStackLayout>
                     </Border>
-
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200"
-                            Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16" Padding="16">
-                        <VerticalStackLayout Spacing="7">
-                            <Label Text="PRODUCTS" FontSize="10" FontAttributes="Bold" TextColor="#64748B" />
-                            <Label x:Name="LblProducts" Text="0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" />
-                            <Label x:Name="LblLowStockCount" Text="0 low stock" FontSize="11" TextColor="#DC2626" />
-                        </VerticalStackLayout>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200" Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="7"><Label Text="PRODUCTS" FontSize="10" FontAttributes="Bold" TextColor="#64748B" /><Label x:Name="LblProducts" Text="0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" /><Label x:Name="LblLowStockCount" Text="0 low stock" FontSize="11" TextColor="#DC2626" /></VerticalStackLayout>
                     </Border>
-
-                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200"
-                            Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 16" Padding="16">
-                        <VerticalStackLayout Spacing="7">
-                            <Label Text="PAYMENTS RECEIVED" FontSize="10" FontAttributes="Bold" TextColor="#64748B" />
-                            <Label x:Name="LblPayments" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" />
-                            <Label Text="Current month" FontSize="11" TextColor="#059669" />
-                        </VerticalStackLayout>
+                    <Border FlexLayout.Grow="1" FlexLayout.Basis="230" MinimumWidthRequest="200" Margin="0,0,12,12" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                        <VerticalStackLayout Spacing="7"><Label Text="PAYMENTS RECEIVED" FontSize="10" FontAttributes="Bold" TextColor="#64748B" /><Label x:Name="LblPayments" Text="₹0" FontSize="26" FontAttributes="Bold" TextColor="#0F172A" /><Label Text="Current month" FontSize="11" TextColor="#059669" /></VerticalStackLayout>
                     </Border>
                 </FlexLayout>
 
-                <!-- Important: no Quick Actions section on dashboard. Navigation lives in the main menu. -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Sales Trend" FontSize="16" FontAttributes="Bold" TextColor="#0F172A" />
+                        <Label Text="Last 6 months · saved invoices" FontSize="11" TextColor="#64748B" />
+                    </VerticalStackLayout>
+                </Grid>
+                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                    <Grid x:Name="MonthlyChart" HeightRequest="180" ColumnSpacing="8" />
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
                     <Label Text="Recent Invoices" FontSize="16" FontAttributes="Bold" TextColor="#0F172A" />
                     <Label Grid.Column="1" Text="Latest 4" FontSize="11" TextColor="#64748B" VerticalOptions="Center" />
                 </Grid>
-
-                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="0">
-                    <VerticalStackLayout x:Name="InvoiceList" Spacing="0" />
-                </Border>
+                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="0"><VerticalStackLayout x:Name="InvoiceList" Spacing="0" /></Border>
 
                 <Grid ColumnDefinitions="*,Auto">
                     <Label Text="Low Stock Alerts" FontSize="16" FontAttributes="Bold" TextColor="#0F172A" />
                     <Label x:Name="LblLowStockHeaderCount" Grid.Column="1" Text="0 items" FontSize="11" TextColor="#DC2626" VerticalOptions="Center" />
                 </Grid>
-
-                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="0">
-                    <VerticalStackLayout x:Name="LowStockList" Spacing="0" />
-                </Border>
-
+                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="0"><VerticalStackLayout x:Name="LowStockList" Spacing="0" /></Border>
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>

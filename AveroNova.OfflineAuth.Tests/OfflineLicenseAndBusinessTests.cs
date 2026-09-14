@@ -157,14 +157,17 @@ public sealed class OfflineLicenseAndBusinessTests : IAsyncLifetime
         var billing = new LocalBillingService(_dbFactory, _session);
         var payments = new LocalPaymentService(_dbFactory, _session);
 
-        Assert.True((await customers.CreateAsync(new CustomerModel { CompanyId = companyA, Name = "Acme" })).Ok);
+        var customer = new CustomerModel { CompanyId = companyA, Name = "Acme" };
+        Assert.True((await customers.CreateAsync(customer)).Ok);
         Assert.False((await customers.CreateAsync(new CustomerModel { CompanyId = companyB, Name = "Other Co" })).Ok);
-        Assert.True((await products.CreateAsync(new ProductModel { CompanyId = companyA, Name = "Widget", SKU = "W1", SellingPrice = 10 })).Ok);
+        var product = new ProductModel { CompanyId = companyA, Name = "Widget", SKU = "W1", SellingPrice = 10 };
+        Assert.True((await products.CreateAsync(product)).Ok);
         Assert.True((await billing.CreateAsync(new InvoiceModel
         {
             CompanyId = companyA,
-            CustomerName = "Acme",
-            Items = [new InvoiceLineItem { ProductName = "Widget", Quantity = 1, UnitPrice = 10 }]
+            CustomerId = customer.LocalId,
+            CustomerName = customer.Name,
+            Items = [new InvoiceLineItem { ProductId = product.LocalId, ProductName = product.Name, Quantity = 1, UnitPrice = 10 }]
         })).Ok);
         Assert.True((await payments.CreateAsync(new PaymentModel { CompanyId = companyA, PartyName = "Acme", Amount = 10 })).Ok);
 

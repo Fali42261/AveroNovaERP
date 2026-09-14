@@ -27,13 +27,30 @@
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"/>
                         <BoxView Style="{StaticResource Divider}"/>
                         <Label Text="Full Name *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryFullName" Placeholder="John Doe"/></Border>
-                        <Label Text="Email *" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryEmail" Placeholder="email@example.com" Keyboard="Email"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryFullName" Placeholder="Enter user full name"/></Border>
+
+                        <Label Text="Company / Work Email *" Style="{StaticResource InputLabel}"/>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryEmail" Placeholder="e.g. sales@company.com" Keyboard="Email"/></Border>
+                        <Label Text="This work email is the user's SwapDigit login ID. Use a unique company email for each user, not a personal email."
+                               FontSize="11" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap"/>
+
+                        <VerticalStackLayout x:Name="LoginPasswordSection" Spacing="10">
+                            <Label Text="Login Password *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource InputContainer}">
+                                <Entry x:Name="EntryPassword" Placeholder="Min 6 chars: upper, lower, number &amp; symbol" IsPassword="True"/>
+                            </Border>
+                            <Label Text="Confirm Password *" Style="{StaticResource InputLabel}"/>
+                            <Border Style="{StaticResource InputContainer}">
+                                <Entry x:Name="EntryConfirmPassword" Placeholder="Re-enter password" IsPassword="True"/>
+                            </Border>
+                            <Label Text="The password is stored securely as a hash; it is never saved as plain text."
+                                   FontSize="11" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+
                         <Label Text="Phone" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="+1 555-0000" Keyboard="Telephone"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="Enter phone number" Keyboard="Telephone"/></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="4"><Label Text="Role" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PickerRole" Title="Select role" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
+                            <VerticalStackLayout Spacing="4"><Label Text="Role *" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Picker x:Name="PickerRole" Title="Select role" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="4"><Label Text="Status" Style="{StaticResource InputLabel}"/><Border Style="{StaticResource InputContainer}"><Switch x:Name="SwitchActive" IsToggled="True" HorizontalOptions="Start"/></Border></VerticalStackLayout>
                         </Grid>
                         <Label Text="Notes" Style="{StaticResource InputLabel}"/>
@@ -55,7 +72,7 @@
                 Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource BorderColorDark}}" StrokeThickness="1">
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Button Text="Cancel" Style="{StaticResource SecondaryButton}" Clicked="OnBackClicked"/>
-                <Button Grid.Column="1" Text="Save User" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
+                <Button Grid.Column="1" Text="Create User" x:Name="BtnSave" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked"/>
             </Grid>
         </Border>
 

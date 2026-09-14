@@ -62,6 +62,47 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SyncNow_PushesBillingCustomerBeforeInvoice_AndMarksBothSynced()
+    {
+        var customer = new CustomerModel
+        {
+            CompanyId = _companyId,
+            Name = "Billing Customer",
+            Email = "billing@example.test",
+            Status = CustomerStatus.Active
+        };
+        Assert.True((await new LocalCustomerService(_factory, _session).CreateAsync(customer)).Ok);
+
+        var invoice = new InvoiceModel
+        {
+            CompanyId = _companyId,
+            CustomerId = customer.LocalId,
+            CustomerName = customer.Name,
+            Items =
+            [
+                new InvoiceLineItem
+                {
+                    ProductId = Guid.NewGuid(),
+                    ProductName = "Item",
+                    Quantity = 1,
+                    UnitPrice = 100m
+                }
+            ]
+        };
+        Assert.True((await new LocalBillingService(_factory, _session).CreateAsync(invoice)).Ok);
+
+        var api = new FakeBusinessSyncApi();
+        Assert.True(await CreateSync(api, new FakeTokenStore("token")).SyncNowAsync());
+
+        Assert.Equal(new[] { "Customer", "Invoice" }, api.LastRequest!.Items.Select(i => i.EntityType).ToArray());
+        await using var db = await _factory.CreateDbContextAsync();
+        Assert.Equal((int)RecordSyncStatus.Synced,
+            (await db.Customers.SingleAsync(c => c.Id == customer.LocalId)).SyncStatus);
+        Assert.Equal((int)RecordSyncStatus.Synced,
+            (await db.Invoices.SingleAsync(i => i.Id == invoice.LocalId)).SyncStatus);
+    }
+
+    [Fact]
     public async Task SyncNow_CoalescesMultipleUpdatesForSamePayment()
     {
         await CreateInvoiceAndPaymentAsync();
@@ -78,6 +119,35 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
         await using var db = await _factory.CreateDbContextAsync();
         Assert.All(await db.SyncQueue.Where(q => q.EntityType == "Payment").ToListAsync(),
             q => Assert.Equal((int)RecordSyncStatus.Synced, q.Status));
+    }
+
+    [Fact]
+    public async Task SyncNow_PushesExpense_AndMarksLocalRecordSynced()
+    {
+        var expense = new ExpenseModel
+        {
+            CompanyId = _companyId,
+            Category = "Software",
+            Description = "Subscription",
+            Amount = 250m,
+            ExpenseDate = DateTime.Today,
+            Method = PaymentMethod.Online,
+            Status = ExpenseStatus.Paid,
+            ApprovedBy = "Owner"
+        };
+        Assert.True((await new LocalExpenseService(_factory, _session).CreateAsync(expense)).Ok);
+
+        var api = new FakeBusinessSyncApi();
+        Assert.True(await CreateSync(api, new FakeTokenStore("token")).SyncNowAsync());
+
+        var item = Assert.Single(api.LastRequest!.Items);
+        Assert.Equal("Expense", item.EntityType);
+        Assert.Contains("\"Amount\":250", item.PayloadJson);
+
+        await using var db = await _factory.CreateDbContextAsync();
+        var saved = await db.Expenses.SingleAsync(x => x.Id == expense.LocalId);
+        Assert.Equal((int)RecordSyncStatus.Synced, saved.SyncStatus);
+        Assert.NotNull(saved.LastSyncedAtUtc);
     }
 
     [Fact]

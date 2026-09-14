@@ -9,9 +9,9 @@ public partial class LicenseViewModel : ObservableObject
 {
     private readonly ILicenseService _licenses;
 
-    [ObservableProperty] private string planName = "Starter";
-    [ObservableProperty] private string statusText = "Trial";
-    [ObservableProperty] private string remainingText = string.Empty;
+    [ObservableProperty] private string planName = "Free";
+    [ObservableProperty] private string statusText = "Active";
+    [ObservableProperty] private string remainingText = "Free plan active";
     [ObservableProperty] private string trialStartText = "—";
     [ObservableProperty] private string trialEndText = "—";
     [ObservableProperty] private bool isTrial;
@@ -31,8 +31,7 @@ public partial class LicenseViewModel : ObservableObject
     [RelayCommand]
     public async Task LoadAsync()
     {
-        if (IsBusy)
-            return;
+        if (IsBusy) return;
 
         IsBusy = true;
         ErrorMessage = null;
@@ -41,21 +40,41 @@ public partial class LicenseViewModel : ObservableObject
         {
             await _licenses.ValidateOnlineIfPossibleAsync();
             var state = await _licenses.GetAccessStateAsync();
-            PlanName = string.IsNullOrWhiteSpace(state.Plan) ? "Starter" : state.Plan;
-            StatusText = state.Status.ToString();
+
+            PlanName = string.IsNullOrWhiteSpace(state.Plan)
+                ? "Free"
+                : state.Plan.Equals("Starter", StringComparison.OrdinalIgnoreCase)
+                    ? "Free"
+                    : state.Plan;
+
             IsTrial = state.IsTrial && state.Status == LicenseStatus.Trial;
             IsExpired = state.Status == LicenseStatus.Expired;
-            RemainingText = IsExpired
-                ? "Trial expired"
-                : IsTrial
-                    ? $"{state.RemainingTrialDays} day{(state.RemainingTrialDays == 1 ? "" : "s")} remaining"
-                    : "Licensed";
-            TrialStartText = FormatLocal(state.TrialStartDateUtc);
-            TrialEndText = FormatLocal(state.TrialEndDateUtc);
+
+            if (PlanName.Equals("Free", StringComparison.OrdinalIgnoreCase))
+            {
+                StatusText = state.Status == LicenseStatus.Expired ? "Inactive" : "Active";
+                RemainingText = state.Status == LicenseStatus.Expired
+                    ? "Free plan access needs to be refreshed"
+                    : "Free plan active";
+                TrialStartText = "Not applicable";
+                TrialEndText = "Not applicable";
+            }
+            else
+            {
+                StatusText = state.Status.ToString();
+                RemainingText = IsExpired
+                    ? "Plan expired"
+                    : IsTrial
+                        ? $"{state.RemainingTrialDays} day{(state.RemainingTrialDays == 1 ? string.Empty : "s")} remaining"
+                        : "Plan active";
+                TrialStartText = FormatLocal(state.TrialStartDateUtc);
+                TrialEndText = FormatLocal(state.TrialEndDateUtc);
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ErrorMessage = "Unable to load license status.";
+            System.Diagnostics.Debug.WriteLine($"[License] View model load failed: {ex}");
+            ErrorMessage = "Unable to load plan status.";
             HasError = true;
         }
         finally
@@ -66,9 +85,10 @@ public partial class LicenseViewModel : ObservableObject
 
     private static string FormatLocal(DateTime? utc)
     {
-        if (utc is not DateTime value)
-            return "—";
-        var local = value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : DateTime.SpecifyKind(value, DateTimeKind.Utc).ToLocalTime();
+        if (utc is not DateTime value) return "—";
+        var local = value.Kind == DateTimeKind.Utc
+            ? value.ToLocalTime()
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc).ToLocalTime();
         return local.ToString("dd-MMM-yyyy");
     }
 }

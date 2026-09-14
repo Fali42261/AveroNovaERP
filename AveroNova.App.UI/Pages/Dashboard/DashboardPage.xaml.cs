@@ -14,12 +14,7 @@ public partial class DashboardPage : ContentPage, IHostedPage
     private readonly IReportingService _reporting;
     private int _loadVersion;
 
-    public DashboardPage(
-        IBillingService billing,
-        IProductService product,
-        ICompanyService company,
-        ILicenseService licenses,
-        IReportingService reporting)
+    public DashboardPage(IBillingService billing, IProductService product, ICompanyService company, ILicenseService licenses, IReportingService reporting)
     {
         InitializeComponent();
         _billing = billing;
@@ -40,22 +35,14 @@ public partial class DashboardPage : ContentPage, IHostedPage
     {
         LblDate.Text = DateTime.Today.ToString("dddd, dd MMMM yyyy");
         LblFiscalYear.Text = $"FY {DateTime.Today:yyyy}";
-        LblWelcome.Text = string.IsNullOrWhiteSpace(_company.CurrentCompany?.Name)
-            ? "Dashboard"
-            : _company.CurrentCompany!.Name;
+        LblWelcome.Text = string.IsNullOrWhiteSpace(_company.CurrentCompany?.Name) ? "Dashboard" : _company.CurrentCompany!.Name;
         await LoadDataAsync();
     }
 
     private async void OnRefreshing(object sender, EventArgs e)
     {
-        try
-        {
-            await LoadForHostAsync();
-        }
-        finally
-        {
-            Refresher.IsRefreshing = false;
-        }
+        try { await LoadForHostAsync(); }
+        finally { Refresher.IsRefreshing = false; }
     }
 
     private async Task LoadDataAsync()
@@ -79,8 +66,7 @@ public partial class DashboardPage : ContentPage, IHostedPage
             var products = await _product.GetAllAsync(cid);
             var (summary, _) = await _reporting.GetSummaryAsync(cid, ReportPeriod.CurrentMonth(DateTime.Today));
 
-            if (!IsCurrentLoad(loadVersion, cid) || summary is null)
-                return;
+            if (!IsCurrentLoad(loadVersion, cid) || summary is null) return;
 
             LblTotalSales.Text = Money(summary.NetRevenue);
             LblTotalPurchases.Text = Money(summary.NetPurchases);
@@ -95,6 +81,7 @@ public partial class DashboardPage : ContentPage, IHostedPage
             LblLowStockCount.Text = $"{summary.LowStockCount} low stock";
             LblLowStockHeaderCount.Text = $"{summary.LowStockCount} items";
 
+            RenderSalesChart(invoices);
             RenderInvoices(invoices);
             RenderLowStock(products);
         }
@@ -111,16 +98,58 @@ public partial class DashboardPage : ContentPage, IHostedPage
         }
     }
 
+    private void RenderSalesChart(List<InvoiceModel> invoices)
+    {
+        MonthlyChart.Children.Clear();
+        MonthlyChart.ColumnDefinitions.Clear();
+        MonthlyChart.RowDefinitions.Clear();
+        MonthlyChart.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+        MonthlyChart.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+        var months = Enumerable.Range(0, 6)
+            .Select(offset => new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(offset - 5))
+            .ToList();
+
+        var values = months.Select(month => invoices
+            .Where(i => i.Status != InvoiceStatus.Cancelled && i.InvoiceDate.Year == month.Year && i.InvoiceDate.Month == month.Month)
+            .Sum(i => i.GrandTotal)).ToList();
+        var max = Math.Max(1m, values.DefaultIfEmpty(0m).Max());
+
+        for (var i = 0; i < months.Count; i++)
+        {
+            MonthlyChart.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            var column = new Grid { RowDefinitions = new RowDefinitionCollection(new RowDefinition(GridLength.Star), new RowDefinition(GridLength.Auto)), RowSpacing = 5 };
+            var barHost = new Grid { VerticalOptions = LayoutOptions.Fill, Padding = new Thickness(4, 6, 4, 0) };
+            var ratio = (double)(values[i] / max);
+            var bar = new BoxView
+            {
+                BackgroundColor = Color.FromArgb("#2563EB"),
+                CornerRadius = 5,
+                HeightRequest = Math.Max(4, 125 * ratio),
+                VerticalOptions = LayoutOptions.End,
+                HorizontalOptions = LayoutOptions.Fill
+            };
+            barHost.Children.Add(bar);
+            column.Add(barHost, 0, 0);
+            column.Add(new Label
+            {
+                Text = months[i].ToString("MMM"),
+                FontSize = 10,
+                TextColor = Color.FromArgb("#64748B"),
+                HorizontalTextAlignment = TextAlignment.Center,
+                HorizontalOptions = LayoutOptions.Fill
+            }, 0, 1);
+            Grid.SetColumn(column, i);
+            Grid.SetRowSpan(column, 2);
+            MonthlyChart.Children.Add(column);
+        }
+    }
+
     private void RenderInvoices(List<InvoiceModel> invoices)
     {
         InvoiceList.Children.Clear();
         var recent = invoices.OrderByDescending(i => i.InvoiceDate).Take(4).ToList();
-        if (recent.Count == 0)
-        {
-            InvoiceList.Children.Add(EmptyLabel("No invoices yet."));
-            return;
-        }
-
+        if (recent.Count == 0) { InvoiceList.Children.Add(EmptyLabel("No invoices yet.")); return; }
         var first = true;
         foreach (var inv in recent)
         {
@@ -134,12 +163,7 @@ public partial class DashboardPage : ContentPage, IHostedPage
     {
         LowStockList.Children.Clear();
         var lowStock = products.Where(p => p.IsLowStock).Take(4).ToList();
-        if (lowStock.Count == 0)
-        {
-            LowStockList.Children.Add(EmptyLabel("No low stock items."));
-            return;
-        }
-
+        if (lowStock.Count == 0) { LowStockList.Children.Add(EmptyLabel("No low stock items.")); return; }
         var first = true;
         foreach (var p in lowStock)
         {
@@ -149,25 +173,15 @@ public partial class DashboardPage : ContentPage, IHostedPage
         }
     }
 
-    private bool IsCurrentLoad(int loadVersion, Guid companyId) =>
-        loadVersion == _loadVersion && _company.CurrentCompany?.LocalId == companyId;
+    private bool IsCurrentLoad(int loadVersion, Guid companyId) => loadVersion == _loadVersion && _company.CurrentCompany?.LocalId == companyId;
 
     private void ClearBusinessData()
     {
-        LblTotalSales.Text = Money(0);
-        LblTotalPurchases.Text = Money(0);
-        LblOutstanding.Text = Money(0);
-        LblCustomers.Text = "0";
-        LblProducts.Text = "0";
-        LblPayments.Text = Money(0);
-        LblSalesCount.Text = "0 invoices";
-        LblPurchaseCount.Text = "0 orders";
-        LblOverdueCount.Text = "0 overdue";
-        LblActiveCustomers.Text = "0 active";
-        LblLowStockCount.Text = "0 low stock";
-        LblLowStockHeaderCount.Text = "0 items";
-        InvoiceList.Children.Clear();
-        LowStockList.Children.Clear();
+        LblTotalSales.Text = Money(0); LblTotalPurchases.Text = Money(0); LblOutstanding.Text = Money(0);
+        LblCustomers.Text = "0"; LblProducts.Text = "0"; LblPayments.Text = Money(0);
+        LblSalesCount.Text = "0 invoices"; LblPurchaseCount.Text = "0 orders"; LblOverdueCount.Text = "0 overdue";
+        LblActiveCustomers.Text = "0 active"; LblLowStockCount.Text = "0 low stock"; LblLowStockHeaderCount.Text = "0 items";
+        MonthlyChart.Children.Clear(); InvoiceList.Children.Clear(); LowStockList.Children.Clear();
     }
 
     private static string Money(decimal amount) => "₹" + amount.ToString("N0");
@@ -176,115 +190,39 @@ public partial class DashboardPage : ContentPage, IHostedPage
     {
         var state = await _licenses.GetAccessStateAsync();
         TrialBanner.IsVisible = true;
-
-        if (state.NeedsFirstActivation)
-        {
-            LblTrialTitle.Text = "Free Plan";
-            LblTrialDetail.Text = "Free access is active for testing. Paid plans remain preview-only.";
-            return;
-        }
-
-        if (state.Status == LicenseStatus.Expired)
-        {
-            LblTrialTitle.Text = "Access status";
-            LblTrialDetail.Text = "Some licensed features are unavailable. Free functionality remains available.";
-            return;
-        }
-
-        if (state.IsTrial)
-        {
-            LblTrialTitle.Text = "Free Plan";
-            LblTrialDetail.Text = "Free plan is enabled while customer testing is in progress.";
-            return;
-        }
-
+        if (state.NeedsFirstActivation) { LblTrialTitle.Text = "Free Plan"; LblTrialDetail.Text = "Free access is active for testing. Paid plans remain preview-only."; return; }
+        if (state.Status == LicenseStatus.Expired) { LblTrialTitle.Text = "Access status"; LblTrialDetail.Text = "Some licensed features are unavailable. Free functionality remains available."; return; }
+        if (state.IsTrial) { LblTrialTitle.Text = "Free Plan"; LblTrialDetail.Text = "Free plan is enabled while customer testing is in progress."; return; }
         LblTrialTitle.Text = string.IsNullOrWhiteSpace(state.Plan) ? "Free Plan" : state.Plan;
         LblTrialDetail.Text = "Current plan status is active on this device.";
     }
 
     private static View BuildInvoiceRow(InvoiceModel inv)
     {
-        var statusColor = inv.Status switch
-        {
-            InvoiceStatus.Paid => "#059669",
-            InvoiceStatus.Overdue => "#DC2626",
-            InvoiceStatus.Sent => "#2563EB",
-            InvoiceStatus.Draft => "#6B7280",
-            InvoiceStatus.Cancelled => "#9CA3AF",
-            _ => "#D97706"
-        };
-
-        var grid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection(
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Auto)),
-            Padding = new Thickness(16, 12),
-            ColumnSpacing = 12
-        };
-
+        var statusText = inv.Status switch { InvoiceStatus.Paid => "Completed", InvoiceStatus.Cancelled => "Cancelled", _ => "Pending" };
+        var statusColor = inv.Status switch { InvoiceStatus.Paid => "#059669", InvoiceStatus.Cancelled => "#9CA3AF", _ => "#D97706" };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), Padding = new Thickness(16,12), ColumnSpacing = 12 };
         var left = new VerticalStackLayout { Spacing = 3 };
         left.Children.Add(new Label { Text = inv.InvoiceNumber, FontSize = 13, FontAttributes = FontAttributes.Bold });
         left.Children.Add(new Label { Text = inv.CustomerName, FontSize = 12, TextColor = Color.FromArgb("#64748B") });
-
         var right = new VerticalStackLayout { Spacing = 3, HorizontalOptions = LayoutOptions.End };
-        right.Children.Add(new Label
-        {
-            Text = Money(inv.GrandTotal),
-            FontSize = 13,
-            FontAttributes = FontAttributes.Bold,
-            HorizontalOptions = LayoutOptions.End
-        });
-        right.Children.Add(new Label
-        {
-            Text = inv.StatusLabel,
-            FontSize = 10,
-            FontAttributes = FontAttributes.Bold,
-            TextColor = Color.FromArgb(statusColor),
-            HorizontalOptions = LayoutOptions.End
-        });
-
-        grid.Add(left, 0, 0);
-        grid.Add(right, 1, 0);
-        return grid;
+        right.Children.Add(new Label { Text = Money(inv.GrandTotal), FontSize = 13, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.End });
+        right.Children.Add(new Label { Text = statusText, FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(statusColor), HorizontalOptions = LayoutOptions.End });
+        grid.Add(left,0,0); grid.Add(right,1,0); return grid;
     }
 
     private static View BuildLowStockRow(ProductModel p)
     {
-        var grid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection(
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Auto)),
-            Padding = new Thickness(16, 12),
-            ColumnSpacing = 12
-        };
-
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection(new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)), Padding = new Thickness(16,12), ColumnSpacing = 12 };
         var left = new VerticalStackLayout { Spacing = 3 };
         left.Children.Add(new Label { Text = p.Name, FontSize = 13, FontAttributes = FontAttributes.Bold });
         left.Children.Add(new Label { Text = $"SKU: {p.SKU}", FontSize = 12, TextColor = Color.FromArgb("#64748B") });
-
         var right = new VerticalStackLayout { Spacing = 3, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = $"{p.Stock} left", FontSize = 13, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#DC2626"), HorizontalOptions = LayoutOptions.End });
         right.Children.Add(new Label { Text = $"Min: {p.MinimumStock}", FontSize = 11, TextColor = Color.FromArgb("#94A3B8"), HorizontalOptions = LayoutOptions.End });
-
-        grid.Add(left, 0, 0);
-        grid.Add(right, 1, 0);
-        return grid;
+        grid.Add(left,0,0); grid.Add(right,1,0); return grid;
     }
 
-    private static View Divider() => new BoxView
-    {
-        HeightRequest = 1,
-        BackgroundColor = Color.FromArgb("#F1F5F9"),
-        HorizontalOptions = LayoutOptions.Fill
-    };
-
-    private static View EmptyLabel(string text) => new Label
-    {
-        Text = text,
-        FontSize = 13,
-        TextColor = Color.FromArgb("#64748B"),
-        Padding = new Thickness(16, 14)
-    };
+    private static View Divider() => new BoxView { HeightRequest = 1, BackgroundColor = Color.FromArgb("#F1F5F9"), HorizontalOptions = LayoutOptions.Fill };
+    private static View EmptyLabel(string text) => new Label { Text = text, FontSize = 13, TextColor = Color.FromArgb("#64748B"), Padding = new Thickness(16,14) };
 }

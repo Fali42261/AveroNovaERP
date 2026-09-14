@@ -31,7 +31,7 @@
                         <Label Text="Email" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryEmail" Placeholder="email@example.com" Keyboard="Email"/></Border>
                         <Label Text="Phone" Style="{StaticResource InputLabel}"/>
-                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="+1 555-0000" Keyboard="Telephone"/></Border>
+                        <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryPhone" Placeholder="Enter phone number" Keyboard="Telephone"/></Border>
                         <Label Text="Address" Style="{StaticResource InputLabel}"/>
                         <Border Style="{StaticResource InputContainer}"><Entry x:Name="EntryAddress" Placeholder="Street address"/></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
