@@ -6,7 +6,7 @@ on:
       - AveroNovaERP
   push:
     branches:
-      - fix/offline-banner-phone-placeholders
+      - AveroNovaERP
 
 jobs:
   build-android:

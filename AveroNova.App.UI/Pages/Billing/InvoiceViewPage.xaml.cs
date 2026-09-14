@@ -142,7 +142,7 @@ public partial class InvoiceViewPage : ContentPage, IHostedPage
             }));
             webView.LoadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
 #else
-            var path = Path.Combine(FileSystem.CacheDirectory, $"Invoice-{inv.InvoiceNumber}.html");
+            var path = System.IO.Path.Combine(FileSystem.CacheDirectory, $"Invoice-{inv.InvoiceNumber}.html");
             await File.WriteAllTextAsync(path, html);
             await Share.Default.RequestAsync(new ShareFileRequest { Title = $"Invoice {inv.InvoiceNumber}", File = new ShareFile(path) });
 #endif
