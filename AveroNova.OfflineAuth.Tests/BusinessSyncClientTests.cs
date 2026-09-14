@@ -122,6 +122,35 @@ public sealed class BusinessSyncClientTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SyncNow_PushesExpense_AndMarksLocalRecordSynced()
+    {
+        var expense = new ExpenseModel
+        {
+            CompanyId = _companyId,
+            Category = "Software",
+            Description = "Subscription",
+            Amount = 250m,
+            ExpenseDate = DateTime.Today,
+            Method = PaymentMethod.Online,
+            Status = ExpenseStatus.Paid,
+            ApprovedBy = "Owner"
+        };
+        Assert.True((await new LocalExpenseService(_factory, _session).CreateAsync(expense)).Ok);
+
+        var api = new FakeBusinessSyncApi();
+        Assert.True(await CreateSync(api, new FakeTokenStore("token")).SyncNowAsync());
+
+        var item = Assert.Single(api.LastRequest!.Items);
+        Assert.Equal("Expense", item.EntityType);
+        Assert.Contains("\"Amount\":250", item.PayloadJson);
+
+        await using var db = await _factory.CreateDbContextAsync();
+        var saved = await db.Expenses.SingleAsync(x => x.Id == expense.LocalId);
+        Assert.Equal((int)RecordSyncStatus.Synced, saved.SyncStatus);
+        Assert.NotNull(saved.LastSyncedAtUtc);
+    }
+
+    [Fact]
     public async Task NetworkFailure_KeepsBusinessItemsPendingForRetry()
     {
         await CreateInvoiceAndPaymentAsync();

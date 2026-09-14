@@ -190,6 +190,55 @@ public sealed class BusinessSyncTests : IClassFixture<AuthWebApplicationFactory>
         Assert.Equal(0m, ReadDecimal(purchase.PayloadJson!, "ReturnCreditAmount"));
     }
 
+    [Fact]
+    public async Task ExpensePush_PersistsServerSnapshot_AndRejectsInvalidAmount()
+    {
+        var (client, companyId) = await AuthenticatedClientAsync("expense-sync");
+        var expenseId = Guid.NewGuid();
+        BusinessSyncItemRequest Item(decimal amount) => new()
+        {
+            QueueId = Guid.NewGuid(),
+            EntityType = "Expense",
+            EntityId = expenseId,
+            CompanyId = companyId,
+            Operation = SyncOperation.Update,
+            ClientUpdatedAtUtc = DateTime.UtcNow,
+            PayloadJson = JsonSerializer.Serialize(new
+            {
+                Id = expenseId,
+                CompanyId = companyId,
+                Category = "Software",
+                Description = "Subscription",
+                Amount = amount,
+                ExpenseDate = DateTime.Today,
+                Method = 5,
+                Reference = "EXP-1",
+                Notes = "",
+                Status = 3,
+                ApprovedBy = "Owner",
+                UpdatedAtUtc = DateTime.UtcNow
+            })
+        };
+
+        var accepted = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [Item(250m)]
+        });
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var saved = await db.SyncQueueItems.SingleAsync(x =>
+            x.CompanyId == companyId && x.EntityType == "Expense" && x.EntityId == expenseId);
+        Assert.Equal(250m, ReadDecimal(saved.PayloadJson!, "Amount"));
+
+        var rejected = await client.PostAsJsonAsync("/api/sync/business/push", new BusinessSyncBatchRequest
+        {
+            Items = [Item(0m)]
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+    }
+
     private async Task<(HttpClient Client, Guid CompanyId)> AuthenticatedClientAsync(string prefix)
     {
         var client = _factory.CreateClient();

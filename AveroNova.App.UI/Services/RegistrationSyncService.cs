@@ -19,7 +19,7 @@ namespace AveroNova.App.UI.Services;
 public sealed class RegistrationSyncService : ISyncService
 {
     private static readonly string[] RegistrationEntityTypes = ["User", "Company", "UserCompany", "Subscription"];
-    private static readonly string[] BusinessEntityTypes = ["Customer", "Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"];
+    private static readonly string[] BusinessEntityTypes = ["Customer", "Expense", "Invoice", "Purchase", "PurchaseReturn", "Payment", "Supplier", "Product", "StockMovement"];
 
     private readonly IDbContextFactory<LocalAppDbContext> _dbFactory;
     private readonly IAuthApiClient _authApi;
@@ -432,6 +432,15 @@ public sealed class RegistrationSyncService : ISyncService
             });
         }
 
+        if (item.EntityType.Equals("Expense", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Expenses.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
+            return row is null ? null : JsonSerializer.Serialize(new
+            {
+                row.Id, row.CompanyId, row.Category, row.Description, row.Amount, row.ExpenseDate,
+                row.Method, row.Reference, row.Notes, row.Status, row.ApprovedBy, row.UpdatedAtUtc
+            });
+        }
         if (item.EntityType.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
         {
             var row = await db.Purchases.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
@@ -491,6 +500,17 @@ public sealed class RegistrationSyncService : ISyncService
         else if (item.EntityType.Equals("Payment", StringComparison.OrdinalIgnoreCase))
         {
             var row = await db.Payments.FirstOrDefaultAsync(x => x.Id == item.EntityId);
+            if (row is not null)
+            {
+                row.ServerId = row.Id;
+                row.SyncStatus = (int)RecordSyncStatus.Synced;
+                row.SyncError = null;
+                row.LastSyncedAtUtc = syncedAt;
+            }
+        }
+        else if (item.EntityType.Equals("Expense", StringComparison.OrdinalIgnoreCase))
+        {
+            var row = await db.Expenses.FirstOrDefaultAsync(x => x.Id == item.EntityId && x.CompanyId == item.CompanyId);
             if (row is not null)
             {
                 row.ServerId = row.Id;
