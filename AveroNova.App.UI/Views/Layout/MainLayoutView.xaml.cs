@@ -164,9 +164,20 @@ public partial class MainLayoutView : ContentView
             BtnAbout
         ];
 
+#if WINDOWS
         foreach (var button in navigationButtons)
-            button.HorizontalTextAlignment = TextAlignment.Start;
+            button.HandlerChanged += OnSidebarButtonHandlerChanged;
+#endif
     }
+
+#if WINDOWS
+    private static void OnSidebarButtonHandlerChanged(object? sender, EventArgs e)
+    {
+        if (sender is Button button &&
+            button.Handler?.PlatformView is Microsoft.UI.Xaml.Controls.Button nativeButton)
+            nativeButton.HorizontalContentAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Left;
+    }
+#endif
 
     // ============================================================
     // USER
