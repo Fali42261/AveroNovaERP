@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - feature/inventory-database-navigation
+      - swapDigit
 
 permissions:
   contents: read
