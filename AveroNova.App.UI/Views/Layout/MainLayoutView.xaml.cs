@@ -84,6 +84,7 @@ public partial class MainLayoutView : ContentView
         Func<HelpAboutPage> helpFactory)
     {
         InitializeComponent();
+        ConfigureSidebarButtons();
 
         _connectivity = connectivity;
         _auth = auth;
@@ -134,6 +135,37 @@ public partial class MainLayoutView : ContentView
             _dashboardFactory(),
             "Dashboard",
             "Home / Dashboard");
+    }
+
+    private void ConfigureSidebarButtons()
+    {
+        Button[] navigationButtons =
+        [
+            BtnDashboard,
+            BtnCompany,
+            BtnCustomers,
+            BtnProducts,
+            BtnInventory,
+            BtnBilling,
+            BtnPurchases,
+            BtnPayments,
+            BtnSalesReturns,
+            BtnPurchaseReturns,
+            BtnExpenses,
+            BtnReports,
+            BtnUsers,
+            BtnRoles,
+            BtnPermissions,
+            BtnSubscription,
+            BtnNotifications,
+            BtnSyncCenter,
+            BtnSettings,
+            BtnHelp,
+            BtnAbout
+        ];
+
+        foreach (var button in navigationButtons)
+            button.HorizontalTextAlignment = TextAlignment.Start;
     }
 
     // ============================================================
