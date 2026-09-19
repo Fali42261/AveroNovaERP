@@ -37,8 +37,8 @@ public sealed class MainContentNavigator : IMainContentNavigator
     {
         var entry = new HostedPage(page, title, breadcrumb);
         _stack.Add(entry);
-        await LoadAsync(entry);
         PageChanged?.Invoke(this, entry);
+        await LoadAsync(entry);
     }
 
     public async Task GoBackAsync()
@@ -46,8 +46,8 @@ public sealed class MainContentNavigator : IMainContentNavigator
         if (_stack.Count <= 1) return;
         _stack.RemoveAt(_stack.Count - 1);
         var entry = _stack[^1];
-        await LoadAsync(entry);
         PageChanged?.Invoke(this, entry);
+        await LoadAsync(entry);
     }
 
     private static Task LoadAsync(HostedPage entry)

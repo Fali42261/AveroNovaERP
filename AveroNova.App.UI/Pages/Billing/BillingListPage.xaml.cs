@@ -5,7 +5,7 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Billing;
 
-public partial class BillingListPage : ContentPage
+public partial class BillingListPage : ContentPage, IHostedPage
 {
     private readonly IBillingService _svc;
     private readonly ICompanyService _company;
@@ -16,6 +16,7 @@ public partial class BillingListPage : ContentPage
     { InitializeComponent(); _svc = svc; _company = company; BuildFilterTabs(); }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync() => LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private void BuildFilterTabs()

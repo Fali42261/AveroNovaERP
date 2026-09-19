@@ -48,7 +48,15 @@ public partial class CustomerViewPage : ContentPage, IHostedPage
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[CustomerView] Load failed: {ex}");
-            await DisplayAlert("Customer", "Customer details could not be loaded.", "OK");
+            Content.Children.Clear();
+            Content.Children.Add(new Label
+            {
+                Text = "Customer details could not be loaded.",
+                FontSize = 14,
+                TextColor = Color.FromArgb("#B91C1C"),
+                HorizontalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, 40)
+            });
         }
     }
 
@@ -175,7 +183,12 @@ public partial class CustomerViewPage : ContentPage, IHostedPage
 
         try
         {
-            await _svc.DeleteAsync(_customer.LocalId);
+            var (ok, error) = await _svc.DeleteAsync(_customer.LocalId);
+            if (!ok)
+            {
+                await DisplayAlert("Customer", error ?? "Customer could not be deleted.", "OK");
+                return;
+            }
             await _navigator.GoBackAsync();
         }
         catch (Exception ex)

@@ -318,38 +318,46 @@ public partial class MainLayoutView : ContentView
             if (isMobile)
             {
                 var page = pageFactory();
-                if (page is IHostedPage hosted)
-                    await hosted.LoadForHostAsync();
                 ShowMobilePage(
                     page,
                     title,
                     breadcrumb);
                 _contentNavigator.SetRoot(page, title, breadcrumb);
+                if (page is IHostedPage hosted)
+                    await hosted.LoadForHostAsync();
             }
             else
             {
                 var page = pageFactory();
-                if (page is IHostedPage hosted)
-                    await hosted.LoadForHostAsync();
                 ShowDesktopPage(
                     page,
                     title,
                     breadcrumb,
                     button);
                 _contentNavigator.SetRoot(page, title, breadcrumb);
+                if (page is IHostedPage hosted)
+                    await hosted.LoadForHostAsync();
             }
         }
     }
 
     private void OnHostedPageChanged(object? sender, HostedPage entry)
     {
-        MainThread.BeginInvokeOnMainThread(() =>
+        void ShowPage()
         {
             if (DesktopLayout.IsVisible)
                 ShowDesktopPage(entry.Page, entry.Title, entry.Breadcrumb);
             else
                 ShowMobilePage(entry.Page, entry.Title, entry.Breadcrumb);
-        });
+        }
+
+        // Navigation is normally initiated by a UI event. Hosting the page
+        // synchronously in that case ensures dialogs, controls and lifecycle
+        // work during LoadForHostAsync instead of loading a detached page.
+        if (MainThread.IsMainThread)
+            ShowPage();
+        else
+            MainThread.BeginInvokeOnMainThread(ShowPage);
     }
 
     private bool IsMobileButton(Button button)

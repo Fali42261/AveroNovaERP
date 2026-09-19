@@ -1,12 +1,13 @@
 using AveroNova.App.UI.Controls.Common;
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Resources;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Notifications;
 
-public partial class NotificationsPage : ContentPage
+public partial class NotificationsPage : ContentPage, IHostedPage
 {
     private readonly INotificationService _svc;
 
@@ -27,6 +28,8 @@ public partial class NotificationsPage : ContentPage
 
         await LoadAsync();
     }
+
+    public Task LoadForHostAsync() => LoadAsync();
 
     private async void OnRefreshing(
         object sender,

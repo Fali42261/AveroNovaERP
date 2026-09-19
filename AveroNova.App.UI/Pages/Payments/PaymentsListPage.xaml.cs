@@ -5,7 +5,7 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Payments;
 
-public partial class PaymentsListPage : ContentPage
+public partial class PaymentsListPage : ContentPage, IHostedPage
 {
     private readonly IPaymentService _svc;
     private readonly ICompanyService _company;
@@ -14,6 +14,7 @@ public partial class PaymentsListPage : ContentPage
     { InitializeComponent(); _svc = svc; _company = company; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync() => LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()

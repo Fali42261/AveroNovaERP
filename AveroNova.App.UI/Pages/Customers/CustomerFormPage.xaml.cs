@@ -62,6 +62,7 @@ public partial class CustomerFormPage : ContentPage, IHostedPage
 
     private async void OnSaveClicked(object s, EventArgs e)
     {
+        var saveButton = s as Button;
         if (string.IsNullOrWhiteSpace(EntryName.Text))
         {
             ShowError("Customer name is required.");
@@ -70,6 +71,9 @@ public partial class CustomerFormPage : ContentPage, IHostedPage
 
         try
         {
+            if (saveButton is not null)
+                saveButton.IsEnabled = false;
+
             var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
             if (companyId == Guid.Empty)
             {
@@ -104,6 +108,11 @@ public partial class CustomerFormPage : ContentPage, IHostedPage
         {
             System.Diagnostics.Debug.WriteLine($"[CustomerForm] Save failed: {ex}");
             ShowError("Customer could not be saved. The app is still running; please try again.");
+        }
+        finally
+        {
+            if (saveButton is not null)
+                saveButton.IsEnabled = true;
         }
     }
 

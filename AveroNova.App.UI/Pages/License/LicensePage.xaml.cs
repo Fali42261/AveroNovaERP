@@ -1,8 +1,9 @@
 using AveroNova.App.UI.ViewModels;
+using AveroNova.App.UI.Navigation;
 
 namespace AveroNova.App.UI.Pages.License;
 
-public partial class LicensePage : ContentPage
+public partial class LicensePage : ContentPage, IHostedPage
 {
     private readonly LicenseViewModel _vm;
 
@@ -18,4 +19,6 @@ public partial class LicensePage : ContentPage
         base.OnAppearing();
         await _vm.LoadAsync();
     }
+
+    public Task LoadForHostAsync() => _vm.LoadAsync();
 }

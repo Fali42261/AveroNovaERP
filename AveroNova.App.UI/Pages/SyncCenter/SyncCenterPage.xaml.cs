@@ -1,11 +1,12 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
 
 namespace AveroNova.App.UI.Pages.SyncCenter;
 
-public partial class SyncCenterPage : ContentPage
+public partial class SyncCenterPage : ContentPage, IHostedPage
 {
     private readonly ISyncService _svc;
     private readonly IConnectivityService _conn;
@@ -26,6 +27,8 @@ public partial class SyncCenterPage : ContentPage
         _conn.StatusChanged += OnStatusChanged;
         await BuildContentAsync();
     }
+
+    public Task LoadForHostAsync() => BuildContentAsync();
 
     protected override void OnDisappearing()
     {

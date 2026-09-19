@@ -1,9 +1,10 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Reports;
 
-public partial class ReportsPage : ContentPage
+public partial class ReportsPage : ContentPage, IHostedPage
 {
     private readonly IReportingService _reporting;
     private readonly ICompanyService _company;
@@ -23,6 +24,8 @@ public partial class ReportsPage : ContentPage
         base.OnAppearing();
         await LoadAsync();
     }
+
+    public Task LoadForHostAsync() => LoadAsync();
 
     private async void OnRefreshing(object s, EventArgs e)
     {

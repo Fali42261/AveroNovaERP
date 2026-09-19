@@ -57,9 +57,37 @@ public partial class CustomersListPage : ContentPage, IHostedPage
         {
             System.Diagnostics.Debug.WriteLine($"[Customers] Load failed: {ex}");
             _all = [];
-            RenderList(_all);
-            await DisplayAlert("Customers", "Customers could not be loaded. Your app is still running and local data is safe.", "OK");
+            RenderLoadError();
         }
+    }
+
+    private void RenderLoadError()
+    {
+        LblCount.Text = "Unable to load customers";
+        CustomerList.Children.Clear();
+
+        var message = new Label
+        {
+            Text = "Customers could not be loaded. Your local data is safe.",
+            FontSize = 14,
+            TextColor = Color.FromArgb("#B91C1C"),
+            HorizontalOptions = LayoutOptions.Center,
+            HorizontalTextAlignment = TextAlignment.Center
+        };
+        var retry = new Button
+        {
+            Text = "Try Again",
+            FontSize = 13,
+            HorizontalOptions = LayoutOptions.Center
+        };
+        retry.Clicked += async (_, _) => await SafeLoadAsync();
+
+        CustomerList.Children.Add(new VerticalStackLayout
+        {
+            Spacing = 12,
+            Margin = new Thickness(0, 40),
+            Children = { message, retry }
+        });
     }
 
     private async void OnSearchChanged(object s, TextChangedEventArgs e)
@@ -202,8 +230,32 @@ public partial class CustomersListPage : ContentPage, IHostedPage
             await _navigator.NavigateAsync(page, "Edit Customer", "Home / Customers / Edit");
         };
 
+        var deleteBtn = new Button
+        {
+            Text = "Delete",
+            FontSize = 12,
+            HeightRequest = 36,
+            Padding = new Thickness(12, 0),
+            TextColor = Color.FromArgb("#DC2626")
+        };
+        deleteBtn.Clicked += async (_, _) =>
+        {
+            if (!await DialogHelper.ConfirmDeleteAsync("Customer", $"Delete {c.Name}?"))
+                return;
+
+            var (ok, error) = await _svc.DeleteAsync(c.LocalId);
+            if (!ok)
+            {
+                await DisplayAlert("Customer", error ?? "Customer could not be deleted.", "OK");
+                return;
+            }
+
+            await SafeLoadAsync();
+        };
+
         actionsRow.Children.Add(viewBtn);
         actionsRow.Children.Add(editBtn);
+        actionsRow.Children.Add(deleteBtn);
         right.Children.Add(actionsRow);
 
         grid.Add(av, 0, 0);

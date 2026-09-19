@@ -6,7 +6,7 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AveroNova.App.UI.Pages.Company;
 
-public partial class CompanyListPage : ContentPage
+public partial class CompanyListPage : ContentPage, IHostedPage
 {
     private readonly ICompanyService _svc;
     private List<CompanyModel> _items = [];
@@ -14,6 +14,7 @@ public partial class CompanyListPage : ContentPage
     public CompanyListPage(ICompanyService svc) { InitializeComponent(); _svc = svc; }
 
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
+    public Task LoadForHostAsync() => LoadAsync();
     private async void OnRefreshing(object s, EventArgs e) { await LoadAsync(); Refresher.IsRefreshing = false; }
 
     private async Task LoadAsync()
