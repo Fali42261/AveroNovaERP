@@ -11,7 +11,7 @@ public interface ILocalDatabaseInitializer
 
 public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 15;
+    public const int CurrentSchemaVersion = 16;
 
     private readonly LocalAppDbContext _db;
     private readonly ILogger<LocalDatabaseInitializer> _logger;
@@ -30,6 +30,7 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
         await _db.Database.EnsureCreatedAsync(cancellationToken);
         await EnsureInstallationsTableAsync(cancellationToken);
         await EnsureSessionColumnsAsync(cancellationToken);
+        await EnsureCompanyColumnsAsync(cancellationToken);
         await EnsureAdministrationColumnsAsync(cancellationToken);
         await EnsureSyncAndSubscriptionTablesAsync(cancellationToken);
         await EnsureLicenseTableAsync(cancellationToken);
@@ -57,6 +58,20 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
             await _db.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Local SQLite upgraded to schema v{Version}.", CurrentSchemaVersion);
         }
+    }
+
+    private async Task EnsureCompanyColumnsAsync(CancellationToken cancellationToken)
+    {
+        await TryAddColumnAsync("LocalCompanies", "Address", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "City", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "Country", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "TaxNumber", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "RegistrationNo", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "Currency", "TEXT NOT NULL DEFAULT 'USD'", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "CurrencySymbol", "TEXT NOT NULL DEFAULT '$'", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "LogoUrl", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "InvoicePrefix", "TEXT NOT NULL DEFAULT 'INV'", cancellationToken);
+        await TryAddColumnAsync("LocalCompanies", "Website", "TEXT NOT NULL DEFAULT ''", cancellationToken);
     }
 
     private async Task EnsureInstallationsTableAsync(CancellationToken cancellationToken)

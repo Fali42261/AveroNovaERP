@@ -9,9 +9,13 @@ public partial class PaymentsListPage : ContentPage, IHostedPage
 {
     private readonly IPaymentService _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<PaymentFormPage> _formFactory;
+    private readonly Func<PaymentViewPage> _viewFactory;
 
-    public PaymentsListPage(IPaymentService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; }
+    public PaymentsListPage(IPaymentService svc, ICompanyService company, IMainContentNavigator navigator,
+        Func<PaymentFormPage> formFactory, Func<PaymentViewPage> viewFactory)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator = navigator; _formFactory = formFactory; _viewFactory = viewFactory; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     public Task LoadForHostAsync() => LoadAsync();
@@ -39,7 +43,7 @@ public partial class PaymentsListPage : ContentPage, IHostedPage
         var right = new VerticalStackLayout { Spacing = 6, HorizontalOptions = LayoutOptions.End };
         right.Children.Add(new Label { Text = $"${p.Amount:N2}", FontSize = 16, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#059669"), HorizontalOptions = LayoutOptions.End });
         var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
-        viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PaymentView}?id={p.LocalId}");
+        viewBtn.Clicked += async (_, _) => { var page = _viewFactory(); page.PaymentId = p.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Payment Details", "Home / Payments / Details"); };
         right.Children.Add(viewBtn);
 
         grid.Add(left,  0, 0);
@@ -48,5 +52,5 @@ public partial class PaymentsListPage : ContentPage, IHostedPage
         return border;
     }
 
-    private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.PaymentAdd);
+    private async void OnAddClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(), "Add Payment", "Home / Payments / Add");
 }

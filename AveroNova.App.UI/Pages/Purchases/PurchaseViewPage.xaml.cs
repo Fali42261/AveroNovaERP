@@ -1,6 +1,7 @@
 using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -12,10 +13,12 @@ public partial class PurchaseViewPage : ContentPage, IHostedPage
     private readonly IPurchaseService _svc;
     private readonly IMainContentNavigator _navigator;
     private readonly Func<PurchaseFormPage> _formFactory;
+    private readonly Func<PaymentFormPage> _paymentFactory;
     private PurchaseModel? _purchase;
     public string? PurchaseId { get; set; }
 
-    public PurchaseViewPage(IPurchaseService svc, IMainContentNavigator navigator, Func<PurchaseFormPage> formFactory) { InitializeComponent(); _svc = svc; _navigator=navigator; _formFactory=formFactory; }
+    public PurchaseViewPage(IPurchaseService svc, IMainContentNavigator navigator, Func<PurchaseFormPage> formFactory,
+        Func<PaymentFormPage> paymentFactory) { InitializeComponent(); _svc = svc; _navigator=navigator; _formFactory=formFactory; _paymentFactory=paymentFactory; }
 
     protected override async void OnAppearing()
     {
@@ -66,7 +69,7 @@ public partial class PurchaseViewPage : ContentPage, IHostedPage
         if (p.Status is not PurchaseStatus.Draft and not PurchaseStatus.Cancelled && p.DueAmount > 0)
         {
             var paymentBtn = new Button { Text = "Record Supplier Payment", Style = (Style)Resources["PrimaryButton"], HorizontalOptions = LayoutOptions.Fill };
-            paymentBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.PaymentAdd}?purchaseId={p.LocalId:D}");
+            paymentBtn.Clicked += async (_, _) => { var page = _paymentFactory(); page.InitialPurchaseId = p.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Record Supplier Payment", "Home / Purchases / Payment"); };
             Content.Children.Add(paymentBtn);
         }
         Content.Children.Add(deleteBtn);

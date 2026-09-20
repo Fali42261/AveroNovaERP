@@ -9,11 +9,15 @@ public partial class BillingListPage : ContentPage, IHostedPage
 {
     private readonly IBillingService _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<InvoiceFormPage> _formFactory;
+    private readonly Func<InvoiceViewPage> _viewFactory;
     private List<InvoiceModel>       _all    = [];
     private string                   _filter = "All";
 
-    public BillingListPage(IBillingService svc, ICompanyService company)
-    { InitializeComponent(); _svc = svc; _company = company; BuildFilterTabs(); }
+    public BillingListPage(IBillingService svc, ICompanyService company, IMainContentNavigator navigator,
+        Func<InvoiceFormPage> formFactory, Func<InvoiceViewPage> viewFactory)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator = navigator; _formFactory = formFactory; _viewFactory = viewFactory; BuildFilterTabs(); }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     public Task LoadForHostAsync() => LoadAsync();
@@ -21,6 +25,7 @@ public partial class BillingListPage : ContentPage, IHostedPage
 
     private void BuildFilterTabs()
     {
+        FilterTabs.Children.Clear();
         var statuses = new[] { "All", "Draft", "Sent", "Partial", "Paid", "Overdue", "Cancelled" };
         foreach (var st in statuses)
         {
@@ -81,7 +86,7 @@ public partial class BillingListPage : ContentPage, IHostedPage
 
         var actRow = new HorizontalStackLayout { Spacing = 6 };
         var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
-        viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceView}?id={inv.LocalId}");
+        viewBtn.Clicked += async (_, _) => { var page = _viewFactory(); page.InvoiceId = inv.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Invoice Details", "Home / Billing / Details"); };
         actRow.Children.Add(viewBtn);
         right.Children.Add(actRow);
 
@@ -91,5 +96,5 @@ public partial class BillingListPage : ContentPage, IHostedPage
         return border;
     }
 
-    private async void OnNewClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.InvoiceNew);
+    private async void OnNewClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(), "New Invoice", "Home / Billing / New");
 }

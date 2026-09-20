@@ -7,17 +7,25 @@ using Microsoft.Maui.Controls.Shapes;
 namespace AveroNova.App.UI.Pages.Products;
 
 [QueryProperty(nameof(ProductId), "id")]
-public partial class ProductViewPage : ContentPage
+public partial class ProductViewPage : ContentPage, IHostedPage
 {
     private readonly IProductService _svc;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<ProductFormPage> _formFactory;
     private ProductModel? _product;
     public string? ProductId { get; set; }
 
-    public ProductViewPage(IProductService svc) { InitializeComponent(); _svc = svc; }
+    public ProductViewPage(IProductService svc, IMainContentNavigator navigator, Func<ProductFormPage> formFactory)
+    { InitializeComponent(); _svc = svc; _navigator = navigator; _formFactory = formFactory; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
         if (!string.IsNullOrEmpty(ProductId) && Guid.TryParse(ProductId, out var id))
         {
             _product = await _svc.GetByIdAsync(id);
@@ -83,13 +91,20 @@ public partial class ProductViewPage : ContentPage
         return g;
     }
 
-    private async void OnEditClicked(object s, EventArgs e) => await Shell.Current.GoToAsync($"{AppRoutes.ProductEdit}?id={_product?.LocalId}");
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnEditClicked(object s, EventArgs e)
+    {
+        if (_product is null) return;
+        var page = _formFactory();
+        page.EditId = _product.LocalId.ToString("D");
+        await _navigator.NavigateAsync(page, "Edit Product", "Home / Products / Edit");
+    }
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
     private async void OnDeleteClicked(object s, EventArgs e)
     {
         if (_product == null) return;
         if (!await DialogHelper.ConfirmDeleteAsync("Product", $"Delete {_product.Name}?")) return;
-        await _svc.DeleteAsync(_product.LocalId);
-        await Shell.Current.GoToAsync("..");
+        var (ok, error) = await _svc.DeleteAsync(_product.LocalId);
+        if (!ok) { await DisplayAlert("Delete failed", error ?? "Unable to delete product.", "OK"); return; }
+        await _navigator.GoBackAsync();
     }
 }

@@ -7,17 +7,25 @@ using Microsoft.Maui.Controls.Shapes;
 namespace AveroNova.App.UI.Pages.Payments;
 
 [QueryProperty(nameof(PaymentId), "id")]
-public partial class PaymentViewPage : ContentPage
+public partial class PaymentViewPage : ContentPage, IHostedPage
 {
     private readonly IPaymentService _svc;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<PaymentFormPage> _formFactory;
     private PaymentModel? _payment;
     public string? PaymentId { get; set; }
 
-    public PaymentViewPage(IPaymentService svc) { InitializeComponent(); _svc = svc; }
+    public PaymentViewPage(IPaymentService svc, IMainContentNavigator navigator, Func<PaymentFormPage> formFactory)
+    { InitializeComponent(); _svc = svc; _navigator = navigator; _formFactory = formFactory; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
         if (!string.IsNullOrEmpty(PaymentId) && Guid.TryParse(PaymentId, out var id))
         {
             _payment = await _svc.GetByIdAsync(id);
@@ -52,15 +60,20 @@ public partial class PaymentViewPage : ContentPage
     {
         if (_payment == null) return;
         if (!await DialogHelper.ConfirmDeleteAsync("Payment", $"Delete {_payment.PaymentNumber}?")) return;
-        await _svc.DeleteAsync(_payment.LocalId);
-        await Shell.Current.GoToAsync("..");
+        var (ok, error) = await _svc.DeleteAsync(_payment.LocalId);
+        if (!ok) { await DisplayAlert("Delete failed", error ?? "Unable to delete payment.", "OK"); return; }
+        await _navigator.GoBackAsync();
     }
 
     private async void OnEditClicked(object s, EventArgs e)
     {
         if (_payment is not null)
-            await Shell.Current.GoToAsync($"{AppRoutes.PaymentEdit}?id={_payment.LocalId}");
+        {
+            var page = _formFactory();
+            page.EditId = _payment.LocalId.ToString("D");
+            await _navigator.NavigateAsync(page, "Edit Payment", "Home / Payments / Edit");
+        }
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
 }

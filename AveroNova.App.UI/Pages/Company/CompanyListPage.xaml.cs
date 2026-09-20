@@ -9,9 +9,12 @@ namespace AveroNova.App.UI.Pages.Company;
 public partial class CompanyListPage : ContentPage, IHostedPage
 {
     private readonly ICompanyService _svc;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<CompanyFormPage> _formFactory;
     private List<CompanyModel> _items = [];
 
-    public CompanyListPage(ICompanyService svc) { InitializeComponent(); _svc = svc; }
+    public CompanyListPage(ICompanyService svc, IMainContentNavigator navigator, Func<CompanyFormPage> formFactory)
+    { InitializeComponent(); _svc = svc; _navigator = navigator; _formFactory = formFactory; }
 
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
     public Task LoadForHostAsync() => LoadAsync();
@@ -62,8 +65,26 @@ public partial class CompanyListPage : ContentPage, IHostedPage
         }
 
         var editBtn = new Button { Text = "Edit", Style = (Style)Resources["SmallButton"] };
-        editBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.CompanyEdit}?id={c.LocalId}");
+        editBtn.Clicked += async (_, _) =>
+        {
+            var page = _formFactory();
+            page.EditId = c.LocalId.ToString("D");
+            await _navigator.NavigateAsync(page, "Edit Company", "Home / Company / Edit");
+        };
         actions.Children.Add(editBtn);
+
+        if (!c.IsCurrentCompany)
+        {
+            var deleteBtn = new Button { Text = "Delete", Style = (Style)Resources["SmallSecondaryButton"], TextColor = Color.FromArgb("#DC2626") };
+            deleteBtn.Clicked += async (_, _) =>
+            {
+                if (!await DialogHelper.ConfirmDeleteAsync("Company", $"Delete {c.Name}?")) return;
+                var (ok, error) = await _svc.DeleteAsync(c.LocalId);
+                if (!ok) { await DisplayAlert("Delete failed", error ?? "Unable to delete company.", "OK"); return; }
+                await LoadAsync();
+            };
+            actions.Children.Add(deleteBtn);
+        }
 
         grid.Add(avatar, 0, 0);
         grid.Add(info,   1, 0);
@@ -72,5 +93,6 @@ public partial class CompanyListPage : ContentPage, IHostedPage
         return border;
     }
 
-    private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.CompanyAdd);
+    private async void OnAddClicked(object s, EventArgs e)
+        => await _navigator.NavigateAsync(_formFactory(), "Add Company", "Home / Company / Add");
 }

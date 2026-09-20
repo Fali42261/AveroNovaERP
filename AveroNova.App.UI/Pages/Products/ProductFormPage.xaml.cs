@@ -1,22 +1,30 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Products;
 
 [QueryProperty(nameof(EditId), "id")]
-public partial class ProductFormPage : ContentPage
+public partial class ProductFormPage : ContentPage, IHostedPage
 {
     private readonly IProductService _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;
     private ProductModel? _editing;
     public string? EditId { get; set; }
 
-    public ProductFormPage(IProductService svc, ICompanyService company) { InitializeComponent(); _svc = svc; _company = company; }
+    public ProductFormPage(IProductService svc, ICompanyService company, IMainContentNavigator navigator)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator = navigator; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (!string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var id))
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
+        if (_editing is null && !string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var id))
         {
             _editing = await _svc.GetByIdAsync(id);
             if (_editing != null)
@@ -58,10 +66,10 @@ public partial class ProductFormPage : ContentPage
         model.MinimumStock  = int.TryParse(EntryMinStock.Text, out var ms) ? ms : 0;
 
         var (ok, err) = _editing == null ? await _svc.CreateAsync(model) : await _svc.UpdateAsync(model);
-        if (ok) await Shell.Current.GoToAsync("..");
+        if (ok) await _navigator.GoBackAsync();
         else ShowError(err ?? "Save failed.");
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 }

@@ -1,6 +1,7 @@
 using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
 using AveroNova.App.UI.Navigation;
+using AveroNova.App.UI.Pages.Payments;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Controls;
@@ -9,17 +10,27 @@ using Microsoft.Maui.Layouts;
 namespace AveroNova.App.UI.Pages.Billing;
 
 [QueryProperty(nameof(InvoiceId), "id")]
-public partial class InvoiceViewPage : ContentPage
+public partial class InvoiceViewPage : ContentPage, IHostedPage
 {
     private readonly IBillingService _svc;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<InvoiceFormPage> _formFactory;
+    private readonly Func<PaymentFormPage> _paymentFactory;
     private InvoiceModel? _invoice;
     public string? InvoiceId { get; set; }
 
-    public InvoiceViewPage(IBillingService svc) { InitializeComponent(); _svc = svc; }
+    public InvoiceViewPage(IBillingService svc, IMainContentNavigator navigator,
+        Func<InvoiceFormPage> formFactory, Func<PaymentFormPage> paymentFactory)
+    { InitializeComponent(); _svc = svc; _navigator = navigator; _formFactory = formFactory; _paymentFactory = paymentFactory; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
         if (!string.IsNullOrEmpty(InvoiceId) && Guid.TryParse(InvoiceId, out var id))
         {
             _invoice = await _svc.GetByIdAsync(id);
@@ -33,19 +44,18 @@ public partial class InvoiceViewPage : ContentPage
 
         // Action buttons
         var actions = new FlexLayout { Wrap = FlexWrap.Wrap, Direction = FlexDirection.Row, JustifyContent = FlexJustify.Start };
-        void AddAction(string label, Action onClick, string style = "SmallSecondaryButton")
+        void AddAction(string label, Func<Task> onClick, string style = "SmallSecondaryButton")
         {
             var b = new Button { Text = label, Style = (Style)Resources[style], Margin = new Thickness(0, 0, 8, 8) };
-            b.Clicked += (_, _) => onClick();
+            b.Clicked += async (_, _) => await onClick();
             actions.Children.Add(b);
         }
-        AddAction("Edit",           async () => await Shell.Current.GoToAsync($"{AppRoutes.InvoiceEdit}?id={inv.LocalId}"));
+        AddAction("Edit", async () => { var page = _formFactory(); page.EditId = inv.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Edit Invoice", "Home / Billing / Edit"); });
         AddAction("Print",          async () => await DisplayAlert("Print", "Print functionality coming soon.", "OK"));
         AddAction("Share",          async () => await DisplayAlert("Share", "Share functionality coming soon.", "OK"));
         if (inv.Status is not InvoiceStatus.Draft and not InvoiceStatus.Cancelled and not InvoiceStatus.Paid
             && inv.DueAmount > 0)
-            AddAction("Record Payment", async () => await Shell.Current.GoToAsync(
-                $"{AppRoutes.PaymentAdd}?invoiceId={inv.LocalId}"), "SmallButton");
+            AddAction("Record Payment", async () => { var page = _paymentFactory(); page.InitialInvoiceId = inv.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Record Payment", "Home / Billing / Payment"); }, "SmallButton");
         if (inv.Status != InvoiceStatus.Cancelled)
             AddAction("Cancel Invoice", async () => await CancelInvoice(), "DangerButton");
         Content.Children.Add(actions);
@@ -126,9 +136,10 @@ public partial class InvoiceViewPage : ContentPage
     {
         if (_invoice == null) return;
         if (!await DialogHelper.ConfirmAsync("Cancel Invoice", "Are you sure you want to cancel this invoice?", "Cancel Invoice", "Keep")) return;
-        await _svc.CancelAsync(_invoice.LocalId);
-        await Shell.Current.GoToAsync("..");
+        var (ok, error) = await _svc.CancelAsync(_invoice.LocalId);
+        if (!ok) { await DisplayAlert("Cancel failed", error ?? "Unable to cancel invoice.", "OK"); return; }
+        await _navigator.GoBackAsync();
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
 }

@@ -56,6 +56,16 @@ public class LocalCompanyEntity
     public string CompanyName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string MobileNumber { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string Country { get; set; } = string.Empty;
+    public string TaxNumber { get; set; } = string.Empty;
+    public string RegistrationNo { get; set; } = string.Empty;
+    public string Currency { get; set; } = "USD";
+    public string CurrencySymbol { get; set; } = "$";
+    public string LogoUrl { get; set; } = string.Empty;
+    public string InvoicePrefix { get; set; } = "INV";
+    public string Website { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
     public long SyncVersion { get; set; } = 1;
 }

@@ -26,7 +26,15 @@ public sealed class LocalCompanyService : ICompanyService
     }
 
     public CompanyModel? CurrentCompany
-        => _session.CurrentCompany is null ? null : Map(_session.CurrentCompany.Id, _session.CurrentCompany.CompanyName, _session.CurrentCompany.Email, _session.CurrentCompany.MobileNumber, isCurrent: true);
+        => _session.CurrentCompany is null ? null : new CompanyModel
+        {
+            LocalId = _session.CurrentCompany.Id,
+            Name = _session.CurrentCompany.CompanyName,
+            Email = _session.CurrentCompany.Email,
+            Phone = _session.CurrentCompany.MobileNumber,
+            IsCurrentCompany = true,
+            SyncStatus = SyncStatus.Local
+        };
 
     public async Task<List<CompanyModel>> GetAllAsync()
     {
@@ -34,7 +42,7 @@ public sealed class LocalCompanyService : ICompanyService
             return [];
 
         var companies = await _sessions.GetCompaniesForUserAsync(userId);
-        return companies.Select(c => Map(c.Id, c.CompanyName, c.Email, c.MobileNumber, c.Id == _session.CurrentCompanyId)).ToList();
+        return companies.Select(c => Map(c, c.Id == _session.CurrentCompanyId)).ToList();
     }
 
     public async Task<CompanyModel?> GetByIdAsync(Guid id)
@@ -57,6 +65,16 @@ public sealed class LocalCompanyService : ICompanyService
             CompanyName = company.Name.Trim(),
             Email = company.Email.Trim(),
             MobileNumber = company.Phone.Trim(),
+            Address = company.Address.Trim(),
+            City = company.City.Trim(),
+            Country = company.Country.Trim(),
+            TaxNumber = company.TaxNumber.Trim(),
+            RegistrationNo = company.RegistrationNo.Trim(),
+            Currency = string.IsNullOrWhiteSpace(company.Currency) ? "USD" : company.Currency.Trim(),
+            CurrencySymbol = company.CurrencySymbol,
+            LogoUrl = company.LogoUrl.Trim(),
+            InvoicePrefix = string.IsNullOrWhiteSpace(company.InvoicePrefix) ? "INV" : company.InvoicePrefix.Trim(),
+            Website = company.Website.Trim(),
             IsActive = true
         });
         db.UserCompanies.Add(new LocalUserCompanyEntity
@@ -68,17 +86,22 @@ public sealed class LocalCompanyService : ICompanyService
             IsOwner = true,
             IsActive = true
         });
-        LocalSyncQueueWriter.Enqueue(db, "Company", company.LocalId, company.LocalId, SyncOperation.Create, new { company.Name, company.Email }, now);
+        LocalSyncQueueWriter.Enqueue(db, "Company", company.LocalId, company.LocalId, SyncOperation.Create,
+            new { company.Name, company.Email, company.Phone, company.Address, company.City, company.Country, company.TaxNumber, company.RegistrationNo, company.Currency, company.CurrencySymbol, company.InvoicePrefix, company.Website }, now);
         await db.SaveChangesAsync();
         return (true, null);
     }
 
     public async Task<(bool Ok, string? Error)> UpdateAsync(CompanyModel company)
     {
-        if (!Owns(company.LocalId))
+        if (_session.CurrentUserId is not Guid userId)
             return (false, "You do not have access to this company.");
 
         await using var db = await _dbFactory.CreateDbContextAsync();
+        var canEdit = await db.UserCompanies.AsNoTracking()
+            .AnyAsync(x => x.UserId == userId && x.CompanyId == company.LocalId && x.IsActive);
+        if (!canEdit)
+            return (false, "You do not have access to this company.");
         var row = await db.Companies.FirstOrDefaultAsync(c => c.Id == company.LocalId);
         if (row is null)
             return (false, "Company not found.");
@@ -86,13 +109,49 @@ public sealed class LocalCompanyService : ICompanyService
         row.CompanyName = company.Name.Trim();
         row.Email = company.Email.Trim();
         row.MobileNumber = company.Phone.Trim();
-        LocalSyncQueueWriter.Enqueue(db, "Company", row.Id, row.Id, SyncOperation.Update, new { row.CompanyName, row.Email }, DateTime.UtcNow);
+        row.Address = company.Address.Trim();
+        row.City = company.City.Trim();
+        row.Country = company.Country.Trim();
+        row.TaxNumber = company.TaxNumber.Trim();
+        row.RegistrationNo = company.RegistrationNo.Trim();
+        row.Currency = string.IsNullOrWhiteSpace(company.Currency) ? "USD" : company.Currency.Trim();
+        row.CurrencySymbol = company.CurrencySymbol;
+        row.LogoUrl = company.LogoUrl.Trim();
+        row.InvoicePrefix = string.IsNullOrWhiteSpace(company.InvoicePrefix) ? "INV" : company.InvoicePrefix.Trim();
+        row.Website = company.Website.Trim();
+        LocalSyncQueueWriter.Enqueue(db, "Company", row.Id, row.Id, SyncOperation.Update,
+            new { row.CompanyName, row.Email, row.MobileNumber, row.Address, row.City, row.Country, row.TaxNumber, row.RegistrationNo, row.Currency, row.CurrencySymbol, row.InvoicePrefix, row.Website }, DateTime.UtcNow);
         await db.SaveChangesAsync();
         return (true, null);
     }
 
-    public Task<(bool Ok, string? Error)> DeleteAsync(Guid id)
-        => Task.FromResult<(bool, string?)>((false, "Deleting a company is not available offline."));
+    public async Task<(bool Ok, string? Error)> DeleteAsync(Guid id)
+    {
+        if (_session.CurrentUserId is not Guid userId)
+            return (false, "Sign in to delete a company.");
+        if (_session.CurrentCompanyId == id)
+            return (false, "Switch to another company before deleting the current company.");
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var membership = await db.UserCompanies.FirstOrDefaultAsync(x =>
+            x.UserId == userId && x.CompanyId == id && x.IsActive);
+        if (membership is null || !membership.IsOwner)
+            return (false, "Only a company owner can delete this company.");
+
+        var company = await db.Companies.FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+        if (company is null)
+            return (false, "Company not found.");
+
+        company.IsActive = false;
+        var memberships = await db.UserCompanies.Where(x => x.CompanyId == id).ToListAsync();
+        foreach (var item in memberships)
+            item.IsActive = false;
+
+        LocalSyncQueueWriter.Enqueue(db, "Company", id, id, SyncOperation.Delete,
+            new { Id = id }, DateTime.UtcNow);
+        await db.SaveChangesAsync();
+        return (true, null);
+    }
 
     public async Task SwitchCompanyAsync(Guid id)
     {
@@ -112,16 +171,24 @@ public sealed class LocalCompanyService : ICompanyService
             snapshot.Session.ServerSessionId);
     }
 
-    private bool Owns(Guid companyId)
-        => _session.CurrentUserId is Guid && _session.CurrentCompanyId == companyId;
-
-    private static CompanyModel Map(Guid id, string name, string email, string phone, bool isCurrent)
+    private static CompanyModel Map(LocalCompanyEntity company, bool isCurrent)
         => new()
         {
-            LocalId = id,
-            Name = name,
-            Email = email,
-            Phone = phone,
+            LocalId = company.Id,
+            Name = company.CompanyName,
+            Email = company.Email,
+            Phone = company.MobileNumber,
+            Address = company.Address,
+            City = company.City,
+            Country = company.Country,
+            TaxNumber = company.TaxNumber,
+            RegistrationNo = company.RegistrationNo,
+            Currency = company.Currency,
+            CurrencySymbol = company.CurrencySymbol,
+            LogoUrl = company.LogoUrl,
+            InvoicePrefix = company.InvoicePrefix,
+            Website = company.Website,
+            Status = company.IsActive ? CompanyStatus.Active : CompanyStatus.Inactive,
             IsCurrentCompany = isCurrent,
             SyncStatus = SyncStatus.Local
         };

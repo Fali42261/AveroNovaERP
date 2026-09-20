@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Payments;
@@ -8,12 +9,13 @@ namespace AveroNova.App.UI.Pages.Payments;
 [QueryProperty(nameof(EditId), "id")]
 [QueryProperty(nameof(InitialInvoiceId), "invoiceId")]
 [QueryProperty(nameof(InitialPurchaseId), "purchaseId")]
-public partial class PaymentFormPage : ContentPage
+public partial class PaymentFormPage : ContentPage, IHostedPage
 {
     private readonly IPaymentService _svc;
     private readonly ICompanyService _company;
     private readonly IBillingService _billing;
     private readonly IPurchaseService _purchasesService;
+    private readonly IMainContentNavigator _navigator;
     private List<InvoiceModel> _invoices = [];
     private List<PurchaseModel> _purchases = [];
     private bool _supplierMode;
@@ -22,16 +24,22 @@ public partial class PaymentFormPage : ContentPage
     public string? InitialInvoiceId { get; set; }
     public string? InitialPurchaseId { get; set; }
 
-    public PaymentFormPage(IPaymentService svc, ICompanyService company, IBillingService billing, IPurchaseService purchasesService)
-    { InitializeComponent(); _svc = svc; _company = company; _billing = billing; _purchasesService = purchasesService; }
+    public PaymentFormPage(IPaymentService svc, ICompanyService company, IBillingService billing,
+        IPurchaseService purchasesService, IMainContentNavigator navigator)
+    { InitializeComponent(); _svc = svc; _company = company; _billing = billing; _purchasesService = purchasesService; _navigator = navigator; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
         DatePayment.Date = DateTime.Today;
         var companyId = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         if (!string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var id))
-            _editing = await _svc.GetByIdAsync(id);
+            _editing ??= await _svc.GetByIdAsync(id);
         _supplierMode = _editing?.IsSupplier == true || Guid.TryParse(InitialPurchaseId, out _);
         if (_supplierMode)
         {
@@ -111,11 +119,11 @@ public partial class PaymentFormPage : ContentPage
         if (string.IsNullOrEmpty(m.PaymentNumber)) m.PaymentNumber = await _svc.GetNextPaymentNumberAsync(cid);
 
         var (ok, err) = _editing == null ? await _svc.CreateAsync(m) : await _svc.UpdateAsync(m);
-        if (ok) await Shell.Current.GoToAsync("..");
+        if (ok) await _navigator.GoBackAsync();
         else ShowError(err ?? "Save failed.");
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 
     private static int MethodIndex(PaymentMethod method)

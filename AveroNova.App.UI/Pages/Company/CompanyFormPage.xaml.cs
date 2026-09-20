@@ -1,23 +1,31 @@
 using AveroNova.App.UI.Helpers;
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 
 namespace AveroNova.App.UI.Pages.Company;
 
 [QueryProperty(nameof(EditId), "id")]
-public partial class CompanyFormPage : ContentPage
+public partial class CompanyFormPage : ContentPage, IHostedPage
 {
     private readonly ICompanyService _svc;
+    private readonly IMainContentNavigator _navigator;
     private CompanyModel? _editing;
 
     public string? EditId { get; set; }
 
-    public CompanyFormPage(ICompanyService svc) { InitializeComponent(); _svc = svc; }
+    public CompanyFormPage(ICompanyService svc, IMainContentNavigator navigator)
+    { InitializeComponent(); _svc = svc; _navigator = navigator; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (!string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var id))
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
+        if (_editing is null && !string.IsNullOrEmpty(EditId) && Guid.TryParse(EditId, out var id))
         {
             _editing = await _svc.GetByIdAsync(id);
             if (_editing != null)
@@ -59,10 +67,10 @@ public partial class CompanyFormPage : ContentPage
             ? await _svc.CreateAsync(model)
             : await _svc.UpdateAsync(model);
 
-        if (ok) await Shell.Current.GoToAsync("..");
+        if (ok) await _navigator.GoBackAsync();
         else ShowError(error ?? "Save failed.");
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 }

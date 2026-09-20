@@ -109,12 +109,18 @@ public static class MauiProgram
 
         builder.Services.AddTransient<CompanyListPage>();
         builder.Services.AddTransient<Func<CompanyListPage>>(sp => () => sp.GetRequiredService<CompanyListPage>());
+        builder.Services.AddTransient<CompanyFormPage>();
+        builder.Services.AddTransient<Func<CompanyFormPage>>(sp => () => sp.GetRequiredService<CompanyFormPage>());
 
         builder.Services.AddTransient<CustomersListPage>();
         builder.Services.AddTransient<Func<CustomersListPage>>(sp => () => sp.GetRequiredService<CustomersListPage>());
 
         builder.Services.AddTransient<ProductsListPage>();
         builder.Services.AddTransient<Func<ProductsListPage>>(sp => () => sp.GetRequiredService<ProductsListPage>());
+        builder.Services.AddTransient<ProductFormPage>();
+        builder.Services.AddTransient<Func<ProductFormPage>>(sp => () => sp.GetRequiredService<ProductFormPage>());
+        builder.Services.AddTransient<ProductViewPage>();
+        builder.Services.AddTransient<Func<ProductViewPage>>(sp => () => sp.GetRequiredService<ProductViewPage>());
 
         builder.Services.AddTransient<InventoryPage>();
         builder.Services.AddTransient<Func<InventoryPage>>(sp => () => sp.GetRequiredService<InventoryPage>());
@@ -125,6 +131,10 @@ public static class MauiProgram
 
         builder.Services.AddTransient<BillingListPage>();
         builder.Services.AddTransient<Func<BillingListPage>>(sp => () => sp.GetRequiredService<BillingListPage>());
+        builder.Services.AddTransient<InvoiceFormPage>();
+        builder.Services.AddTransient<Func<InvoiceFormPage>>(sp => () => sp.GetRequiredService<InvoiceFormPage>());
+        builder.Services.AddTransient<InvoiceViewPage>();
+        builder.Services.AddTransient<Func<InvoiceViewPage>>(sp => () => sp.GetRequiredService<InvoiceViewPage>());
 
         builder.Services.AddTransient<PurchasesListPage>();
         builder.Services.AddTransient<Func<PurchasesListPage>>(sp => () => sp.GetRequiredService<PurchasesListPage>());
@@ -139,6 +149,10 @@ public static class MauiProgram
 
         builder.Services.AddTransient<PaymentsListPage>();
         builder.Services.AddTransient<Func<PaymentsListPage>>(sp => () => sp.GetRequiredService<PaymentsListPage>());
+        builder.Services.AddTransient<PaymentFormPage>();
+        builder.Services.AddTransient<Func<PaymentFormPage>>(sp => () => sp.GetRequiredService<PaymentFormPage>());
+        builder.Services.AddTransient<PaymentViewPage>();
+        builder.Services.AddTransient<Func<PaymentViewPage>>(sp => () => sp.GetRequiredService<PaymentViewPage>());
 
         builder.Services.AddTransient<SalesReturnsListPage>();
         builder.Services.AddTransient<Func<SalesReturnsListPage>>(sp => () => sp.GetRequiredService<SalesReturnsListPage>());

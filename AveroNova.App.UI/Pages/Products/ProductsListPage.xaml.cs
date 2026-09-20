@@ -9,9 +9,14 @@ public partial class ProductsListPage : ContentPage, IHostedPage
 {
     private readonly IProductService _svc;
     private readonly ICompanyService _company;
+    private readonly IMainContentNavigator _navigator;
+    private readonly Func<ProductFormPage> _formFactory;
+    private readonly Func<ProductViewPage> _viewFactory;
     private List<ProductModel> _all = [];
 
-    public ProductsListPage(IProductService svc, ICompanyService company) { InitializeComponent(); _svc = svc; _company = company; }
+    public ProductsListPage(IProductService svc, ICompanyService company, IMainContentNavigator navigator,
+        Func<ProductFormPage> formFactory, Func<ProductViewPage> viewFactory)
+    { InitializeComponent(); _svc = svc; _company = company; _navigator = navigator; _formFactory = formFactory; _viewFactory = viewFactory; }
 
     protected override async void OnAppearing()    { base.OnAppearing(); await LoadAsync(); }
     public Task LoadForHostAsync() => LoadAsync();
@@ -62,9 +67,9 @@ public partial class ProductsListPage : ContentPage, IHostedPage
         right.Children.Add(new Label { Text = $"Stock: {p.Stock}", FontSize = 11, TextColor = Color.FromArgb("#64748B"), HorizontalOptions = LayoutOptions.End });
         var actRow = new HorizontalStackLayout { Spacing = 6 };
         var viewBtn = new Button { Text = "View", Style = (Style)Resources["SmallSecondaryButton"] };
-        viewBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.ProductView}?id={p.LocalId}");
+        viewBtn.Clicked += async (_, _) => { var page = _viewFactory(); page.ProductId = p.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Product Details", "Home / Products / Details"); };
         var editBtn = new Button { Text = "Edit", Style = (Style)Resources["SmallButton"] };
-        editBtn.Clicked += async (_, _) => await Shell.Current.GoToAsync($"{AppRoutes.ProductEdit}?id={p.LocalId}");
+        editBtn.Clicked += async (_, _) => { var page = _formFactory(); page.EditId = p.LocalId.ToString("D"); await _navigator.NavigateAsync(page, "Edit Product", "Home / Products / Edit"); };
         actRow.Children.Add(viewBtn); actRow.Children.Add(editBtn);
         right.Children.Add(actRow);
 
@@ -75,5 +80,5 @@ public partial class ProductsListPage : ContentPage, IHostedPage
         return border;
     }
 
-    private async void OnAddClicked(object s, EventArgs e) => await Shell.Current.GoToAsync(AppRoutes.ProductAdd);
+    private async void OnAddClicked(object s, EventArgs e) => await _navigator.NavigateAsync(_formFactory(), "Add Product", "Home / Products / Add");
 }

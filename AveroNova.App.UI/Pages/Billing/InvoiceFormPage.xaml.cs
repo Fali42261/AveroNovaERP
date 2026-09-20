@@ -1,4 +1,5 @@
 using AveroNova.App.UI.Models;
+using AveroNova.App.UI.Navigation;
 using AveroNova.App.UI.Services.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -15,12 +16,13 @@ namespace AveroNova.App.UI.Pages.Billing;
 // ==================================================
 
 [QueryProperty(nameof(EditId), "id")]
-public partial class InvoiceFormPage : ContentPage
+public partial class InvoiceFormPage : ContentPage, IHostedPage
 {
     private readonly IBillingService  _billing;
     private readonly ICustomerService _customers;
     private readonly IProductService  _products;
     private readonly ICompanyService  _company;
+    private readonly IMainContentNavigator _navigator;
 
     private List<CustomerModel>  _customerList = [];
     private List<ProductModel>   _productList  = [];
@@ -28,12 +30,18 @@ public partial class InvoiceFormPage : ContentPage
     private InvoiceModel?        _editing;
     public  string?              EditId { get; set; }
 
-    public InvoiceFormPage(IBillingService billing, ICustomerService customers, IProductService products, ICompanyService company)
-    { InitializeComponent(); _billing = billing; _customers = customers; _products = products; _company = company; }
+    public InvoiceFormPage(IBillingService billing, ICustomerService customers, IProductService products,
+        ICompanyService company, IMainContentNavigator navigator)
+    { InitializeComponent(); _billing = billing; _customers = customers; _products = products; _company = company; _navigator = navigator; }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadForHostAsync();
+    }
+
+    public async Task LoadForHostAsync()
+    {
         var cid = _company.CurrentCompany?.LocalId ?? Guid.Empty;
         _customerList = await _customers.GetAllAsync(cid);
         _productList  = await _products.GetAllAsync(cid);
@@ -48,7 +56,7 @@ public partial class InvoiceFormPage : ContentPage
         }
         else if (Guid.TryParse(EditId, out var id))
         {
-            _editing = await _billing.GetByIdAsync(id);
+            _editing ??= await _billing.GetByIdAsync(id);
             if (_editing != null) PopulateForm(_editing);
         }
     }
@@ -64,6 +72,7 @@ public partial class InvoiceFormPage : ContentPage
         EntryDiscount.Text    = inv.DiscountPct.ToString("N0");
         EntryTax.Text         = inv.TaxPct.ToString("N0");
         EditorNotes.Text      = inv.Notes;
+        _lineItems.Clear();
         _lineItems.AddRange(inv.Items);
         RebuildLineItems();
     }
@@ -161,11 +170,11 @@ public partial class InvoiceFormPage : ContentPage
         inv.Status        = status;
 
         var (ok, err) = _editing == null ? await _billing.CreateAsync(inv) : await _billing.UpdateAsync(inv);
-        if (ok) await Shell.Current.GoToAsync("..");
+        if (ok) await _navigator.GoBackAsync();
         else ShowError(err ?? "Save failed.");
     }
 
-    private async void OnBackClicked(object s, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object s, EventArgs e) => await _navigator.GoBackAsync();
     private void ShowError(string msg) { LblError.Text = msg; ErrorBanner.IsVisible = true; }
 }
 

@@ -71,6 +71,10 @@ public sealed class LocalAppDbContext : DbContext
             e.ToTable("LocalCompanies");
             e.HasKey(x => x.Id);
             e.Property(x => x.CompanyName).HasMaxLength(200);
+            e.Property(x => x.Email).HasMaxLength(150);
+            e.Property(x => x.Currency).HasMaxLength(8);
+            e.Property(x => x.CurrencySymbol).HasMaxLength(8);
+            e.Property(x => x.InvoicePrefix).HasMaxLength(16);
         });
 
         modelBuilder.Entity<LocalUserCompanyEntity>(e =>
